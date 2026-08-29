@@ -17,9 +17,7 @@ export const metadata: Metadata = {
   title: 'Perigee',
   description: 'Your app description goes here',
   icons: {
-    icon: [
-      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-    ],
+    icon: [{ url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }],
     apple: [{ url: '/apple-touch-icon.png' }],
   },
   manifest: '/site.webmanifest',
