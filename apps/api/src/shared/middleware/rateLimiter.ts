@@ -31,6 +31,9 @@ export function createRateLimiter(options: RateLimitOptions) {
   cleanup.unref(); // Prevent timer from blocking process exit
 
   return (req: Request, res: Response, next: NextFunction) => {
+    if (process.env.NODE_ENV !== 'production') {
+      return next();
+    }
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     const windowStart = now - windowMs;
@@ -50,3 +53,9 @@ export function createRateLimiter(options: RateLimitOptions) {
     next();
   };
 }
+
+export const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15-minute sliding window
+  max: 10, // Max 10 requests per IP per window
+  message: 'Too many signup attempts. Please try again in a few minutes.',
+});

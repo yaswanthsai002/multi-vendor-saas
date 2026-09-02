@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
+import { apiRouter } from './routes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { notFoundHandler } from './shared/middleware/notFound.js';
 
@@ -39,6 +41,9 @@ app.get('/', (_req, res) => {
     status: 'ok',
   });
 });
+
+// Mount the main API router under /api prefix
+app.use('/api', apiRouter);
 
 // Catch-all handler for unmatched routes (returns 404)
 app.use(notFoundHandler);

@@ -1,4 +1,4 @@
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 import { AppError } from '../errors/AppError.js';
 
@@ -10,7 +10,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   // Automatically intercept and format Zod schema validation errors
   if (err instanceof ZodError) {
-    return res.status(400).json({ error: 'Validation Error', details: err.format() });
+    return res.status(400).json({ error: 'Validation Error', details: z.treeifyError(err) });
   }
 
   // Handle known application errors
