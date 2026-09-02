@@ -1,0 +1,52 @@
+import { AppError } from '../errors/AppError.js';
+
+import type { Request, Response, NextFunction } from 'express';
+
+interface RateLimitOptions {
+  windowMs: number;
+  max: number;
+  message?: string;
+}
+
+export function createRateLimiter(options: RateLimitOptions) {
+  const { windowMs, max, message = 'Too many requests. Please try again later.' } = options;
+  const ipLogs = new Map<string, number[]>();
+
+  // Periodic cleanup every 5 minutes to prevent memory leak from inactive IPs
+  const cleanup = setInterval(
+    () => {
+      const threshold = Date.now() - windowMs;
+      for (const [ip, timestamps] of ipLogs.entries()) {
+        const active = timestamps.filter((time) => time > threshold);
+        if (active.length === 0) {
+          ipLogs.delete(ip);
+        } else {
+          ipLogs.set(ip, active);
+        }
+      }
+    },
+    5 * 60 * 1000,
+  );
+
+  cleanup.unref(); // Prevent timer from blocking process exit
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    const windowStart = now - windowMs;
+
+    // Filter out timestamps outside the current sliding window
+    const timestamps = (ipLogs.get(ip) || []).filter((time) => time > windowStart);
+
+    if (timestamps.length >= max) {
+      const oldestHit = timestamps[0];
+      const retryAfterSeconds = Math.ceil((oldestHit + windowMs - now) / 1000);
+      res.setHeader('Retry-After', retryAfterSeconds);
+      return next(new AppError(429, 'RATE_LIMIT_EXCEEDED', message));
+    }
+
+    timestamps.push(now);
+    ipLogs.set(ip, timestamps);
+    next();
+  };
+}

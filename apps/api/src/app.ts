@@ -3,6 +3,9 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
+import { errorHandler } from './shared/middleware/errorHandler.js';
+import { notFoundHandler } from './shared/middleware/notFound.js';
+
 const app = express();
 
 app.disable('x-powered-by');
@@ -36,5 +39,11 @@ app.get('/', (_req, res) => {
     status: 'ok',
   });
 });
+
+// Catch-all handler for unmatched routes (returns 404)
+app.use(notFoundHandler);
+
+// Global error handler MUST be the last middleware in the pipeline
+app.use(errorHandler);
 
 export default app;
