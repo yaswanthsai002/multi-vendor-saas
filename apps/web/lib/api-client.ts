@@ -44,11 +44,42 @@ axiosInstance.interceptors.response.use(
       const status = error.response.status;
       const data = error.response.data;
       const code = data?.code || (data?.error ? 'VALIDATION_ERROR' : `HTTP_${status}`);
-      const message =
-        data?.message ||
-        (typeof data?.error === 'string' ? data.error : null) ||
-        error.message ||
-        'An unexpected error occurred.';
+
+      // Extract specific validation message if available
+      let message = data?.message;
+      if (!message && data?.details && typeof data.details === 'object') {
+        const detailsObj = data.details as {
+          errors?: string[];
+          properties?: Record<string, { errors?: string[]; message?: string }>;
+        };
+        if (
+          Array.isArray(detailsObj.errors) &&
+          detailsObj.errors.length > 0 &&
+          detailsObj.errors[0]
+        ) {
+          message = detailsObj.errors[0];
+        } else if (detailsObj.properties && typeof detailsObj.properties === 'object') {
+          for (const prop of Object.values(detailsObj.properties)) {
+            if (Array.isArray(prop?.errors) && prop.errors.length > 0 && prop.errors[0]) {
+              message = prop.errors[0];
+              break;
+            }
+            if (prop?.message) {
+              message = prop.message;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!message) {
+        message =
+          (typeof data?.error === 'string' && data.error !== 'Validation Error'
+            ? data.error
+            : null) ||
+          error.message ||
+          'An unexpected error occurred.';
+      }
 
       return Promise.reject(new ApiError(status, code, message, data?.details));
     }
