@@ -65,3 +65,9 @@ export const signInLimiter = createRateLimiter({
   max: 10, // Max 10 requests per IP per window
   message: 'Too many failed sign-in attempts. Please try again in 15 minutes.',
 });
+
+export const otpLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15-minute sliding window
+  max: 5, // Max 5 requests per IP per window
+  message: 'Too many OTP requests from this IP. Please try again in 15 minutes.',
+});
