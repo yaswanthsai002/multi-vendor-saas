@@ -5,6 +5,8 @@ import type { ReactNode } from 'react';
 
 import { Toaster } from '@/components/ui/toaster';
 import { QueryProvider } from '@/providers/query-provider';
+import { Footer } from '@/shared/components/layout/footer';
+import { Header } from '@/shared/components/layout/header';
 import { ThemeProvider } from '@/shared/components/layout/theme-provider';
 
 import './globals.css';
@@ -45,8 +47,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             enableSystem
             disableTransitionOnChange={false}
           >
+            {/* Domain-agnostic Header on every page */}
+            <Header />
+
             {/* Main content area */}
             <main className="flex-1 flex flex-col">{children}</main>
+
+            {/* Domain-agnostic Footer on every page */}
+            <Footer />
 
             {/* Global toast notification system */}
             <Toaster />
