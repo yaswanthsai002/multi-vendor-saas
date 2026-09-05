@@ -1,14 +1,31 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-const connectionString = process.env.DATABASE_URL;
+import * as schema from './schema/index.js';
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not defined');
+type Database = ReturnType<typeof createDb>;
+
+let db: Database | undefined;
+
+function createDb() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not defined');
+  }
+
+  const client = postgres(connectionString);
+
+  return drizzle({
+    client,
+    schema,
+  });
 }
 
-const client = postgres(connectionString);
+export function getDb(): Database {
+  if (!db) {
+    db = createDb();
+  }
 
-export const db = drizzle({
-  client,
-});
+  return db;
+}

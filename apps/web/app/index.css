@@ -1,0 +1,149 @@
+/* ==========================================================================
+   Perigee Design System - Color & Semantic Tokens (DESIGN.md)
+   ========================================================================== */
+
+:root {
+  /* --------------------------------------------------------------------------
+     Primitive Palette (DESIGN.md)
+     -------------------------------------------------------------------------- */
+  --color-ember-50: #fff1ec;
+  --color-ember-100: #ffe0d7;
+  --color-ember-200: #ffc2b1;
+  --color-ember-300: #f49a80;
+  --color-ember-400: #e66a45;
+  --color-ember-500: #d95d39;
+  --color-ember-600: #b9482a;
+  --color-ember-700: #93381f;
+
+  --color-atmospheric-blue-50: #eef7fa;
+  --color-atmospheric-blue-100: #dceef4;
+  --color-atmospheric-blue-200: #b9dce8;
+  --color-atmospheric-blue-300: #7fb6ca;
+  --color-atmospheric-blue-400: #4a90b2;
+  --color-atmospheric-blue-500: #367b9d;
+  --color-atmospheric-blue-600: #2c657f;
+  --color-atmospheric-blue-700: #245369;
+
+  --color-canvas-light: #eceff4;
+  --color-surface-light: #f7f9fc;
+  --color-text-primary-light: #1e232d;
+  --color-text-muted-light: #6b7280;
+  --color-border-light: #d5d9e0;
+
+  --color-canvas-dark: #0a0d14;
+  --color-surface-dark: #131722;
+  --color-text-primary-dark: #e4e7ec;
+  --color-text-muted-dark: #8b95a5;
+  --color-border-dark: #1f2430;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-success-500: #2e8b68;
+  --color-success-100: #e6f5ef;
+  --color-warning-500: #b7791f;
+  --color-warning-100: #fff4d6;
+  --color-danger-500: #c74646;
+  --color-danger-100: #fdeaea;
+  --color-info-500: #367b9d;
+  --color-info-100: #e7f3f7;
+
+  /* --------------------------------------------------------------------------
+     Semantic Tokens - Light Theme (default)
+     -------------------------------------------------------------------------- */
+  --background: #eceff4;
+  --surface: #f7f9fc;
+  --surface-raised: #ffffff;
+  --surface-subtle: #e5e9ef;
+  --surface-hover: #f0f3f7;
+  --surface-active: #e7ebf1;
+
+  --text-primary: #1e232d;
+  --text-secondary: #4f5663;
+  --text-tertiary: #6b7280;
+  --text-disabled: #9aa1ad;
+  --text-inverse: #ffffff;
+
+  --border-default: #d5d9e0;
+  --border-subtle: #e3e6eb;
+  --border-strong: #b9bec8;
+  --border-focus: #d95d39;
+
+  --accent: #d95d39;
+  --accent-hover: #b9482a;
+  --accent-active: #93381f;
+  --accent-subtle: #fff1ec;
+  --on-accent: #ffffff;
+
+  --secondary-accent: #367b9d;
+  --secondary-accent-hover: #2c657f;
+  --secondary-accent-subtle: #eef7fa;
+
+  --success: #2e8b68;
+  --success-subtle: #e6f5ef;
+  --warning: #b7791f;
+  --warning-subtle: #fff4d6;
+  --danger: #c74646;
+  --danger-subtle: #fdeaea;
+  --info: #367b9d;
+  --info-subtle: #e7f3f7;
+
+  /* --------------------------------------------------------------------------
+     Motion
+     -------------------------------------------------------------------------- */
+  --motion-duration-fast: 120ms;
+  --motion-duration-normal: 180ms;
+  --motion-duration-moderate: 240ms;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ==========================================================================
+   Semantic Tokens - Dark Theme (.dark)
+   ========================================================================== */
+.dark {
+  --background: #0a0d14;
+  --surface: #131722;
+  --surface-raised: #191e2a;
+  --surface-subtle: #10141d;
+  --surface-hover: #1b202c;
+  --surface-active: #202633;
+
+  --text-primary: #e4e7ec;
+  --text-secondary: #b5bbc6;
+  --text-tertiary: #8b95a5;
+  --text-disabled: #626b7a;
+  --text-inverse: #1e232d;
+
+  --border-default: #1f2430;
+  --border-subtle: #181d27;
+  --border-strong: #343b49;
+  --border-focus: #e66a45;
+
+  --accent: #e66a45;
+  --accent-hover: #f08060;
+  --accent-active: #ff9476;
+  --accent-subtle: #321c17;
+  --on-accent: #ffffff;
+
+  --secondary-accent: #4a90b2;
+  --secondary-accent-hover: #68a8c4;
+  --secondary-accent-subtle: #142833;
+
+  --success: #55b78f;
+  --success-subtle: #12271f;
+  --warning: #d5a24d;
+  --warning-subtle: #2b2415;
+  --danger: #e47777;
+  --danger-subtle: #2c1818;
+  --info: #68a8c4;
+  --info-subtle: #142833;
+}
+
+/* Seamless, smooth theme transition without flash */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  transition-duration: 200ms;
+}
