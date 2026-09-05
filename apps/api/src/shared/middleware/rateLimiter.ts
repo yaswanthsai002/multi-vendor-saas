@@ -54,8 +54,14 @@ export function createRateLimiter(options: RateLimitOptions) {
   };
 }
 
-export const authLimiter = createRateLimiter({
+export const signUpLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15-minute sliding window
   max: 10, // Max 10 requests per IP per window
-  message: 'Too many signup attempts. Please try again in a few minutes.',
+  message: 'Too many registration attempts. Please try again in 15 minutes.',
+});
+
+export const signInLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15-minute sliding window
+  max: 10, // Max 10 requests per IP per window
+  message: 'Too many failed sign-in attempts. Please try again in 15 minutes.',
 });

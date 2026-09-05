@@ -1,11 +1,14 @@
+import { TextEncoder } from 'util';
+
 import { db } from '@repo/db';
 import { users } from '@repo/db/schema';
 import argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
+import { SignJWT } from 'jose';
 
 import { AppError } from '../../shared/errors/AppError.js';
 
-import type { SignupInput } from './auth.schema.js';
+import type { SignInInput, SignupInput } from './auth.schema.js';
 
 export async function signup(input: SignupInput) {
   // Normalize email for consistent database lookups and prevent case-sensitive duplicates
@@ -46,4 +49,49 @@ export async function signup(input: SignupInput) {
     }
     throw error;
   }
+}
+
+// Static dummy hash to ensure uniform execution timing against user enumeration
+const DUMMY_ARGON2_HASH =
+  '$argon2id$v=19$m=65536,t=3,p=4$dGVzdHNhbHQxMjM0NTY3OA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+export async function signin(input: SignInInput) {
+  // Normalize email for consistent database lookups and prevent case-sensitive duplicates
+  const email = input.email.trim().toLowerCase();
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  const hashToVerify = user?.passwordHash || DUMMY_ARGON2_HASH;
+  // Verify password using Argon2id
+  const matchPassword = await argon2.verify(hashToVerify, input.password);
+
+  if (!user || !matchPassword) {
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new AppError(500, 'SECRET_MISSING', 'JWT secret is not configured');
+  }
+
+  const token = await new SignJWT({})
+    .setProtectedHeader({ alg: 'HS512' })
+    .setSubject(user.userId.toString())
+    .setIssuedAt('perigee-api')
+    .setAudience('perigee-web-app')
+    .setExpirationTime('2h')
+    .sign(new TextEncoder().encode(secret));
+
+  return {
+    token,
+    user: {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      roles: user.roles,
+      emailVerifiedAt: user.emailVerifiedAt,
+    },
+  };
 }

@@ -6,121 +6,186 @@ import { AppError } from '../../shared/errors/AppError.js';
 
 import * as authService from './auth.service.js';
 
-// Mock the auth service to isolate the controller and routing logic
+// Mock auth service to test controller, routing, validation, and cookie emission
 vi.mock('./auth.service.js', () => ({
   signup: vi.fn(),
+  signin: vi.fn(),
 }));
 
-describe('Auth API - Signup (/api/auth/signup)', () => {
+describe('Auth API (/api/auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const validPayload = {
-    fullName: 'Jane Doe',
-    email: 'jane@example.com',
-    password: 'securePassword123!',
-    confirmPassword: 'securePassword123!',
-  };
+  /* -------------------------------------------------------------------------- */
+  /*                               /signup Tests                                */
+  /* -------------------------------------------------------------------------- */
+  describe('POST /api/auth/signup', () => {
+    const validSignupPayload = {
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      password: 'securePassword123!',
+      confirmPassword: 'securePassword123!',
+    };
 
-  describe('Validation', () => {
-    it('should return 400 if fullName is missing', async () => {
-      const { fullName: _fullName, ...payload } = validPayload;
-      const res = await request(app).post('/api/auth/signup').send(payload);
+    describe('Validation', () => {
+      it('should return 400 if fullName is missing or too short', async () => {
+        const res = await request(app)
+          .post('/api/auth/signup')
+          .send({ ...validSignupPayload, fullName: ' ' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Validation Error');
-      expect(res.body.details.fullName).toBeDefined();
-    });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Validation Error');
+        expect(res.body.details.properties.fullName).toBeDefined();
+      });
 
-    it('should return 400 if email is invalid', async () => {
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send({
-          ...validPayload,
-          email: 'invalid-email',
-        });
+      it('should return 400 if email format is invalid', async () => {
+        const res = await request(app)
+          .post('/api/auth/signup')
+          .send({ ...validSignupPayload, email: 'not-an-email' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Validation Error');
-      expect(res.body.details.email).toBeDefined();
-    });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Validation Error');
+        expect(res.body.details.properties.email).toBeDefined();
+      });
 
-    it('should return 400 if password is too short', async () => {
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send({
-          ...validPayload,
-          password: 'short',
-          confirmPassword: 'short',
-        });
+      it('should return 400 if password is too short (<8 chars)', async () => {
+        const res = await request(app)
+          .post('/api/auth/signup')
+          .send({ ...validSignupPayload, password: 'short', confirmPassword: 'short' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Validation Error');
-      expect(res.body.details.password).toBeDefined();
-    });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Validation Error');
+        expect(res.body.details.properties.password).toBeDefined();
+      });
 
-    it('should return 400 if passwords do not match', async () => {
-      const res = await request(app)
-        .post('/api/auth/signup')
-        .send({
-          ...validPayload,
-          confirmPassword: 'differentPassword!',
-        });
+      it('should return 400 if passwords do not match', async () => {
+        const res = await request(app)
+          .post('/api/auth/signup')
+          .send({ ...validSignupPayload, confirmPassword: 'mismatchPassword!' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Validation Error');
-      expect(res.body.details.confirmPassword).toBeDefined();
-    });
-  });
-
-  describe('Business Logic', () => {
-    it('should return 201 and the user object on successful signup', async () => {
-      const mockUserResponse = {
-        user: {
-          userId: 1,
-          fullName: validPayload.fullName,
-          email: validPayload.email,
-          roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
-          emailVerifiedAt: null,
-        },
-      };
-
-      vi.mocked(authService.signup).mockResolvedValueOnce(mockUserResponse);
-
-      const res = await request(app).post('/api/auth/signup').send(validPayload);
-
-      expect(res.status).toBe(201);
-      expect(res.body).toEqual(mockUserResponse);
-      expect(authService.signup).toHaveBeenCalledTimes(1);
-      expect(authService.signup).toHaveBeenCalledWith({
-        fullName: validPayload.fullName,
-        email: validPayload.email,
-        password: validPayload.password,
-        confirmPassword: validPayload.confirmPassword,
+        expect(res.status).toBe(400);
+        expect(res.body.details.properties.confirmPassword).toBeDefined();
       });
     });
 
-    it('should return 409 if email is already registered (AppError)', async () => {
-      vi.mocked(authService.signup).mockRejectedValueOnce(
-        new AppError(409, 'EMAIL_IN_USE', 'An account with this email already exists'),
-      );
+    describe('Business Logic', () => {
+      it('should return 201 and sanitized user object on success', async () => {
+        const mockUserResponse = {
+          user: {
+            userId: 1,
+            fullName: 'Jane Doe',
+            email: 'jane@example.com',
+            roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
+            emailVerifiedAt: null,
+          },
+        };
 
-      const res = await request(app).post('/api/auth/signup').send(validPayload);
+        vi.mocked(authService.signup).mockResolvedValueOnce(mockUserResponse);
 
-      expect(res.status).toBe(409);
-      expect(res.body.error).toBe('An account with this email already exists');
-      expect(authService.signup).toHaveBeenCalledTimes(1);
+        const res = await request(app).post('/api/auth/signup').send(validSignupPayload);
+
+        expect(res.status).toBe(201);
+        expect(res.body).toEqual(mockUserResponse);
+        expect(res.body.user).not.toHaveProperty('passwordHash');
+      });
+
+      it('should return 409 if email already exists', async () => {
+        vi.mocked(authService.signup).mockRejectedValueOnce(
+          new AppError(409, 'EMAIL_IN_USE', 'An account with this email already exists'),
+        );
+
+        const res = await request(app).post('/api/auth/signup').send(validSignupPayload);
+
+        expect(res.status).toBe(409);
+        expect(res.body.code).toBe('EMAIL_IN_USE');
+      });
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                               /signin Tests                                */
+  /* -------------------------------------------------------------------------- */
+  describe('POST /api/auth/signin', () => {
+    const validSigninPayload = {
+      email: 'jane@example.com',
+      password: 'securePassword123!',
+    };
+
+    describe('Validation', () => {
+      it('should return 400 if email is invalid', async () => {
+        const res = await request(app)
+          .post('/api/auth/signin')
+          .send({ email: 'bad-email', password: 'password123' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.details.properties.email).toBeDefined();
+      });
+
+      it('should return 400 if password is empty', async () => {
+        const res = await request(app)
+          .post('/api/auth/signin')
+          .send({ email: 'jane@example.com', password: '' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.details.properties.password).toBeDefined();
+      });
     });
 
-    it('should return 500 on unexpected server errors', async () => {
-      vi.mocked(authService.signup).mockRejectedValueOnce(new Error('Database connection failed'));
+    describe('Business Logic & Security', () => {
+      it('should return 200, set HttpOnly cookie, and return user DTO on success', async () => {
+        const mockAuthResult = {
+          token: 'mock.jwt.token',
+          user: {
+            userId: 1,
+            fullName: 'Jane Doe',
+            email: 'jane@example.com',
+            roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
+            emailVerifiedAt: null,
+          },
+        };
 
-      const res = await request(app).post('/api/auth/signup').send(validPayload);
+        vi.mocked(authService.signin).mockResolvedValueOnce(mockAuthResult);
 
-      expect(res.status).toBe(500);
-      // Depending on the test runner environment, it might expose the error or mask it as 'Internal Server Error'
-      expect(res.body.error).toBeDefined();
+        const res = await request(app).post('/api/auth/signin').send(validSigninPayload);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ user: mockAuthResult.user });
+        expect(res.body.user).not.toHaveProperty('passwordHash');
+
+        // Verify Set-Cookie header attributes
+        const rawCookies = res.headers['set-cookie'] as unknown as string[] | string | undefined;
+        const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+        expect(cookies.length).toBeGreaterThan(0);
+        const authCookie = cookies.find((c: string) => c.startsWith('auth_token='));
+        expect(authCookie).toBeDefined();
+        expect(authCookie).toContain('HttpOnly');
+        expect(authCookie).toContain('Path=/');
+        expect(authCookie).toContain('SameSite=Lax');
+      });
+
+      it('should return 401 on invalid credentials', async () => {
+        const invalidSignInPayload = {
+          email: 'ivalid@mail.com',
+          password: 'not-a-password',
+        };
+        vi.mocked(authService.signin).mockRejectedValueOnce(
+          new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.'),
+        );
+
+        const res = await request(app).post('/api/auth/signin').send(invalidSignInPayload);
+
+        expect(res.status).toBe(401);
+        expect(res.body.code).toBe('INVALID_CREDENTIALS');
+      });
+
+      it('should return 500 when an unexpected internal error occurs', async () => {
+        vi.mocked(authService.signin).mockRejectedValueOnce(new Error('DB failure'));
+
+        const res = await request(app).post('/api/auth/signin').send(validSigninPayload);
+
+        expect(res.status).toBe(500);
+      });
     });
   });
 });

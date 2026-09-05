@@ -1,9 +1,10 @@
 import { Router } from 'express';
 
-import { authLimiter } from '../../shared/middleware/rateLimiter.js';
+import { signUpLimiter, signInLimiter } from '../../shared/middleware/rateLimiter.js';
 
-import { signup } from './auth.controller.js';
+import { signup, signin } from './auth.controller.js';
 
 export const authRouter = Router();
 
-authRouter.post('/signup', authLimiter, signup);
+authRouter.post('/signup', signUpLimiter, signup);
+authRouter.post('/signin', signInLimiter, signin);
