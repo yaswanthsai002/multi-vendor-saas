@@ -3,8 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import SignupPage from './page';
-
 import * as signupService from '@/features/signup/services/signup.service';
 import { ApiError } from '@/lib/api-client';
 import { QueryProvider } from '@/providers/query-provider';
