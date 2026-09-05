@@ -1,27 +1,31 @@
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import { config } from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import * as schema from './schema/index.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+type Database = ReturnType<typeof createDb>;
 
-config({
-  path: resolve(__dirname, '../../../.env'),
-});
+let db: Database | undefined;
 
-const connectionString = process.env.DATABASE_URL;
+function createDb() {
+  const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not defined');
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not defined');
+  }
+
+  const client = postgres(connectionString);
+
+  return drizzle({
+    client,
+    schema,
+  });
 }
 
-const client = postgres(connectionString);
+export function getDb(): Database {
+  if (!db) {
+    db = createDb();
+  }
 
-export const db = drizzle({
-  client,
-  schema,
-});
+  return db;
+}
