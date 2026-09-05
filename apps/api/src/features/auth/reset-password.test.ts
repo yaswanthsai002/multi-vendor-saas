@@ -1,12 +1,10 @@
-import { db } from '@repo/db';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import app from '../../app.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
-// Mock DB queries so tests execute without a live PostgreSQL connection
-vi.mock('@repo/db', () => ({
+const { db } = vi.hoisted(() => ({
   db: {
     query: {
       users: {
@@ -19,6 +17,10 @@ vi.mock('@repo/db', () => ({
       })),
     })),
   },
+}));
+
+vi.mock('@repo/db', () => ({
+  getDb: vi.fn(() => db),
 }));
 
 describe('Password Reset Flow (/api/auth)', () => {

@@ -1,6 +1,6 @@
 import { TextEncoder } from 'util';
 
-import { db } from '@repo/db';
+import { getDb } from '@repo/db';
 import { users } from '@repo/db/schema';
 import argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
@@ -12,6 +12,7 @@ import { redis } from '../../shared/redis/redis.client.js';
 import type { ResetPasswordInput, SignInInput, SignupInput } from './auth.schema.js';
 
 export async function signup(input: SignupInput) {
+  const db = getDb();
   // Normalize email for consistent database lookups and prevent case-sensitive duplicates
   const email = input.email.trim().toLowerCase();
 
@@ -57,6 +58,7 @@ const DUMMY_ARGON2_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$dGVzdHNhbHQxMjM0NTY3OA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 export async function signin(input: SignInInput) {
+  const db = getDb();
   // Normalize email for consistent database lookups and prevent case-sensitive duplicates
   const email = input.email.trim().toLowerCase();
 
@@ -99,6 +101,7 @@ export async function signin(input: SignInInput) {
 }
 
 export async function resetPassword(input: ResetPasswordInput) {
+  const db = getDb();
   // 1. Get verified email directly from Redis token
   const email = await redis.get(`password_reset_token:${input.resetToken}`);
   if (!email) {
@@ -126,6 +129,7 @@ export async function resetPassword(input: ResetPasswordInput) {
 }
 
 export async function getMe(userId: number) {
+  const db = getDb();
   const user = await db.query.users.findFirst({
     where: eq(users.userId, userId),
   });
