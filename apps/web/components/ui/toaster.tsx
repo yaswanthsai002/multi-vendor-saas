@@ -1,15 +1,22 @@
 'use client';
 
+import { useTheme } from 'next-themes';
 import { Toaster as SonnerToaster } from 'sonner';
 
 export function Toaster() {
+  const { theme = 'system' } = useTheme();
+
   return (
     <SonnerToaster
+      theme={theme as 'light' | 'dark' | 'system'}
+      richColors
+      closeButton
       position="top-right"
       toastOptions={{
-        className:
-          'font-sans bg-surface-raised text-text-primary border border-border-default rounded-lg p-3.5 shadow-md text-sm',
-        descriptionClassName: 'text-text-secondary text-xs mt-1',
+        classNames: {
+          title: 'font-semibold text-sm',
+          description: 'text-xs mt-0.5 opacity-90',
+        },
       }}
     />
   );
