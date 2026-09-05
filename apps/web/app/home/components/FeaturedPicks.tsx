@@ -8,7 +8,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$240.00',
     rating: 4.5,
-    image: '/images/products/featured-1.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/vendor-rianna.jpg',
   },
   {
@@ -17,7 +17,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$240.00',
     rating: 4.5,
-    image: '/images/products/featured-2.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/exchome.jpg',
   },
   {
@@ -26,7 +26,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$240.00',
     rating: 4.5,
-    image: '/images/products/featured-3.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
   {
@@ -35,7 +35,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$240.00',
     rating: 4.5,
-    image: '/images/products/featured-4.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/relicoolen.jpg',
   },
   {
@@ -44,7 +44,7 @@ const products = [
     price: '$120.00',
     originalPrice: '$140.00',
     rating: 4.5,
-    image: '/images/products/featured-5.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
   {
@@ -53,7 +53,7 @@ const products = [
     price: '$130.00',
     originalPrice: '$140.00',
     rating: 4.5,
-    image: '/images/products/featured-6.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/stylinfix.jpg',
   },
 ];

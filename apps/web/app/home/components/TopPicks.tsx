@@ -8,7 +8,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$140.00',
     rating: 4.7,
-    image: '/images/products/hot-1.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/vender-rame.jpg',
   },
   {
@@ -17,7 +17,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$140.00',
     rating: 4.8,
-    image: '/images/products/hot-2.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/ecorlame.jpg',
   },
   {
@@ -26,7 +26,7 @@ const products = [
     price: '$140.00',
     originalPrice: '$140.00',
     rating: 4.6,
-    image: '/images/products/hot-3.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
   {
@@ -35,7 +35,7 @@ const products = [
     price: '$120.00',
     originalPrice: '$140.00',
     rating: 4.7,
-    image: '/images/products/hot-4.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
   {
@@ -44,7 +44,7 @@ const products = [
     price: '$120.00',
     originalPrice: '$140.00',
     rating: 4.8,
-    image: '/images/products/hot-5.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
   {
@@ -53,7 +53,7 @@ const products = [
     price: '$160.00',
     originalPrice: '$140.00',
     rating: 4.5,
-    image: '/images/products/hot-6.jpg',
+    image: '/assets/products/product.png',
     avatar: '/images/avatars/aurobeauty.jpg',
   },
 ];
