@@ -1,3 +1,4 @@
+import { SignJWT } from 'jose';
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -10,11 +11,13 @@ import * as authService from './auth.service.js';
 vi.mock('./auth.service.js', () => ({
   signup: vi.fn(),
   signin: vi.fn(),
+  getMe: vi.fn(),
 }));
 
 describe('Auth API (/api/auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.JWT_SECRET = 'test-secret-at-least-32-characters-long-key';
   });
 
   /* -------------------------------------------------------------------------- */
@@ -186,6 +189,64 @@ describe('Auth API (/api/auth)', () => {
 
         expect(res.status).toBe(500);
       });
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                                 /me Tests                                  */
+  /* -------------------------------------------------------------------------- */
+  describe('GET /api/auth/me', () => {
+    const mockUserResponse = {
+      user: {
+        userId: 1,
+        fullName: 'Jane Doe',
+        email: 'jane@example.com',
+        roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
+        emailVerifiedAt: null,
+      },
+    };
+
+    it('should return 401 if auth_token cookie is missing', async () => {
+      const res = await request(app).get('/api/auth/me');
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('AUTH_TOKEN_MISSING');
+    });
+
+    it('should return 200 and user profile when valid auth token is provided in cookie', async () => {
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const token = await new SignJWT({})
+        .setProtectedHeader({ alg: 'HS512' })
+        .setSubject('1')
+        .setIssuer('perigee-api')
+        .setAudience('perigee-web-app')
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(new TextEncoder().encode(secret));
+
+      vi.mocked(authService.getMe).mockResolvedValueOnce(mockUserResponse);
+
+      const res = await request(app)
+        .get('/api/auth/me')
+        .set('Cookie', [`auth_token=${token}`]);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(mockUserResponse);
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                              /signout Tests                                */
+  /* -------------------------------------------------------------------------- */
+  describe('POST /api/auth/signout', () => {
+    it('should return 200 and clear the auth_token cookie', async () => {
+      const res = await request(app).post('/api/auth/signout');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: 'Signed out successfully' });
+
+      const rawCookies = res.headers['set-cookie'] as unknown as string[] | string | undefined;
+      const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+      const authCookie = cookies.find((c: string) => c.startsWith('auth_token='));
+      expect(authCookie).toBeDefined();
     });
   });
 });

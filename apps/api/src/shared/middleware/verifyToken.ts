@@ -8,14 +8,6 @@ export interface AuthenticatedRequest extends Request {
   user?: JWTPayload;
 }
 
-const secret = process.env.JWT_SECRET;
-
-if (!secret) {
-  throw new Error('JWT_SECRET is not configured');
-}
-
-const secretKey = new TextEncoder().encode(secret);
-
 export async function verifyToken(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.auth_token;
@@ -23,6 +15,13 @@ export async function verifyToken(req: AuthenticatedRequest, _res: Response, nex
     if (!token) {
       return next(new AppError(401, 'AUTH_TOKEN_MISSING', 'Authentication required'));
     }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return next(new AppError(500, 'SECRET_MISSING', 'JWT secret is not configured'));
+    }
+
+    const secretKey = new TextEncoder().encode(secret);
 
     const { payload } = await jwtVerify(token, secretKey, {
       algorithms: ['HS512'],

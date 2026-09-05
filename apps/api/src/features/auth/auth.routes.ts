@@ -6,13 +6,24 @@ import {
   signInLimiter,
   signUpLimiter,
 } from '../../shared/middleware/rateLimiter.js';
+import { verifyToken } from '../../shared/middleware/verifyToken.js';
 
-import { resetPassword, sendOtp, signin, signup, verifyOtp } from './auth.controller.js';
+import {
+  me,
+  resetPassword,
+  sendOtp,
+  signin,
+  signout,
+  signup,
+  verifyOtp,
+} from './auth.controller.js';
 
 export const authRouter = Router();
 
 authRouter.post('/signup', signUpLimiter, signup);
 authRouter.post('/signin', signInLimiter, signin);
+authRouter.post('/signout', signout);
+authRouter.get('/me', verifyToken, me);
 authRouter.post('/send-otp', otpLimiter, sendOtp);
 authRouter.post('/verify-otp', otpLimiter, verifyOtp);
 authRouter.post('/reset-password', resetPasswordLimiter, resetPassword);

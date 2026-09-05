@@ -80,8 +80,9 @@ export async function signin(input: SignInInput) {
   const token = await new SignJWT({})
     .setProtectedHeader({ alg: 'HS512' })
     .setSubject(user.userId.toString())
-    .setIssuedAt('perigee-api')
+    .setIssuer('perigee-api')
     .setAudience('perigee-web-app')
+    .setIssuedAt()
     .setExpirationTime('2h')
     .sign(new TextEncoder().encode(secret));
 
@@ -122,4 +123,24 @@ export async function resetPassword(input: ResetPasswordInput) {
   await redis.del(`password_reset_token:${input.resetToken}`);
 
   return { message: 'Password has been reset successfully.' };
+}
+
+export async function getMe(userId: number) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.userId, userId),
+  });
+
+  if (!user) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
+  }
+
+  return {
+    user: {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      roles: user.roles,
+      emailVerifiedAt: user.emailVerifiedAt,
+    },
+  };
 }

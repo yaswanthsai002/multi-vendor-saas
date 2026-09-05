@@ -1,3 +1,5 @@
+import { AppError } from '../../shared/errors/AppError.js';
+
 import {
   resetPasswordSchema,
   sendOtpSchema,
@@ -8,6 +10,7 @@ import {
 import * as authService from './auth.service.js';
 import * as otpService from './otp.service.js';
 
+import type { AuthenticatedRequest } from '../../shared/middleware/verifyToken.js';
 import type { Request, Response, NextFunction } from 'express';
 
 export async function signup(req: Request, res: Response, next: NextFunction) {
@@ -75,6 +78,33 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     const result = await authService.resetPassword(validatedData);
 
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function me(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = Number(req.user?.sub);
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid session payload');
+    }
+    const result = await authService.getMe(userId);
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function signout(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.clearCookie('auth_token', {
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+    });
+    return res.status(200).json({ message: 'Signed out successfully' });
   } catch (error) {
     return next(error);
   }
