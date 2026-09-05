@@ -35,8 +35,10 @@ function GoogleIcon() {
 
 export function SignupForm() {
   const {
-    form: { register },
-    errors,
+    form: {
+      register,
+      formState: { errors },
+    },
     isSubmitting,
     onSubmit,
     showPassword,
@@ -91,7 +93,7 @@ export function SignupForm() {
           <Input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="Enter your email"
             autoComplete="email"
             isInvalid={!!errors.email}
             aria-describedby={errors.email ? 'email-error' : undefined}

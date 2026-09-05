@@ -19,7 +19,7 @@ export function useSignup() {
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    mode: 'onBlur',
+    mode: 'onTouched',
     defaultValues: {
       fullName: '',
       email: '',
@@ -56,12 +56,16 @@ export function useSignup() {
           error.details.properties &&
           typeof error.details.properties === 'object'
         ) {
-          const properties = error.details.properties as Record<string, { message?: string }>;
+          const properties = error.details.properties as Record<
+            string,
+            { errors?: string[]; message?: string }
+          >;
           for (const [field, fieldError] of Object.entries(properties)) {
-            if (field in form.getValues() && fieldError?.message) {
+            const errorMsg = fieldError?.errors?.[0] || fieldError?.message;
+            if (field in form.getValues() && errorMsg) {
               form.setError(field as keyof SignupFormData, {
                 type: 'manual',
-                message: fieldError.message,
+                message: errorMsg,
               });
             }
           }
@@ -91,6 +95,5 @@ export function useSignup() {
     toggleConfirmPasswordVisibility,
     onSubmit: form.handleSubmit(onSubmit),
     isSubmitting: form.formState.isSubmitting || signupMutation.isPending,
-    errors: form.formState.errors,
   };
 }
