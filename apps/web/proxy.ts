@@ -6,6 +6,12 @@ import { DEFAULT_UNAUTHENTICATED_REDIRECT, PROTECTED_ROUTE_PREFIXES } from '@/li
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === '/home') {
+    const redirectUrl = new URL('/', request.url);
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   const authToken = request.cookies.get('auth_token')?.value;
   const isAuthenticated = Boolean(authToken);
 
