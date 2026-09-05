@@ -91,11 +91,26 @@ export default function CuratedNewFinds() {
   const visibleProducts = products.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <section className="w-full bg-white py-14">
+    <section
+      className="
+        w-full
+        bg-white
+        py-14
+        dark:bg-[#11161F]
+      "
+    >
       <div className="mx-auto max-w-[1200px] px-6">
         {/* Heading */}
         <div className="mb-7 flex items-center justify-between">
-          <h2 className="text-[25px] font-semibold tracking-[-0.6px] text-[#171717]">
+          <h2
+            className="
+              text-[25px]
+              font-semibold
+              tracking-[-0.6px]
+              text-[#171717]
+              dark:text-[#E4E7EC]
+            "
+          >
             Curated New Finds
           </h2>
 
@@ -108,20 +123,28 @@ export default function CuratedNewFinds() {
                 disabled={currentPage === 0}
                 aria-label="Previous products"
                 className="
-                                    flex h-10 w-10 items-center justify-center
-                                    rounded-full border border-[#d8d3ce]
-                                    bg-white text-[#222] shadow-sm
-                                    transition-all duration-200
-                                    hover:border-[#222]
-                                    hover:bg-[#f8f6f3]
-                                    hover:shadow-md
-                                    active:scale-95
-                                    disabled:cursor-not-allowed
-                                    disabled:border-[#e8e5e2]
-                                    disabled:bg-[#f7f6f5]
-                                    disabled:text-[#b8b4b0]
-                                    disabled:shadow-none
-                                "
+                  flex h-10 w-10 items-center justify-center
+                  rounded-full border border-[#d8d3ce]
+                  bg-white text-[#222] shadow-sm
+                  transition-all duration-200
+                  hover:border-[#222]
+                  hover:bg-[#f8f6f3]
+                  hover:shadow-md
+                  active:scale-95
+                  disabled:cursor-not-allowed
+                  disabled:border-[#e8e5e2]
+                  disabled:bg-[#f7f6f5]
+                  disabled:text-[#b8b4b0]
+                  disabled:shadow-none
+                  dark:border-[#343B49]
+                  dark:bg-[#191E2A]
+                  dark:text-[#E4E7EC]
+                  dark:hover:border-[#E66A45]
+                  dark:hover:bg-[#202633]
+                  dark:disabled:border-[#1F2430]
+                  dark:disabled:bg-[#131722]
+                  dark:disabled:text-[#626B7A]
+                "
               >
                 <ChevronLeft size={19} strokeWidth={1.8} />
               </button>
@@ -132,20 +155,28 @@ export default function CuratedNewFinds() {
                 disabled={currentPage === totalPages - 1}
                 aria-label="Next products"
                 className="
-                                    flex h-10 w-10 items-center justify-center
-                                    rounded-full border border-[#d8d3ce]
-                                    bg-white text-[#222] shadow-sm
-                                    transition-all duration-200
-                                    hover:border-[#222]
-                                    hover:bg-[#f8f6f3]
-                                    hover:shadow-md
-                                    active:scale-95
-                                    disabled:cursor-not-allowed
-                                    disabled:border-[#e8e5e2]
-                                    disabled:bg-[#f7f6f5]
-                                    disabled:text-[#b8b4b0]
-                                    disabled:shadow-none
-                                "
+                  flex h-10 w-10 items-center justify-center
+                  rounded-full border border-[#d8d3ce]
+                  bg-white text-[#222] shadow-sm
+                  transition-all duration-200
+                  hover:border-[#222]
+                  hover:bg-[#f8f6f3]
+                  hover:shadow-md
+                  active:scale-95
+                  disabled:cursor-not-allowed
+                  disabled:border-[#e8e5e2]
+                  disabled:bg-[#f7f6f5]
+                  disabled:text-[#b8b4b0]
+                  disabled:shadow-none
+                  dark:border-[#343B49]
+                  dark:bg-[#191E2A]
+                  dark:text-[#E4E7EC]
+                  dark:hover:border-[#E66A45]
+                  dark:hover:bg-[#202633]
+                  dark:disabled:border-[#1F2430]
+                  dark:disabled:bg-[#131722]
+                  dark:disabled:text-[#626B7A]
+                "
               >
                 <ChevronRight size={19} strokeWidth={1.8} />
               </button>
@@ -158,34 +189,104 @@ export default function CuratedNewFinds() {
           {visibleProducts.map((product) => (
             <article
               key={product.name}
-              className="overflow-hidden rounded-[8px] border border-[#e4e4e4] bg-white"
+              className="
+                group
+                overflow-hidden
+                rounded-[8px]
+                border border-[#e4e4e4]
+                bg-white
+                transition-[transform,background-color,border-color,box-shadow]
+                duration-300
+                ease-out
+                will-change-transform
+                hover:scale-[1.01]
+                hover:border-[#d6d1cc]
+                hover:bg-[#fcfbfa]
+                hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)]
+                dark:border-[#252A33]
+                dark:bg-[#0D1117]
+                dark:hover:border-[#343B49]
+                dark:hover:bg-[#151A21]
+                dark:hover:shadow-[0_8px_20px_rgba(0,0,0,0.30)]
+                "
             >
               {/* Product Image */}
-              <div className="relative h-[145px] overflow-hidden bg-[#eee8e1]">
+              <div
+                className="
+                  relative
+                  h-[145px]
+                  overflow-hidden
+                  bg-[#eee8e1]
+                  dark:bg-[#10141D]
+                "
+              >
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
                   sizes="175px"
-                  className="object-cover"
+                  className="
+                    object-cover
+                    transition-transform
+                    duration-500
+                    ease-out
+                    will-change-transform
+                    group-hover:scale-[1.025]
+                    "
                 />
               </div>
 
               {/* Product Details */}
               <div className="px-3 py-3">
-                <p className="mb-1 text-[9px] font-medium text-[#777]">{product.brand}</p>
+                <p
+                  className="
+                    mb-1
+                    text-[9px]
+                    font-medium
+                    text-[#777]
+                    dark:text-[#8B95A5]
+                  "
+                >
+                  {product.brand}
+                </p>
 
-                <h3 className="min-h-[28px] text-[10px] font-medium leading-[1.35] text-[#222]">
+                <h3
+                  className="
+                    min-h-[28px]
+                    text-[10px]
+                    font-medium
+                    leading-[1.35]
+                    text-[#222]
+                    dark:text-[#E4E7EC]
+                  "
+                >
                   {product.name}
                 </h3>
 
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-[#222]">{product.price}</span>
+                  <span
+                    className="
+                      text-[11px]
+                      font-semibold
+                      text-[#222]
+                      dark:text-[#E4E7EC]
+                    "
+                  >
+                    {product.price}
+                  </span>
 
                   <div className="flex items-center gap-1">
                     <Star size={9} fill="currentColor" className="text-[#c59b38]" />
 
-                    <span className="text-[9px] text-[#777]">{product.rating}</span>
+                    <span
+                      className="
+                        text-[9px]
+                        text-[#777]
+                        dark:text-[#8B95A5]
+                      "
+                    >
+                      {product.rating}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -203,7 +304,9 @@ export default function CuratedNewFinds() {
                 onClick={() => goToPage(index)}
                 aria-label={`Go to product page ${index + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-200 ${
-                  currentPage === index ? 'w-5 bg-[#222]' : 'w-1.5 bg-[#cfcfcf]'
+                  currentPage === index
+                    ? 'w-5 bg-[#222] dark:bg-[#E66A45]'
+                    : 'w-1.5 bg-[#cfcfcf] dark:bg-[#343B49]'
                 }`}
               />
             ))}
