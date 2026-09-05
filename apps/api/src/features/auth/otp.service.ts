@@ -1,4 +1,4 @@
-import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
@@ -130,6 +130,18 @@ export async function verifyOtp(input: VerifyOtpInput) {
 
   // Consume OTP upon successful verification to prevent replay attacks
   await redis.del(otpKey);
+
+  if (input.purpose === 'password_reset') {
+    const resetToken = randomBytes(24).toString('hex');
+    await redis.set(`password_reset_token:${resetToken}`, email, 'EX', 600);
+    return {
+      message: 'OTP verified successfully',
+      verified: true,
+      email,
+      purpose: input.purpose,
+      resetToken,
+    };
+  }
 
   return {
     message: 'OTP verified successfully',

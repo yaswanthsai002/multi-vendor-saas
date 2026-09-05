@@ -46,7 +46,23 @@ export const verifyOtpSchema = z.object({
   purpose: z.enum(['signin', 'password_reset', 'email_verification']).default('email_verification'),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    resetToken: z.string().min(1, 'Reset token is required.'),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters.')
+      .max(128, 'Password must not exceed 128 characters.'),
+
+    confirmNewPassword: z.string(),
+  })
+  .refine(({ newPassword, confirmNewPassword }) => newPassword === confirmNewPassword, {
+    path: ['confirmNewPassword'],
+    message: 'Passwords do not match.',
+  });
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

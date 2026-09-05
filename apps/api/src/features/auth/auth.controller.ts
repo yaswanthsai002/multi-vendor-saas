@@ -1,4 +1,10 @@
-import { sendOtpSchema, signInSchema, signupSchema, verifyOtpSchema } from './auth.schema.js';
+import {
+  resetPasswordSchema,
+  sendOtpSchema,
+  signInSchema,
+  signupSchema,
+  verifyOtpSchema,
+} from './auth.schema.js';
 import * as authService from './auth.service.js';
 import * as otpService from './otp.service.js';
 
@@ -56,6 +62,17 @@ export async function verifyOtp(req: Request, res: Response, next: NextFunction)
   try {
     const validatedData = verifyOtpSchema.parse(req.body);
     const result = await otpService.verifyOtp(validatedData);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function resetPassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validatedData = resetPasswordSchema.parse(req.body);
+    const result = await authService.resetPassword(validatedData);
 
     return res.status(200).json(result);
   } catch (error) {

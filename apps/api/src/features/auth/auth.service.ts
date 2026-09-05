@@ -7,8 +7,9 @@ import { eq } from 'drizzle-orm';
 import { SignJWT } from 'jose';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { redis } from '../../shared/redis/redis.client.js';
 
-import type { SignInInput, SignupInput } from './auth.schema.js';
+import type { ResetPasswordInput, SignInInput, SignupInput } from './auth.schema.js';
 
 export async function signup(input: SignupInput) {
   // Normalize email for consistent database lookups and prevent case-sensitive duplicates
@@ -94,4 +95,31 @@ export async function signin(input: SignInInput) {
       emailVerifiedAt: user.emailVerifiedAt,
     },
   };
+}
+
+export async function resetPassword(input: ResetPasswordInput) {
+  // 1. Get verified email directly from Redis token
+  const email = await redis.get(`password_reset_token:${input.resetToken}`);
+  if (!email) {
+    throw new AppError(400, 'INVALID_RESET_TOKEN', 'Password reset token is invalid or expired.');
+  }
+
+  // 2. Ensure user exists
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (!user) {
+    throw new AppError(400, 'INVALID_RESET_TOKEN', 'Unable to reset password for this user.');
+  }
+
+  // 3. Hash & update password
+  const passwordHash = await argon2.hash(input.newPassword);
+
+  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.email, email));
+
+  // 4. Remove token to prevent replay
+  await redis.del(`password_reset_token:${input.resetToken}`);
+
+  return { message: 'Password has been reset successfully.' };
 }
