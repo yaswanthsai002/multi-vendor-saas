@@ -7,13 +7,22 @@ import { eq } from 'drizzle-orm';
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
-import type { SendOtpInput, VerifyOtpInput } from './auth.schema.js';
+import { verifyOtpSchema, type SendOtpInput, type VerifyOtpInput } from './auth.schema.js';
 
 const CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const OTP_LENGTH = 6;
 const OTP_TTL_SECONDS = 300; // 5 minutes validity
 const COOLDOWN_SECONDS = 60; // 60 seconds resend cooldown
 const MAX_VERIFY_ATTEMPTS = 3; // Maximum failed attempts before OTP invalidation
+
+export function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) return email;
+  const [local, domain] = email.split('@');
+  if (!local || !domain) return email;
+  if (local.length <= 1) return `${local}••••••@${domain}`;
+  const firstChar = local[0];
+  return `${firstChar}••••••@${domain}`;
+}
 
 /**
  * Generates a cryptographically secure alphanumeric OTP.
@@ -62,6 +71,10 @@ export async function sendOtp(input: SendOtpInput) {
   const otpHash = hashOtp(otp);
   const otpKey = getOtpKey(input.purpose, email);
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.info(`[DEV ONLY] OTP for ${email} (${input.purpose}): ${otp}`);
+  }
+
   // Store hashed OTP with TTL in seconds
   const payload = JSON.stringify({ otpHash, attempts: 0 });
   await redis.set(otpKey, payload, 'EX', OTP_TTL_SECONDS);
@@ -69,12 +82,22 @@ export async function sendOtp(input: SendOtpInput) {
   // Set cooldown key to prevent rapid re-sending
   await redis.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS);
 
+  // Generate verification pending token to secure and state-manage the session across refreshes
+  const verificationPendingToken = randomBytes(24).toString('hex');
+  await redis.set(
+    `email_verification_pending:${verificationPendingToken}`,
+    JSON.stringify({ email, purpose: input.purpose }),
+    'EX',
+    900, // 15 minutes
+  );
+
   // NOTE: For POC, the OTP is returned directly in the response payload.
   // In production, dispatch an email or SMS task (e.g. via BullMQ or notification service).
   return {
-    message: 'OTP sent successfully',
+    message: 'Verification code has been sent.',
     email,
     purpose: input.purpose,
+    verificationPendingToken,
     expiresIn: OTP_TTL_SECONDS,
     resendCooldown: COOLDOWN_SECONDS,
     otp,
@@ -82,11 +105,77 @@ export async function sendOtp(input: SendOtpInput) {
 }
 
 /**
- * Verifies an OTP against stored hash with brute-force lockout.
+ * Retrieves verification session status and remaining cooldown.
  */
-export async function verifyOtp(input: VerifyOtpInput) {
-  const email = input.email.trim().toLowerCase();
-  const otpKey = getOtpKey(input.purpose, email);
+export async function getVerificationStatus(
+  token?: string,
+  fallbackEmail?: string,
+  fallbackPurpose?: string,
+) {
+  let email: string | undefined;
+  let purpose = 'email_verification';
+  const sessionToken = token;
+
+  if (token) {
+    const sessionData = await redis.get(`email_verification_pending:${token}`);
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData) as { email: string; purpose: string };
+      email = parsed.email;
+      purpose = parsed.purpose;
+    }
+  }
+
+  if (!email && fallbackEmail) {
+    email = fallbackEmail.trim().toLowerCase();
+    if (fallbackPurpose) {
+      purpose = fallbackPurpose;
+    }
+  }
+
+  if (!email) {
+    throw new AppError(401, 'NO_PENDING_VERIFICATION', 'No pending verification found.');
+  }
+
+  const cooldownKey = getCooldownKey(purpose, email);
+  const ttl = await redis.ttl(cooldownKey);
+  const remainingCooldown = Math.max(0, ttl);
+
+  return {
+    email,
+    maskedEmail: maskEmail(email),
+    purpose,
+    remainingCooldown,
+    sessionToken,
+  };
+}
+
+/**
+ * Verifies an OTP against stored hash with brute-force lockout and PostgreSQL user existence check.
+ */
+export async function verifyOtp(input: Partial<VerifyOtpInput>, pendingToken?: string) {
+  let email = input.email;
+  let purpose = input.purpose;
+
+  if ((!email || !purpose) && pendingToken) {
+    const sessionData = await redis.get(`email_verification_pending:${pendingToken}`);
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData) as {
+        email: string;
+        purpose: VerifyOtpInput['purpose'];
+      };
+      email = email || parsed.email;
+      purpose = purpose || parsed.purpose;
+    }
+  }
+
+  const validatedData = verifyOtpSchema.parse({
+    ...input,
+    ...(email ? { email } : {}),
+    ...(purpose ? { purpose } : {}),
+  });
+
+  const normalizedEmail = validatedData.email.trim().toLowerCase();
+  const otpKey = getOtpKey(validatedData.purpose, normalizedEmail);
 
   const storedData = await redis.get(otpKey);
   if (!storedData) {
@@ -98,7 +187,7 @@ export async function verifyOtp(input: VerifyOtpInput) {
     attempts: number;
   };
 
-  const inputHash = hashOtp(input.otp);
+  const inputHash = hashOtp(validatedData.otp);
 
   const isMatch =
     Buffer.byteLength(inputHash) === Buffer.byteLength(otpHash) &&
@@ -135,30 +224,45 @@ export async function verifyOtp(input: VerifyOtpInput) {
   // Consume OTP upon successful verification to prevent replay attacks
   await redis.del(otpKey);
 
-  if (input.purpose === 'email_verification') {
-    const db = getDb();
+  // Clear pending verification session if present
+  if (pendingToken) {
+    await redis.del(`email_verification_pending:${pendingToken}`);
+  }
+
+  // Check user existence in PostgreSQL
+  const db = getDb();
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, normalizedEmail),
+  });
+
+  if (!user) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'No account exists with this email address.');
+  }
+
+  if (validatedData.purpose === 'email_verification') {
     await db
       .update(users)
       .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.email, email));
+      .where(eq(users.email, normalizedEmail));
+
+    return {
+      message: 'Email verified successfully.',
+      verified: true,
+    };
   }
 
-  if (input.purpose === 'password_reset') {
+  if (validatedData.purpose === 'password_reset') {
     const resetToken = randomBytes(24).toString('hex');
-    await redis.set(`password_reset_token:${resetToken}`, email, 'EX', 600);
+    await redis.set(`password_reset_token:${resetToken}`, normalizedEmail, 'EX', 600);
     return {
-      message: 'OTP verified successfully',
+      message: 'OTP verified successfully.',
       verified: true,
-      email,
-      purpose: input.purpose,
       resetToken,
     };
   }
 
   return {
-    message: 'OTP verified successfully',
+    message: 'OTP verified successfully.',
     verified: true,
-    email,
-    purpose: input.purpose,
   };
 }

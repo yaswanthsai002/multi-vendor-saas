@@ -4,7 +4,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { toast } from 'sonner';
 
-import { useSendOtpMutation, useVerifyOtpMutation } from './use-verify-email-mutation';
+import {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+  useVerificationStatusQuery,
+} from './use-verify-email-mutation';
 
 import { ApiError } from '@/lib/api-client';
 
@@ -21,45 +25,44 @@ export function useVerifyEmail() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const email = searchParams.get('email') || '';
+  const tokenParam = searchParams.get('token') || undefined;
+  const queryEmail = searchParams.get('email') || '';
   const rawPurpose = searchParams.get('purpose');
-  const purpose =
+  const queryPurpose =
     rawPurpose === 'password_reset' || rawPurpose === 'signin' ? rawPurpose : 'email_verification';
-
-  const [otp, setOtp] = React.useState('');
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [cooldown, setCooldown] = React.useState(60);
 
   const sendOtpMutation = useSendOtpMutation();
   const verifyOtpMutation = useVerifyOtpMutation();
+  const {
+    data: statusData,
+    isLoading: isLoadingStatus,
+    error: statusError,
+  } = useVerificationStatusQuery(tokenParam);
 
-  // Trigger initial OTP send on mount if email is provided
-  const initialSendRef = React.useRef(false);
   React.useEffect(() => {
-    if (!email || initialSendRef.current) return;
-    initialSendRef.current = true;
+    if (statusError && statusError.status === 401 && !queryEmail) {
+      toast.error('Session expired', {
+        description: 'No active verification session found. Please request a new code.',
+      });
+      router.push('/signin');
+    }
+  }, [statusError, queryEmail, router]);
 
-    sendOtpMutation.mutate(
-      { data: { email, purpose } },
-      {
-        onSuccess: (data) => {
-          setCooldown(data.resendCooldown || 60);
-        },
-        onError: (err) => {
-          // If already sent or cooldown active, set standard 60s
-          if (err.status === 429) {
-            setCooldown(60);
-          }
-        },
-      },
-    );
-  }, [email, purpose, sendOtpMutation]);
+  const email = statusData?.email ?? queryEmail;
+  const purpose = statusData?.purpose ?? queryPurpose;
+  const maskedEmail = statusData?.maskedEmail ?? maskEmail(email);
+
+  const [otp, setOtp] = React.useState('');
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = React.useState<number | null>(null);
+
+  const cooldown = cooldownRemaining ?? statusData?.remainingCooldown ?? 60;
 
   // Cooldown timer tick
   React.useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
-      setCooldown((prev) => Math.max(0, prev - 1));
+      setCooldownRemaining((prev) => Math.max(0, (prev ?? cooldown) - 1));
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
@@ -71,7 +74,8 @@ export function useVerifyEmail() {
       { data: { email, purpose } },
       {
         onSuccess: (data) => {
-          setCooldown(data.resendCooldown || 60);
+          setOtp('');
+          setCooldownRemaining(data.resendCooldown || 60);
           toast.success('New code sent', {
             description: 'Please check your email for the new verification code.',
           });
@@ -104,7 +108,7 @@ export function useVerifyEmail() {
     }
 
     try {
-      const response = await verifyOtpMutation.mutateAsync({
+      await verifyOtpMutation.mutateAsync({
         data: {
           email,
           otp,
@@ -112,17 +116,27 @@ export function useVerifyEmail() {
         },
       });
 
-      toast.success('Email verified successfully!', {
-        description: 'You can now sign in with your credentials.',
-      });
-
-      if (purpose === 'password_reset' && response.resetToken) {
-        router.push(`/reset-password?token=${encodeURIComponent(response.resetToken)}`);
+      if (purpose === 'password_reset') {
+        toast.success('Email verified successfully!', {
+          description: 'Please set your new password.',
+        });
+        router.push('/reset-password');
       } else {
+        toast.success('Email verified successfully!', {
+          description: 'You can now sign in with your credentials.',
+        });
         router.push('/signin');
       }
     } catch (err) {
       if (err instanceof ApiError) {
+        if (err.status === 404) {
+          const notFoundMsg = 'No account exists with this email address.';
+          setErrorMessage(notFoundMsg);
+          toast.error('Verification failed', {
+            description: notFoundMsg,
+          });
+          return;
+        }
         setErrorMessage(err.message);
         toast.error('Verification failed', {
           description: err.message,
@@ -146,7 +160,7 @@ export function useVerifyEmail() {
   return {
     email,
     purpose,
-    maskedEmail: maskEmail(email),
+    maskedEmail,
     otp,
     setOtp: handleOtpChange,
     errorMessage,
@@ -156,5 +170,6 @@ export function useVerifyEmail() {
     handleSubmit,
     isSubmitting: verifyOtpMutation.isPending,
     isResending: sendOtpMutation.isPending,
+    isLoadingStatus,
   };
 }

@@ -13,7 +13,17 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     const validatedData = signupSchema.parse(req.body);
     const result = await authService.signup(validatedData);
 
-    return res.status(201).json(result);
+    if (result.verificationPendingToken) {
+      res.cookie('email_verification_pending_token', result.verificationPendingToken, {
+        maxAge: 15 * 60 * 1000,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        path: '/',
+      });
+    }
+
+    return res.status(201).json({ user: result.user });
   } catch (error) {
     // Propagate all errors (Zod validation, DB constraints, etc.) to the central error handler
     return next(error);
@@ -46,9 +56,29 @@ export async function signin(req: Request, res: Response, next: NextFunction) {
 export async function resetPassword(req: Request, res: Response, next: NextFunction) {
   try {
     const validatedData = resetPasswordSchema.parse(req.body);
-    const result = await authService.resetPassword(validatedData);
+    const token = req.cookies.reset_password_token || validatedData.resetToken;
 
-    return res.status(200).json(result);
+    if (!token) {
+      throw new AppError(
+        400,
+        'INVALID_RESET_TOKEN',
+        'Password reset session is invalid or expired.',
+      );
+    }
+
+    const result = await authService.resetPassword({
+      ...validatedData,
+      resetToken: token,
+    });
+
+    res.clearCookie('reset_password_token', {
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+    });
+
+    return res.status(200).json({ message: result.message });
   } catch (error) {
     return next(error);
   }

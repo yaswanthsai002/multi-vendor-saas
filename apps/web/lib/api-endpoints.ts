@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     me: '/api/auth/me',
     sendOtp: '/api/auth/send-otp',
     verifyOtp: '/api/auth/verify-otp',
+    verificationStatus: '/api/auth/verification-status',
     resetPassword: '/api/auth/reset-password',
   },
 } as const;
