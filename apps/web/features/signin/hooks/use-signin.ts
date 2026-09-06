@@ -38,6 +38,17 @@ export function useSignin() {
       router.push(redirectUrl);
     } catch (error) {
       if (error instanceof ApiError) {
+        if (error.status === 403 || error.code === 'EMAIL_NOT_VERIFIED') {
+          toast.error('Email verification required', {
+            description: 'Please verify your email address before signing in.',
+          });
+          const email = form.getValues('email');
+          router.push(
+            `/verify-email?email=${encodeURIComponent(email)}&purpose=email_verification`,
+          );
+          return;
+        }
+
         if (error.status === 401 || error.code === 'INVALID_CREDENTIALS') {
           form.setError('password', {
             type: 'manual',

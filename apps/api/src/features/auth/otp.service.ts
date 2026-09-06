@@ -1,5 +1,9 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 
+import { getDb } from '@repo/db';
+import { users } from '@repo/db/schema';
+import { eq } from 'drizzle-orm';
+
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
@@ -130,6 +134,14 @@ export async function verifyOtp(input: VerifyOtpInput) {
 
   // Consume OTP upon successful verification to prevent replay attacks
   await redis.del(otpKey);
+
+  if (input.purpose === 'email_verification') {
+    const db = getDb();
+    await db
+      .update(users)
+      .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.email, email));
+  }
 
   if (input.purpose === 'password_reset') {
     const resetToken = randomBytes(24).toString('hex');
