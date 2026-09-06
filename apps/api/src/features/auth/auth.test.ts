@@ -153,7 +153,12 @@ describe('Auth API (/api/auth)', () => {
         const res = await request(app).post('/api/auth/signin').send(validSigninPayload);
 
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ user: mockAuthResult.user });
+        expect(res.body).toEqual({
+          user: {
+            ...mockAuthResult.user,
+            emailVerifiedAt: mockAuthResult.user.emailVerifiedAt.toISOString(),
+          },
+        });
         expect(res.body.user).not.toHaveProperty('passwordHash');
 
         // Verify Set-Cookie header attributes

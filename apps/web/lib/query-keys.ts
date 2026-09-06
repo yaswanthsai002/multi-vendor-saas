@@ -6,5 +6,7 @@ export const queryKeys = {
   auth: {
     all: () => ['auth'] as const,
     me: () => ['auth', 'me'] as const,
+    verificationStatus: (token?: string) =>
+      ['auth', 'verification-status', token ?? 'current'] as const,
   },
 } as const;

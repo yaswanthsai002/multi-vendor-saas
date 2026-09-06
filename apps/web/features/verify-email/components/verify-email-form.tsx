@@ -10,19 +10,6 @@ import { OtpInput } from './otp-input';
 
 import { Button } from '@/components/ui/button';
 
-function PerigeeLogo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white shadow-sm font-bold text-xl select-none">
-        P
-      </div>
-      <span className="font-extrabold text-2xl tracking-wider text-text-primary uppercase font-sans">
-        Perigee
-      </span>
-    </div>
-  );
-}
-
 export function VerifyEmailForm() {
   const {
     purpose,

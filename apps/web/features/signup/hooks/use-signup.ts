@@ -37,9 +37,7 @@ export function useSignup() {
       toast.success('Account created successfully!', {
         description: 'Please enter the verification code sent to your email.',
       });
-      router.push(
-        `/verify-email?email=${encodeURIComponent(data.email)}&purpose=email_verification`,
-      );
+      router.push('/verify-email');
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.code === 'EMAIL_IN_USE' || error.status === 409) {

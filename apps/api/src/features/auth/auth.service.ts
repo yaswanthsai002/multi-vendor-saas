@@ -9,9 +9,22 @@ import { SignJWT } from 'jose';
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
+import { sendOtp } from './otp.service.js';
+
 import type { ResetPasswordInput, SignInInput, SignupInput } from './auth.schema.js';
 
-export async function signup(input: SignupInput) {
+export interface SignupResult {
+  user: {
+    userId: number;
+    fullName: string;
+    email: string;
+    roles: ('customer' | 'vendor' | 'admin')[];
+    emailVerifiedAt: Date | null;
+  };
+  verificationPendingToken?: string;
+}
+
+export async function signup(input: SignupInput): Promise<SignupResult> {
   const db = getDb();
   // Normalize email for consistent database lookups and prevent case-sensitive duplicates
   const email = input.email.trim().toLowerCase();
@@ -35,6 +48,16 @@ export async function signup(input: SignupInput) {
       .insert(users)
       .values({ fullName: input.fullName.trim(), email, passwordHash, roles: ['customer'] })
       .returning();
+
+    let verificationPendingToken: string | undefined;
+    // Automatically send initial verification OTP
+    try {
+      const otpResult = await sendOtp({ email, purpose: 'email_verification' });
+      verificationPendingToken = otpResult.verificationPendingToken;
+    } catch {
+      // Non-blocking: user can still trigger OTP resend on /verify-email
+    }
+
     // Strip out sensitive fields (like passwordHash) before returning the user object
     return {
       user: {
@@ -44,6 +67,7 @@ export async function signup(input: SignupInput) {
         roles: user.roles,
         emailVerifiedAt: user.emailVerifiedAt,
       },
+      verificationPendingToken,
     };
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {

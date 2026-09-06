@@ -6,3 +6,5 @@ coverage
 drizzle
 *.lock
 pnpm-lock.yaml
+next-env.d.ts
+apps/web/next-env.d.ts

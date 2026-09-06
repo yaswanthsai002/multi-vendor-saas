@@ -34,7 +34,7 @@ describe('Password Reset Flow (/api/auth)', () => {
   describe('POST /api/auth/reset-password', () => {
     it('should reset password successfully using a verified OTP resetToken', async () => {
       // 1. Mock existing user in DB
-      vi.mocked(db.query.users.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.users.findFirst).mockResolvedValue({
         userId: 1,
         fullName: 'Jane Doe',
         email: testEmail,
@@ -53,25 +53,32 @@ describe('Password Reset Flow (/api/auth)', () => {
       expect(sendRes.status).toBe(200);
       const otp = sendRes.body.otp;
 
-      // 3. Verify OTP to receive the 24-byte hex resetToken
+      // 3. Verify OTP to receive the 24-byte hex resetToken via HttpOnly cookie
       const verifyRes = await request(app)
         .post('/api/auth/verify-otp')
         .send({ email: testEmail, otp, purpose: 'password_reset' });
 
       expect(verifyRes.status).toBe(200);
       expect(verifyRes.body.verified).toBe(true);
-      expect(verifyRes.body.resetToken).toBeDefined();
-      expect(typeof verifyRes.body.resetToken).toBe('string');
-      expect(verifyRes.body.resetToken).toHaveLength(48); // 24 bytes = 48 hex chars
+      expect(verifyRes.body.resetToken).toBeUndefined();
 
-      const resetToken = verifyRes.body.resetToken;
+      const verifyCookies = verifyRes.headers['set-cookie'];
+      expect(verifyCookies).toBeDefined();
+      const resetCookie = (verifyCookies as unknown as string[]).find((c: string) =>
+        c.startsWith('reset_password_token='),
+      );
+      expect(resetCookie).toBeDefined();
+      const resetToken = resetCookie!.split(';')[0].split('=')[1];
+      expect(resetToken).toHaveLength(48); // 24 bytes = 48 hex chars
 
-      // 4. Reset password using the received resetToken
-      const resetRes = await request(app).post('/api/auth/reset-password').send({
-        resetToken,
-        newPassword: 'newSecurePassword123!',
-        confirmNewPassword: 'newSecurePassword123!',
-      });
+      // 4. Reset password using the received resetToken (also verifies cookie support)
+      const resetRes = await request(app)
+        .post('/api/auth/reset-password')
+        .set('Cookie', [`reset_password_token=${resetToken}`])
+        .send({
+          newPassword: 'newSecurePassword123!',
+          confirmNewPassword: 'newSecurePassword123!',
+        });
 
       expect(resetRes.status).toBe(200);
       expect(resetRes.body.message).toBe('Password has been reset successfully.');
@@ -148,17 +155,16 @@ describe('Password Reset Flow (/api/auth)', () => {
       expect(res.body.error).toBe('Unable to reset password for this user.');
     });
 
-    describe('Validation', () => {
+    describe('Validation & Security', () => {
       it('should return 400 if resetToken is missing or empty', async () => {
         const res = await request(app).post('/api/auth/reset-password').send({
-          resetToken: '',
           newPassword: 'newSecurePassword123!',
           confirmNewPassword: 'newSecurePassword123!',
         });
 
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe('Validation Error');
-        expect(res.body.details.properties.resetToken).toBeDefined();
+        expect(res.body.code).toBe('INVALID_RESET_TOKEN');
+        expect(res.body.error).toBe('Password reset session is invalid or expired.');
       });
 
       it('should return 400 if newPassword is too short (< 8 characters)', async () => {

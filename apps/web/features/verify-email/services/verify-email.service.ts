@@ -8,25 +8,27 @@ export interface SendOtpPayload {
 
 export interface SendOtpResponse {
   message: string;
-  email: string;
-  purpose: string;
   expiresIn: number;
   resendCooldown: number;
   otp?: string;
 }
 
 export interface VerifyOtpPayload {
-  email: string;
+  email?: string;
   otp: string;
-  purpose: 'email_verification' | 'password_reset' | 'signin';
+  purpose?: 'email_verification' | 'password_reset' | 'signin';
 }
 
 export interface VerifyOtpResponse {
   message: string;
   verified: boolean;
+}
+
+export interface VerificationStatusResponse {
   email: string;
-  purpose: string;
-  resetToken?: string;
+  maskedEmail: string;
+  purpose: 'email_verification' | 'password_reset' | 'signin';
+  remainingCooldown: number;
 }
 
 export async function sendOtp(
@@ -49,6 +51,22 @@ export async function verifyOtp(
     url: API_ENDPOINTS.auth.verifyOtp,
     method: 'POST',
     data,
+    signal,
+  });
+}
+
+export async function getVerificationStatus(
+  token?: string,
+  signal?: AbortSignal,
+): Promise<VerificationStatusResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['x-verification-token'] = token;
+  }
+  return makeApiRequest<VerificationStatusResponse>({
+    url: API_ENDPOINTS.auth.verificationStatus,
+    method: 'GET',
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
     signal,
   });
 }

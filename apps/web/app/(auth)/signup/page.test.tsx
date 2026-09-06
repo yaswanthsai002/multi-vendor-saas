@@ -91,9 +91,7 @@ describe('Signup Page (/signup)', () => {
           description: 'Please enter the verification code sent to your email.',
         }),
       );
-      expect(mockPush).toHaveBeenCalledWith(
-        '/verify-email?email=jane%40example.com&purpose=email_verification',
-      );
+      expect(mockPush).toHaveBeenCalledWith('/verify-email');
     });
   });
 
