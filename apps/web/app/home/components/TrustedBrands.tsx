@@ -25,15 +25,41 @@ const brands = [
 
 export default function TrustedBrands() {
   return (
-    <section className="w-full bg-white py-10 sm:py-12">
+    <section
+      className="
+        w-full
+        bg-white
+        py-10
+        dark:bg-[#0A0D14]
+        sm:py-12
+      "
+    >
       <div className="mx-auto max-w-[1200px] px-6">
         {/* Heading */}
         <div className="text-center">
-          <h2 className="text-[20px] font-semibold tracking-[-0.4px] text-[#222] sm:text-[22px]">
+          <h2
+            className="
+              text-[20px]
+              font-semibold
+              tracking-[-0.4px]
+              text-[#222]
+              dark:text-[#E4E7EC]
+              sm:text-[22px]
+            "
+          >
             Shop All Trusted Partner Brands
           </h2>
 
-          <p className="mt-[4px] text-[15px] text-[#666]">Adapted to sound independent</p>
+          <p
+            className="
+              mt-[4px]
+              text-[15px]
+              text-[#666]
+              dark:text-[#9AA3B2]
+            "
+          >
+            Adapted to sound independent
+          </p>
         </div>
 
         {/* Brand Logos */}
@@ -43,16 +69,16 @@ export default function TrustedBrands() {
               key={brand.name}
               type="button"
               className="
-                                flex
-                                h-[38px]
-                                w-[100px]
-                                shrink-0
-                                items-center
-                                justify-center
-                                transition-opacity
-                                duration-200
-                                hover:opacity-60
-                            "
+                flex
+                h-[38px]
+                w-[100px]
+                shrink-0
+                items-center
+                justify-center
+                transition-opacity
+                duration-200
+                hover:opacity-60
+              "
               aria-label={`View ${brand.name}`}
             >
               <Image
@@ -71,19 +97,22 @@ export default function TrustedBrands() {
           <button
             type="button"
             className="
-                            rounded-[4px]
-                            bg-[#111]
-                            px-4
-                            py-[7px]
-                            text-[12px]
-                            font-medium
-                            text-white
-                            transition-all
-                            duration-200
-                            hover:bg-[#333]
-                            hover:shadow-sm
-                            active:scale-[0.98]
-                        "
+                rounded-[4px]
+                bg-[#111]
+                px-4
+                py-[7px]
+                text-[12px]
+                font-medium
+                text-white
+                transition-all
+                duration-200
+                hover:bg-[#333]
+                hover:shadow-sm
+                active:scale-[0.98]
+                dark:bg-[#E66A45]
+                dark:text-white
+                dark:hover:bg-[#F08060]
+                "
           >
             Shop All Brands
           </button>
