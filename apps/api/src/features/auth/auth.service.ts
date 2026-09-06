@@ -74,6 +74,14 @@ export async function signin(input: SignInInput) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
 
+  if (!user.emailVerifiedAt) {
+    throw new AppError(
+      403,
+      'EMAIL_NOT_VERIFIED',
+      'Please verify your email address before signing in.',
+    );
+  }
+
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new AppError(500, 'SECRET_MISSING', 'JWT secret is not configured');

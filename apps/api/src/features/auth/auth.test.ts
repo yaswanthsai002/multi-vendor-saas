@@ -144,7 +144,7 @@ describe('Auth API (/api/auth)', () => {
             fullName: 'Jane Doe',
             email: 'jane@example.com',
             roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
-            emailVerifiedAt: null,
+            emailVerifiedAt: new Date(),
           },
         };
 

@@ -3,9 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import SignupPage from './page';
+
 import * as signupService from '@/features/signup/services/signup.service';
 import { ApiError } from '@/lib/api-client';
 import { QueryProvider } from '@/providers/query-provider';
+
+const mockPush = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 vi.mock('sonner', () => ({
   toast: {
@@ -79,8 +88,11 @@ describe('Signup Page (/signup)', () => {
       expect(toast.success).toHaveBeenCalledWith(
         'Account created successfully!',
         expect.objectContaining({
-          description: 'Welcome to Perigee. You can now sign in to your account.',
+          description: 'Please enter the verification code sent to your email.',
         }),
+      );
+      expect(mockPush).toHaveBeenCalledWith(
+        '/verify-email?email=jane%40example.com&purpose=email_verification',
       );
     });
   });

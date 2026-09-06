@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -28,13 +29,17 @@ export function useSignup() {
     },
   });
 
+  const router = useRouter();
+
   const onSubmit = async (data: SignupFormData) => {
     try {
       await signupMutation.mutateAsync({ data });
       toast.success('Account created successfully!', {
-        description: 'Welcome to Perigee. You can now sign in to your account.',
+        description: 'Please enter the verification code sent to your email.',
       });
-      form.reset();
+      router.push(
+        `/verify-email?email=${encodeURIComponent(data.email)}&purpose=email_verification`,
+      );
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.code === 'EMAIL_IN_USE' || error.status === 409) {

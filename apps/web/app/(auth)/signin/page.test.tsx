@@ -114,4 +114,34 @@ describe('Signin Page (/signin)', () => {
       );
     });
   });
+
+  it('handles unverified email (403) and redirects to verify-email', async () => {
+    const user = userEvent.setup();
+    vi.mocked(signinService.signin).mockRejectedValueOnce(
+      new ApiError(
+        403,
+        'EMAIL_NOT_VERIFIED',
+        'Please verify your email address before signing in.',
+      ),
+    );
+
+    renderSigninPage();
+
+    await user.type(screen.getByLabelText(/^email/i), 'unverified@example.com');
+    await user.type(screen.getByLabelText(/^password/i), 'ValidPass123!');
+
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Email verification required',
+        expect.objectContaining({
+          description: 'Please verify your email address before signing in.',
+        }),
+      );
+      expect(mockPush).toHaveBeenCalledWith(
+        '/verify-email?email=unverified%40example.com&purpose=email_verification',
+      );
+    });
+  });
 });
