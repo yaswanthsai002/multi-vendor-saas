@@ -1,7 +1,10 @@
+import { Suspense } from 'react';
+
 import type { Metadata } from 'next';
 
 import { SigninForm } from '@/features/signin/components/signin-form';
 import { SigninHero } from '@/features/signin/components/signin-hero';
+import { SigninSkeleton } from '@/features/signin/components/signin-skeleton';
 
 export const metadata: Metadata = {
   title: 'Sign In | Perigee',
@@ -10,22 +13,24 @@ export const metadata: Metadata = {
 
 export default function SigninPage() {
   return (
-    <div className="w-full flex-1 flex flex-col md:flex-row items-stretch bg-surface-raised dark:bg-surface transition-colors duration-200">
-      {/* Left Column: Hero Showcase (visible on tablet and desktop) */}
-      <section
-        aria-label="Brand presentation"
-        className="hidden md:block md:w-5/12 lg:w-[58%] xl:w-[60%] min-h-150 lg:min-h-205 relative overflow-hidden shrink-0"
-      >
-        <SigninHero />
-      </section>
+    <Suspense fallback={<SigninSkeleton />}>
+      <div className="w-full flex-1 flex flex-col md:flex-row items-stretch bg-surface-raised dark:bg-surface transition-colors duration-200">
+        {/* Left Column: Hero Showcase (visible on tablet and desktop) */}
+        <section
+          aria-label="Brand presentation"
+          className="hidden md:block md:w-5/12 lg:w-[58%] xl:w-[60%] min-h-150 lg:min-h-205 relative overflow-hidden shrink-0"
+        >
+          <SigninHero />
+        </section>
 
-      {/* Right Column: Authentication Form */}
-      <section
-        aria-label="Sign in form"
-        className="w-full md:w-7/12 lg:w-[42%] xl:w-[40%] flex flex-col justify-center items-center bg-surface-raised dark:bg-surface transition-colors duration-200 py-4 sm:py-8 px-4 sm:px-8 lg:px-12"
-      >
-        <SigninForm />
-      </section>
-    </div>
+        {/* Right Column: Authentication Form */}
+        <section
+          aria-label="Sign in form"
+          className="w-full md:w-7/12 lg:w-[42%] xl:w-[40%] flex flex-col justify-center items-center bg-surface-raised dark:bg-surface transition-colors duration-200 py-4 sm:py-8 px-4 sm:px-8 lg:px-12"
+        >
+          <SigninForm />
+        </section>
+      </div>
+    </Suspense>
   );
 }
