@@ -1,12 +1,12 @@
-import { pgTable, serial, integer, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
 import { users } from './users.js';
 
 export const authAccounts = pgTable(
   'authAccounts',
   {
-    authAccountId: serial('authAccountId').primaryKey(),
-    userId: integer('userId')
+    authAccountId: uuid('authAccountId').defaultRandom().primaryKey(),
+    userId: uuid('userId')
       .notNull()
       .references(() => users.userId, {
         onDelete: 'cascade',

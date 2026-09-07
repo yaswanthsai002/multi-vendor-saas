@@ -1,7 +1,7 @@
 CREATE TYPE "public"."user_role" AS ENUM('customer', 'vendor', 'admin');--> statement-breakpoint
 CREATE TABLE "authAccounts" (
-	"authAccountId" serial PRIMARY KEY NOT NULL,
-	"userId" integer NOT NULL,
+	"authAccountId" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"userId" uuid NOT NULL,
 	"provider" text NOT NULL,
 	"providerAccountId" text NOT NULL,
 	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE "authAccounts" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"userId" serial PRIMARY KEY NOT NULL,
+	"userId" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"fullName" text NOT NULL,
 	"email" text NOT NULL,
 	"passwordHash" text,
