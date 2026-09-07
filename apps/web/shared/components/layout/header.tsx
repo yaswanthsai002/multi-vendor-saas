@@ -3,49 +3,36 @@
 import { ChevronDown, Heart, Menu, Search, ShoppingCart, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
-import * as React from 'react';
 
 import { ThemeToggle } from './theme-toggle';
-
-const emptySubscribe = () => () => {};
-
-function useIsMounted() {
-  return React.useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-}
+import { useHeader } from './use-header';
 
 function PerigeeBrandLogo() {
-  const { resolvedTheme } = useTheme();
-  const isMounted = useIsMounted();
-  const isDark = isMounted && resolvedTheme === 'dark';
-
   return (
     <Link href="/" className="flex items-center gap-2 shrink-0 group focus-visible:outline-none">
       <Image
-        src={isDark ? '/assets/perigee-primary-dark.svg' : '/assets/perigee-primary-light.svg'}
+        src="/assets/perigee-primary-light.svg"
         alt="Perigee"
         width={130}
         height={38}
         priority
-        className="h-8 w-auto"
+        className="block dark:hidden h-8 w-auto"
+      />
+      <Image
+        src="/assets/perigee-primary-dark.svg"
+        alt="Perigee"
+        width={130}
+        height={38}
+        priority
+        className="hidden dark:block h-8 w-auto"
       />
     </Link>
   );
 }
 
-interface HeaderProps {
-  user?: {
-    name: string;
-    avatarUrl?: string;
-  } | null;
-}
-
-export function Header({ user = null }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+export function Header() {
+  const { user, displayName, avatarInitial, mobileMenuOpen, toggleMobileMenu, closeMobileMenu } =
+    useHeader();
 
   return (
     <header className="w-full bg-surface-raised border-b border-border-default transition-colors duration-200 sticky top-0 z-50">
@@ -69,25 +56,23 @@ export function Header({ user = null }: HeaderProps) {
 
         {/* Right: Utility Actions */}
         <div className="flex items-center gap-3.5 shrink-0">
-          {/* Auth State: ONLY Avatar if authenticated, ONLY Sign In if guest */}
+          {/* Auth State: Avatar if authenticated, Sign In if guest */}
           {user ? (
             <button
               type="button"
-              className="flex items-center justify-center h-8 w-8 rounded-full border border-border-default bg-surface overflow-hidden"
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-border-strong bg-surface overflow-hidden hover:opacity-90 transition-opacity"
               aria-label="User profile"
             >
               {user.avatarUrl ? (
                 <Image
                   src={user.avatarUrl}
-                  alt={user.name}
+                  alt={displayName}
                   width={32}
                   height={32}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <span className="text-xs font-semibold text-text-primary">
-                  {user.name.charAt(0).toUpperCase()}
-                </span>
+                <span className="text-xs font-semibold text-text-primary">{avatarInitial}</span>
               )}
             </button>
           ) : (
@@ -100,13 +85,13 @@ export function Header({ user = null }: HeaderProps) {
             </Link>
           )}
 
-          {/* Beautiful Sliding Pill Dark/Light Mode Toggle */}
+          {/* Sliding Pill Dark/Light Mode Toggle */}
           <ThemeToggle />
 
           {/* Mobile Menu Hamburger */}
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={toggleMobileMenu}
             className="md:hidden p-2 rounded-md hover:bg-surface-hover text-text-secondary hover:text-text-primary cursor-pointer"
             aria-label="Toggle navigation menu"
           >
@@ -180,41 +165,42 @@ export function Header({ user = null }: HeaderProps) {
           <nav className="flex flex-col space-y-2 pt-2 text-sm font-medium text-text-secondary">
             <Link
               href="/shop"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
             >
               Shop All
             </Link>
             <Link
               href="/categories"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
             >
               Categories
             </Link>
             <Link
               href="/brands"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
             >
               Brands
             </Link>
             <Link
               href="/deals"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
             >
               Deals
             </Link>
             <Link
               href="/wishlist"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary flex items-center gap-2"
             >
               Wish List
             </Link>
             <Link
               href="/cart"
+              onClick={closeMobileMenu}
               className="relative p-2 rounded-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors duration-150"
               aria-label="Shopping Cart (2 items)"
             >
