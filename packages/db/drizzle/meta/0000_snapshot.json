@@ -1,5 +1,5 @@
 {
-  "id": "37573c3c-a4cb-4a4a-96c0-90b9bb9e9ec1",
+  "id": "81a600e1-4cbd-4773-974c-1cd30c60ccb8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -10,13 +10,14 @@
       "columns": {
         "authAccountId": {
           "name": "authAccountId",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "userId": {
           "name": "userId",
-          "type": "integer",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -77,9 +78,10 @@
       "columns": {
         "userId": {
           "name": "userId",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "fullName": {
           "name": "fullName",

@@ -15,7 +15,7 @@ import type { ResetPasswordInput, SignInInput, SignupInput } from './auth.schema
 
 export interface SignupResult {
   user: {
-    userId: number;
+    userId: string;
     fullName: string;
     email: string;
     roles: ('customer' | 'vendor' | 'admin')[];
@@ -160,7 +160,7 @@ export async function resetPassword(input: ResetPasswordInput) {
   return { message: 'Password has been reset successfully.' };
 }
 
-export async function getMe(userId: number) {
+export async function getMe(userId: string) {
   const db = getDb();
   const user = await db.query.users.findFirst({
     where: eq(users.userId, userId),
