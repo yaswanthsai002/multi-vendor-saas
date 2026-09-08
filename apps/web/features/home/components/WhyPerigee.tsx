@@ -28,9 +28,9 @@ export default function WhyPerigee() {
     <section
       className="
         w-full
-        bg-[#f4f6f9]
+        bg-[var(--background)]
         py-12
-        dark:bg-[#11161F]
+        
         sm:py-14
       "
     >
@@ -51,7 +51,7 @@ export default function WhyPerigee() {
           </h2>
 
           <p
-            className="
+            className=" 
               mt-1
               text-[18px]
               text-[#555]

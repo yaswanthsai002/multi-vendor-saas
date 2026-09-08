@@ -1,137 +1,640 @@
-import Image from 'next/image';
+'use client';
 
-import HeroImage2 from '@/assets/images/Home/bags.png';
-import HeroImage4 from '@/assets/images/Home/girl.png';
-import HeroImage1 from '@/assets/images/Home/Livingroom.png';
-import HeroImage3 from '@/assets/images/Home/tech.png';
+import Image from 'next/image';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
+
+const slides = [
+  {
+    eyebrow: 'DEALS OF THE WEEK',
+    title: 'Up to 40% Off',
+    description: 'Selected products from independent brands.',
+    primaryAction: 'Shop Deals',
+    secondaryAction: 'Explore Offers',
+    image: '/assets/hero/hero-1.png',
+  },
+  {
+    eyebrow: 'NEW ARRIVALS',
+    title: "Discover What's New",
+    description: 'Fresh products from independent brands.',
+    primaryAction: 'Shop New Arrivals',
+    secondaryAction: 'Explore Brands',
+    image: '/assets/hero/hero-1.png',
+  },
+  {
+    eyebrow: 'PERIGEE DISCOVERY',
+    title: 'Find Something Less Ordinary.',
+    description: 'Thoughtfully selected products from independent brands worth discovering.',
+    primaryAction: 'Explore Discovery',
+    secondaryAction: 'Shop Collections',
+    image: '/assets/hero/hero-1.png',
+  },
+];
+
+const AUTO_SLIDE_TIME = 15000;
 
 export default function Hero() {
+  /*
+   * Current slide:
+   *
+   * 0 = Slide 1
+   * 1 = Slide 2
+   * 2 = Slide 3
+   */
+  const [current, setCurrent] = useState(0);
+
+  /*
+   * Drag position while swiping.
+   */
+  const [dragX, setDragX] = useState(0);
+
+  /*
+   * Whether the user is currently dragging.
+   */
+  const [dragging, setDragging] = useState(false);
+
+  /*
+   * Whether the slide movement should animate.
+   */
+  const [animate, setAnimate] = useState(true);
+
+  /*
+   * Starting pointer position.
+   */
+  const startX = useRef(0);
+
+  /*
+   * -----------------------------------------
+   * GO TO NEXT SLIDE
+   * -----------------------------------------
+   */
+  const nextSlide = () => {
+    setAnimate(true);
+    setDragX(0);
+
+    setCurrent((prev) => {
+      /*
+       * If we're on the last slide,
+       * go directly back to the first slide.
+       */
+      if (prev === slides.length - 1) {
+        return 0;
+      }
+
+      return prev + 1;
+    });
+  };
+
+  /*
+   * -----------------------------------------
+   * GO TO PREVIOUS SLIDE
+   * -----------------------------------------
+   */
+  const previousSlide = () => {
+    setAnimate(true);
+    setDragX(0);
+
+    setCurrent((prev) => {
+      /*
+       * If we're on the first slide,
+       * go directly to the last slide.
+       */
+      if (prev === 0) {
+        return slides.length - 1;
+      }
+
+      return prev - 1;
+    });
+  };
+
+  /*
+   * -----------------------------------------
+   * AUTOMATIC SLIDE
+   * -----------------------------------------
+   *
+   * Every 15 seconds:
+   *
+   * 1 → 2 → 3 → 1 → 2 → 3 ...
+   */
+  useEffect(() => {
+    /*
+     * Don't run the timer while the user
+     * is actively swiping.
+     */
+    if (dragging) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      nextSlide();
+    }, AUTO_SLIDE_TIME);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [current, dragging]);
+
+  /*
+   * -----------------------------------------
+   * POINTER DOWN
+   * -----------------------------------------
+   */
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    /*
+     * Only respond to the primary mouse button.
+     */
+    if (e.button !== 0) {
+      return;
+    }
+
+    startX.current = e.clientX;
+
+    setDragging(true);
+
+    /*
+     * Disable transition while following
+     * the user's finger.
+     */
+    setAnimate(false);
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  /*
+   * -----------------------------------------
+   * POINTER MOVE
+   * -----------------------------------------
+   */
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) {
+      return;
+    }
+
+    const distance = e.clientX - startX.current;
+
+    /*
+     * Slight resistance.
+     */
+    setDragX(distance * 0.85);
+  };
+
+  /*
+   * -----------------------------------------
+   * POINTER UP
+   * -----------------------------------------
+   */
+  const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) {
+      return;
+    }
+
+    const distance = dragX;
+    const threshold = 60;
+
+    setDragging(false);
+
+    /*
+     * Release pointer capture.
+     */
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    /*
+     * -----------------------------------------
+     * SWIPE LEFT
+     * -----------------------------------------
+     */
+    if (distance < -threshold) {
+      setAnimate(true);
+      setDragX(0);
+
+      setCurrent((prev) => {
+        /*
+         * LAST → FIRST
+         */
+        if (prev === slides.length - 1) {
+          return 0;
+        }
+
+        return prev + 1;
+      });
+
+      return;
+    }
+
+    /*
+     * -----------------------------------------
+     * SWIPE RIGHT
+     * -----------------------------------------
+     */
+    if (distance > threshold) {
+      setAnimate(true);
+      setDragX(0);
+
+      setCurrent((prev) => {
+        /*
+         * FIRST → LAST
+         */
+        if (prev === 0) {
+          return slides.length - 1;
+        }
+
+        return prev - 1;
+      });
+
+      return;
+    }
+
+    /*
+     * -----------------------------------------
+     * NOT ENOUGH MOVEMENT
+     * -----------------------------------------
+     *
+     * Return to the current slide.
+     */
+    setAnimate(true);
+    setDragX(0);
+  };
+
+  /*
+   * -----------------------------------------
+   * POINTER CANCEL
+   * -----------------------------------------
+   */
+  const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
+    setDragging(false);
+    setAnimate(true);
+    setDragX(0);
+
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
   return (
     <section
       className="
         w-full
-        bg-[#2b211e]
-        dark:bg-[#131722]
+        overflow-hidden
+        bg-white
+        dark:bg-[#0A0D14]
       "
     >
-      <div className="mx-auto flex min-h-[360px] max-w-[1440px] flex-col md:flex-row">
-        {/* LEFT CONTENT */}
-        <div className="flex w-full items-center px-8 py-12 sm:px-12 lg:w-[53%] lg:px-16">
-          <div className="max-w-[520px]">
-            <h1
+      {/* ====================================== */}
+      {/* VIEWPORT */}
+      {/* ====================================== */}
+
+      <div
+        className="
+          relative
+          w-full
+          overflow-hidden
+          touch-pan-y
+          select-none
+        "
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+      >
+        {/* ==================================== */}
+        {/* TRACK */}
+        {/* ==================================== */}
+
+        <div
+          className={`
+            flex
+            w-max
+
+            ${
+              animate
+                ? `
+                  transition-transform
+                  duration-[500ms]
+                  ease-[cubic-bezier(0.22,0.8,0.2,1)]
+                `
+                : ''
+            }
+          `}
+          style={{
+            transform: `
+              translate3d(
+                calc(
+                  -${current * 100}vw
+                  + ${dragX}px
+                ),
+                0,
+                0
+              )
+            `,
+          }}
+        >
+          {slides.map((slide, index) => (
+            <article
+              key={slide.eyebrow}
               className="
-                text-[34px]
-                font-semibold
-                leading-[1.08]
-                tracking-[-1.5px]
-                text-white
-                sm:text-[40px]
-                lg:text-[46px]
+                relative
+                h-[360px]
+                w-screen
+                flex-none
+                overflow-hidden
+
+                sm:h-[420px]
+
+                lg:h-[500px]
               "
             >
-              Everything You Need,
-              <br />
-              Discovered from
-              <br />
-              Distinctive Partners.
-            </h1>
+              {/* ============================== */}
+              {/* IMAGE */}
+              {/* ============================== */}
 
-            <p
-              className="
-                mt-5
-                max-w-[430px]
-                text-[13px]
-                leading-[1.6]
-                text-white/65
-                dark:text-[#B5BBC6]
-              "
-            >
-              Curated marketplace with distinctive independent brands and their products, directly
-              sourced.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Image
+                src={slide.image}
+                alt={slide.title}
+                fill
+                priority={index === 0}
+                draggable={false}
+                sizes="100vw"
                 className="
-                    cursor-pointer
-                  rounded-[5px]
-                  bg-[#d86f45]
-                  px-4
-                  py-[9px]
-                  text-[12px]
-                  font-bold
-                  leading-none
-                  text-white
-                  transition
-                  hover:bg-[#c96039]
-                  dark:bg-[#E66A45]
-                  dark:hover:bg-[#F08060]
+                  pointer-events-none
+                  object-cover
+                  object-left
+
+                  sm:object-center
+                "
+              />
+
+              {/* ============================== */}
+              {/* MOBILE OVERLAY */}
+              {/* ============================== */}
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  bg-gradient-to-r
+                  from-[#f4efe7]/95
+                  via-[#f4efe7]/75
+                  to-transparent
+
+                  sm:hidden
+                "
+              />
+
+              {/* ============================== */}
+              {/* DESKTOP OVERLAY */}
+              {/* ============================== */}
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  hidden
+                  bg-gradient-to-r
+                  from-[#f4efe7]/80
+                  via-[#f4efe7]/20
+                  to-transparent
+
+                  sm:block
+                "
+              />
+
+              {/* ============================== */}
+              {/* CONTENT */}
+              {/* ============================== */}
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  z-10
                 "
               >
-                Shop Best Brands
-              </button>
+                <div className="flex h-full items-center">
+                  <div
+                    className="
+                      w-full
+                      px-6
 
-              <button
-                type="button"
-                className="
-                    cursor-pointer
-                  rounded-[5px]
-                  border
-                  border-white/40
-                  px-4
-                  py-[9px]
-                  text-[12px]
-                  font-bold
-                  leading-none
-                  text-white
-                  transition
-                  hover:bg-white/10
-                  dark:border-[#343B49]
-                  dark:text-[#E4E7EC]
-                  dark:hover:bg-[#1B202C]
-                "
-              >
-                Explore Sellers
-              </button>
-            </div>
-          </div>
+                      sm:px-12
+
+                      md:px-16
+
+                      lg:px-20
+                    "
+                  >
+                    <div
+                      className="
+                        max-w-[280px]
+
+                        sm:max-w-[440px]
+
+                        lg:max-w-[500px]
+                      "
+                    >
+                      {/* EYEBROW */}
+
+                      <p
+                        className="
+                          mb-2
+                          text-[10px]
+                          font-bold
+                          tracking-[0.4px]
+                          text-[#202936]
+
+                          sm:mb-3
+                          sm:text-[12px]
+
+                          lg:text-[13px]
+                        "
+                      >
+                        {slide.eyebrow}
+                      </p>
+
+                      {/* TITLE */}
+
+                      <h1
+                        className="
+                          text-[34px]
+                          font-bold
+                          leading-[1.02]
+                          tracking-[-1.5px]
+                          text-[#111827]
+
+                          sm:text-[46px]
+
+                          lg:text-[58px]
+                          lg:tracking-[-1.8px]
+                        "
+                      >
+                        {slide.title}
+                      </h1>
+
+                      {/* DESCRIPTION */}
+
+                      <p
+                        className="
+                          mt-3
+                          max-w-[290px]
+                          text-[12px]
+                          font-medium
+                          leading-[1.45]
+                          text-[#374151]
+
+                          sm:mt-4
+                          sm:max-w-[400px]
+                          sm:text-[13px]
+
+                          lg:text-[14px]
+                        "
+                      >
+                        {slide.description}
+                      </p>
+
+                      {/* BUTTONS */}
+
+                      <div
+                        className="
+                          pointer-events-auto
+                          mt-5
+                          flex
+                          flex-wrap
+                          gap-2
+
+                          sm:mt-6
+                          sm:gap-2.5
+                        "
+                      >
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onPointerUp={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="
+                            cursor-pointer
+                            rounded-[6px]
+                            bg-[#d76542]
+                            px-4
+                            py-2.5
+                            text-[11px]
+                            font-bold
+                            text-white
+                            shadow-sm
+
+                            transition-all
+                            duration-200
+
+                            hover:-translate-y-0.5
+                            hover:bg-[#c95636]
+                            hover:shadow-md
+
+                            active:scale-[0.98]
+
+                            sm:px-5
+                            sm:text-[12px]
+                          "
+                        >
+                          {slide.primaryAction}
+                        </button>
+
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onPointerUp={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="
+                            cursor-pointer
+                            rounded-[6px]
+                            bg-[#557792]
+                            px-4
+                            py-2.5
+                            text-[11px]
+                            font-bold
+                            text-white
+                            shadow-sm
+
+                            transition-all
+                            duration-200
+
+                            hover:-translate-y-0.5
+                            hover:bg-[#496a83]
+                            hover:shadow-md
+
+                            active:scale-[0.98]
+
+                            sm:px-5
+                            sm:text-[12px]
+                          "
+                        >
+                          {slide.secondaryAction}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
+      </div>
 
-        {/* RIGHT IMAGE COLLAGE */}
-        <div className="relative min-h-[360px] w-full overflow-hidden lg:w-[47%]">
-          {/* Image 1 - Top Left */}
-          <div className="absolute left-0 top-0 h-[57%] w-[51%] overflow-hidden rounded-[8px]">
-            <Image
-              src={HeroImage1}
-              alt="Curated home interior"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+      {/* ====================================== */}
+      {/* INDICATORS */}
+      {/* ====================================== */}
 
-          {/* Image 2 - Top Right */}
-          <div className="absolute right-0 top-0 h-[42%] w-[47%] overflow-hidden rounded-[8px]">
-            <Image
-              src={HeroImage2}
-              alt="Curated living space"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+      <div
+        className="
+          flex
+          items-center
+          justify-center
+          gap-1.5
+          bg-[#eef1f5]
+          py-3
 
-          {/* Image 3 - Bottom Left */}
-          <div className="absolute bottom-[-12px] left-0 h-[43%] w-[51%] overflow-hidden rounded-[8px]">
-            <Image src={HeroImage3} alt="Curated products" fill className="object-cover" />
-          </div>
+          dark:bg-[#0A0D14]
+        "
+      >
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            aria-label={`Go to slide ${index + 1}`}
+            onClick={() => {
+              setAnimate(true);
+              setDragX(0);
+              setCurrent(index);
+            }}
+            className={`
+              h-[5px]
+              rounded-full
+              transition-all
+              duration-200
 
-          {/* Image 4 - Bottom Right */}
-          <div className="absolute bottom-0 right-0 top-[calc(43%+8px)] w-[47%] overflow-hidden rounded-[8px]">
-            <Image src={HeroImage4} alt="Independent seller" fill className="object-cover" />
-          </div>
-        </div>
+              ${
+                current === index
+                  ? `
+                    w-6
+                    bg-[#667585]
+                    dark:bg-[#E66A45]
+                  `
+                  : `
+                    w-[5px]
+                    bg-[#c6ccd3]
+                    dark:bg-[#343B49]
+                  `
+              }
+            `}
+          />
+        ))}
       </div>
     </section>
   );
