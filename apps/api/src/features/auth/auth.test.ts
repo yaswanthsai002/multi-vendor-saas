@@ -76,7 +76,7 @@ describe('Auth API (/api/auth)', () => {
       it('should return 201 and sanitized user object on success', async () => {
         const mockUserResponse = {
           user: {
-            userId: 1,
+            userId: '1',
             fullName: 'Jane Doe',
             email: 'jane@example.com',
             roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
@@ -140,7 +140,7 @@ describe('Auth API (/api/auth)', () => {
         const mockAuthResult = {
           token: 'mock.jwt.token',
           user: {
-            userId: 1,
+            userId: '1',
             fullName: 'Jane Doe',
             email: 'jane@example.com',
             roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
@@ -203,7 +203,7 @@ describe('Auth API (/api/auth)', () => {
   describe('GET /api/auth/me', () => {
     const mockUserResponse = {
       user: {
-        userId: 1,
+        userId: '1',
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -17,6 +17,17 @@ export function useSignup() {
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const signupMutation = useSignupMutation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  React.useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      toast.error('Authentication failed', {
+        description: errorParam,
+      });
+    }
+  }, [searchParams]);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -28,8 +39,6 @@ export function useSignup() {
       confirmPassword: '',
     },
   });
-
-  const router = useRouter();
 
   const onSubmit = async (data: SignupFormData) => {
     try {

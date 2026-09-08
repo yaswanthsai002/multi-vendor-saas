@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useGoogleAuth } from '@/shared/hooks/use-google-auth';
 
 function GoogleIcon() {
   return (
@@ -44,6 +45,7 @@ export function SigninForm() {
     showPassword,
     togglePasswordVisibility,
   } = useSignin();
+  const { loginWithGoogle, isLoading: isGoogleLoading } = useGoogleAuth();
 
   return (
     <div className="w-full h-full max-w-lg px-4 py-2 sm:px-6 lg:px-0">
@@ -161,9 +163,8 @@ export function SigninForm() {
         variant="outline"
         size="lg"
         className="w-full h-11 rounded-lg border-border-strong text-text-primary font-medium hover:bg-surface-hover active:bg-surface-active bg-surface-raised dark:bg-surface shadow-xs transition-colors flex items-center justify-center gap-2.5 cursor-pointer"
-        onClick={() => {
-          // OAuth redirect hook point
-        }}
+        onClick={() => loginWithGoogle()}
+        isLoading={isGoogleLoading}
       >
         <GoogleIcon />
         <span>Continue with Google</span>

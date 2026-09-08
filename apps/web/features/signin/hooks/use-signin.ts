@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -13,12 +13,21 @@ import { useSigninMutation } from './use-signin-mutation';
 import { ApiError } from '@/lib/api-client';
 
 export function useSignin() {
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/';
 
   const signinMutation = useSigninMutation();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      toast.error('Authentication failed', {
+        description: errorParam,
+      });
+    }
+  }, [searchParams]);
 
   const form = useForm<SigninFormData>({
     resolver: zodResolver(signinSchema),
