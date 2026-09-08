@@ -1,214 +1,189 @@
 'use client';
 
-import { ChevronDown, Heart, Menu, Search, ShoppingCart, X } from 'lucide-react';
+import { Heart, ShoppingCart, User as UserIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import * as React from 'react';
 
-import { ThemeToggle } from './theme-toggle';
+import { HeaderDeliveryAddress } from './header-delivery-address';
+import { HeaderNavBar } from './header-nav-bar';
+import { HeaderSearch } from './header-search';
+import { HeaderUserMenu } from './header-user-menu';
 import { useHeader } from './use-header';
+
+export interface HeaderProps {
+  initialCartCount?: number;
+}
 
 function PerigeeBrandLogo() {
   return (
-    <Link href="/" className="flex items-center gap-2 shrink-0 group focus-visible:outline-none">
+    <Link
+      href="/"
+      className="flex items-center gap-2 shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-md"
+      aria-label="Perigee Home"
+    >
       <Image
         src="/assets/perigee-primary-light.svg"
         alt="Perigee"
         width={130}
-        height={38}
+        height={34}
         priority
-        className="block dark:hidden h-8 w-auto"
+        className="block dark:hidden h-7 sm:h-8 w-auto"
       />
       <Image
         src="/assets/perigee-primary-dark.svg"
         alt="Perigee"
         width={130}
-        height={38}
+        height={34}
         priority
-        className="hidden dark:block h-8 w-auto"
+        className="hidden dark:block h-7 sm:h-8 w-auto"
       />
     </Link>
   );
 }
 
-export function Header() {
-  const { user, displayName, avatarInitial, mobileMenuOpen, toggleMobileMenu, closeMobileMenu } =
-    useHeader();
+export function Header({ initialCartCount }: HeaderProps) {
+  const { user, isLoading, searchQuery, setSearchQuery, cartCount } = useHeader({
+    initialCartCount,
+  });
 
   return (
     <header className="w-full bg-surface-raised border-b border-border-default transition-colors duration-200 sticky top-0 z-50">
-      {/* Upper Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-4 h-16 flex items-center justify-between gap-4">
-        {/* Left: Brand Logo */}
-        <PerigeeBrandLogo />
+      {/* ========================================================================= */}
+      {/* DESKTOP HEADER (>= 768px / md:)                                           */}
+      {/* ========================================================================= */}
+      <div className="hidden md:flex flex-col">
+        {/* Main Desktop Upper Navigation Bar */}
+        <div className="max-w-11/12 mx-auto px-4 lg:px-8 h-16 w-full flex items-center justify-between gap-6">
+          {/* Left: Brand Logo + Desktop Delivery Address Selector */}
+          <div className="flex items-center gap-4 shrink-0">
+            <PerigeeBrandLogo />
+            <HeaderDeliveryAddress variant="desktop" />
+          </div>
 
-        {/* Center: Search Bar */}
-        <div className="hidden sm:flex flex-1 max-w-2xl mx-auto px-4 items-center">
-          <div className="w-full flex items-center bg-surface hover:bg-surface-hover/80 border border-border-default rounded-md px-3 py-2 text-sm focus-within:ring focus-within:ring-border-focus focus-within:border-border-focus transition-all duration-150 shadow-xs">
-            <Search className="h-4 w-4 text-text-tertiary mr-2.5 shrink-0" aria-hidden="true" />
-            <input
-              type="search"
-              placeholder="Search distinctive products, brands..."
-              className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:outline-none! focus-visible:outline-none!"
-              aria-label="Search products and brands"
+          {/* Center: Search Bar */}
+          <div className="flex flex-1 max-w-2xl items-center mx-auto">
+            <HeaderSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search products, brands & categories..."
             />
           </div>
-        </div>
 
-        {/* Right: Utility Actions */}
-        <div className="flex items-center gap-3.5 shrink-0">
-          {/* Auth State: Avatar if authenticated, Sign In if guest */}
-          {user ? (
-            <button
-              type="button"
-              className="flex items-center justify-center h-8 w-8 rounded-full border border-border-strong bg-surface overflow-hidden hover:opacity-90 transition-opacity"
-              aria-label="User profile"
-            >
-              {user.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt={displayName}
-                  width={32}
-                  height={32}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-semibold text-text-primary">{avatarInitial}</span>
-              )}
-            </button>
-          ) : (
-            <Link
-              href="/signin"
-              className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface-hover transition-colors duration-150"
-              aria-label="Sign in"
-            >
-              <span>Sign in</span>
-            </Link>
-          )}
-
-          {/* Sliding Pill Dark/Light Mode Toggle */}
-          <ThemeToggle />
-
-          {/* Mobile Menu Hamburger */}
-          <button
-            type="button"
-            onClick={toggleMobileMenu}
-            className="md:hidden p-2 rounded-md hover:bg-surface-hover text-text-secondary hover:text-text-primary cursor-pointer"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Sub Navigation Bar */}
-      <div className="hidden md:block border-t border-border-subtle bg-surface/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center justify-between text-xs sm:text-sm font-medium text-text-secondary">
-          {/* Left Category Links */}
-          <nav aria-label="Product categories" className="flex items-center gap-6">
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-text-primary transition-colors focus-visible:outline-none"
-            >
-              Shop <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1 hover:text-text-primary transition-colors focus-visible:outline-none"
-            >
-              Categories <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            <Link href="/brands" className="hover:text-text-primary transition-colors">
-              Brands
-            </Link>
-            <Link href="/deals" className="hover:text-text-primary transition-colors">
-              Deals
-            </Link>
-          </nav>
-
-          {/* Right Utility Links */}
-          <div className="flex items-center gap-5">
+          {/* Right: Utility Actions (Wishlist, Cart, User Menu / Signin) */}
+          <div className="flex items-center gap-5 shrink-0">
+            {/* Wishlist Link */}
             <Link
               href="/wishlist"
-              className="flex items-center gap-1.5 hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded-md px-1 py-1"
             >
-              <Heart className="h-3.5 w-3.5" />
+              <Heart className="h-4 w-4" aria-hidden="true" />
               <span>Wishlist</span>
             </Link>
-            {/* Cart Icon with Counter Badge */}
+
+            {/* Cart Icon with Dynamic Counter Badge */}
             <Link
               href="/cart"
-              className="relative p-2 rounded-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors duration-150"
-              aria-label="Shopping Cart (2 items)"
+              className="relative p-2 rounded-lg hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+              aria-label={`Shopping Cart (${cartCount} items)`}
             >
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-accent rounded-full ring-2 ring-surface-raised">
-                2
-              </span>
+              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+              {cartCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-white bg-accent rounded-full ring-2 ring-surface-raised">
+                  {cartCount}
+                </span>
+              )}
             </Link>
+
+            {/* Account: Loading skeleton, User Avatar Menu, or Signin Text Link */}
+            {isLoading ? (
+              <div
+                className="h-9 w-9 rounded-full bg-surface-subtle animate-pulse border border-border-subtle"
+                aria-label="Loading profile"
+              />
+            ) : user ? (
+              <HeaderUserMenu user={user} />
+            ) : (
+              <Link
+                href="/signin"
+                className="text-sm font-semibold text-text-primary hover:text-accent transition-colors px-2.5 py-1.5 rounded-lg hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+              >
+                Signin
+              </Link>
+            )}
           </div>
         </div>
+
+        {/* Sub Navigation Bar (Desktop) */}
+        <HeaderNavBar />
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border-default bg-surface-raised px-4 pt-3 pb-5 space-y-3">
-          <div className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-md border border-border-default bg-surface focus-within:ring-2 focus-within:ring-border-focus focus-within:border-border-focus transition-all duration-150">
-            <Search className="h-4 w-4 text-text-tertiary shrink-0" />
-            <input
-              type="search"
-              placeholder="Search products, brands..."
-              className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:outline-none focus-visible:outline-none"
-              aria-label="Search products and brands"
-            />
-          </div>
+      {/* ========================================================================= */}
+      {/* MOBILE & TABLET HEADER (< 768px / md:hidden)                              */}
+      {/* ========================================================================= */}
+      <div className="flex md:hidden flex-col w-full">
+        {/* Row 1: Brand Logo + Actions (Wishlist, Cart, Profile) */}
+        <div className="px-3.5 pt-3 pb-2 flex items-center justify-between">
+          <PerigeeBrandLogo />
 
-          <nav className="flex flex-col space-y-2 pt-2 text-sm font-medium text-text-secondary">
-            <Link
-              href="/shop"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
-            >
-              Shop All
-            </Link>
-            <Link
-              href="/categories"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
-            >
-              Categories
-            </Link>
-            <Link
-              href="/brands"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
-            >
-              Brands
-            </Link>
-            <Link
-              href="/deals"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary"
-            >
-              Deals
-            </Link>
+          <div className="flex items-center gap-3">
+            {/* Wishlist Icon Link */}
             <Link
               href="/wishlist"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded hover:bg-surface-hover hover:text-text-primary flex items-center gap-2"
+              className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+              aria-label="Wishlist"
             >
-              Wish List
+              <Heart className="h-5 w-5" aria-hidden="true" />
             </Link>
+
+            {/* Cart Icon with dynamic badge */}
             <Link
               href="/cart"
-              onClick={closeMobileMenu}
-              className="relative p-2 rounded-md hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors duration-150"
-              aria-label="Shopping Cart (2 items)"
+              className="relative p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+              aria-label={`Shopping Cart (${cartCount} items)`}
             >
-              Cart
+              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-white bg-accent rounded-full ring-2 ring-surface-raised">
+                  {cartCount}
+                </span>
+              )}
             </Link>
-          </nav>
+
+            {/* User Account / Profile */}
+            {isLoading ? (
+              <div className="h-8 w-8 rounded-full bg-surface-subtle animate-pulse border border-border-subtle" />
+            ) : user ? (
+              <HeaderUserMenu user={user} />
+            ) : (
+              <Link
+                href="/signin"
+                className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+                aria-label="Account sign in"
+              >
+                <UserIcon className="h-5 w-5" aria-hidden="true" />
+              </Link>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Row 2: Search Bar */}
+        <div className="px-3.5 pb-2">
+          <HeaderSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search products, brands & categories..."
+          />
+        </div>
+
+        {/* Row 3: Deliver to Location */}
+        <div className="px-3.5 pb-2">
+          <HeaderDeliveryAddress variant="mobile" />
+        </div>
+
+        {/* Row 4: Sub Navigation Bar */}
+        <HeaderNavBar />
+      </div>
     </header>
   );
 }
