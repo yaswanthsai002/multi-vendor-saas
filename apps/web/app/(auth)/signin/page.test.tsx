@@ -10,10 +10,11 @@ import { ApiError } from '@/lib/api-client';
 import { QueryProvider } from '@/providers/query-provider';
 
 const mockPush = vi.fn();
+let mockSearchParams = new URLSearchParams();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams,
 }));
 
 vi.mock('sonner', () => ({
@@ -38,6 +39,7 @@ function renderSigninPage() {
 describe('Signin Page (/signin)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = new URLSearchParams();
   });
 
   afterEach(() => {
@@ -141,6 +143,21 @@ describe('Signin Page (/signin)', () => {
       );
       expect(mockPush).toHaveBeenCalledWith(
         '/verify-email?email=unverified%40example.com&purpose=email_verification',
+      );
+    });
+  });
+
+  it('displays error toast when error query parameter is present in URL', async () => {
+    mockSearchParams = new URLSearchParams('error=Google%20authentication%20failed');
+
+    renderSigninPage();
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Authentication failed',
+        expect.objectContaining({
+          description: 'Google authentication failed',
+        }),
       );
     });
   });

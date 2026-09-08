@@ -1,7 +1,9 @@
 import { AppError } from '../../shared/errors/AppError.js';
+import { redis } from '../../shared/redis/redis.client.js';
 
 import { resetPasswordSchema, signInSchema, signupSchema } from './auth.schema.js';
 import * as authService from './auth.service.js';
+import * as googleService from './google.service.js';
 
 import type { AuthenticatedRequest } from '../../shared/middleware/verifyToken.js';
 import type { Request, Response, NextFunction } from 'express';
@@ -86,7 +88,7 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
 
 export async function me(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
-    const userId = Number(req.user?.sub);
+    const userId = req.user?.sub;
     if (!userId) {
       throw new AppError(401, 'UNAUTHORIZED', 'Invalid session payload');
     }
@@ -108,5 +110,65 @@ export async function signout(_req: Request, res: Response, next: NextFunction) 
     return res.status(200).json({ message: 'Signed out successfully' });
   } catch (error) {
     return next(error);
+  }
+}
+
+export async function googleAuthInit(req: Request, res: Response, next: NextFunction) {
+  try {
+    const redirectParam = typeof req.query.redirect === 'string' ? req.query.redirect : '/';
+    const fromParam = typeof req.query.from === 'string' ? req.query.from : '/signin';
+    const authUrl = await googleService.getGoogleAuthUrl(redirectParam, fromParam);
+    return res.redirect(authUrl);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function googleAuthCallback(req: Request, res: Response, _next: NextFunction) {
+  const webOrigin = process.env.WEB_ORIGIN || 'http://localhost:3000';
+  let fromUrl = '/signin';
+
+  try {
+    const { code, state, error: oauthError } = req.query;
+
+    if (typeof state === 'string') {
+      const rawState = await redis.get(`oauth_state:${state}`);
+      if (rawState) {
+        try {
+          const parsed = JSON.parse(rawState) as { fromUrl?: string };
+          if (typeof parsed.fromUrl === 'string' && parsed.fromUrl.startsWith('/')) {
+            fromUrl = parsed.fromUrl;
+          }
+        } catch {
+          // Ignore JSON parse error
+        }
+      }
+    }
+
+    if (oauthError) {
+      return res.redirect(
+        `${webOrigin}${fromUrl}?error=${encodeURIComponent(oauthError as string)}`,
+      );
+    }
+
+    if (typeof code !== 'string' || typeof state !== 'string') {
+      return res.redirect(`${webOrigin}${fromUrl}?error=invalid_request`);
+    }
+
+    const result = await googleService.handleGoogleCallback(code, state);
+
+    res.cookie('auth_token', result.token, {
+      maxAge: 2 * 60 * 60 * 1000,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      path: '/',
+    });
+
+    const targetUrl = result.redirectUrl.startsWith('/') ? result.redirectUrl : '/';
+    return res.redirect(`${webOrigin}${targetUrl}`);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Google authentication failed';
+    return res.redirect(`${webOrigin}${fromUrl}?error=${encodeURIComponent(errorMessage)}`);
   }
 }
