@@ -10,6 +10,7 @@ export const AUTH_ROUTES = [
   '/signin',
   '/forgot-password',
   '/reset-password',
+  '/verify-email',
   '/verify-otp',
 ] as const;
 
