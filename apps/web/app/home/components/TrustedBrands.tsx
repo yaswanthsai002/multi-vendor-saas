@@ -63,7 +63,19 @@ export default function TrustedBrands() {
         </div>
 
         {/* Brand Logos */}
-        <div className="mt-7 flex items-center justify-center gap-7 overflow-hidden sm:gap-10 md:gap-12">
+        <div
+          className="
+            mt-7
+            grid
+            grid-cols-2
+            gap-4
+            sm:flex
+            sm:items-center
+            sm:justify-center
+            sm:gap-10
+            md:gap-12
+        "
+        >
           {brands.map((brand) => (
             <button
               key={brand.name}
@@ -71,14 +83,15 @@ export default function TrustedBrands() {
               className="
                 flex
                 h-[38px]
-                w-[100px]
-                shrink-0
+                w-full
                 items-center
                 justify-center
                 transition-opacity
                 duration-200
                 hover:opacity-60
-              "
+                sm:w-[100px]
+                sm:shrink-0
+            "
               aria-label={`View ${brand.name}`}
             >
               <Image
@@ -86,7 +99,14 @@ export default function TrustedBrands() {
                 alt={`${brand.name} logo`}
                 width={100}
                 height={38}
-                className="h-auto max-h-[32px] w-auto max-w-[100px] object-contain"
+                className="
+                h-auto
+                max-h-[32px]
+                w-auto
+                max-w-[90px]
+                object-contain
+                sm:max-w-[100px]
+                "
               />
             </button>
           ))}

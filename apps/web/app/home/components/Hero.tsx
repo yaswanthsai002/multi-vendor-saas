@@ -54,6 +54,7 @@ export default function Hero() {
               <button
                 type="button"
                 className="
+                    cursor-pointer
                   rounded-[5px]
                   bg-[#d86f45]
                   px-4
@@ -74,6 +75,7 @@ export default function Hero() {
               <button
                 type="button"
                 className="
+                    cursor-pointer
                   rounded-[5px]
                   border
                   border-white/40
