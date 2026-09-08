@@ -1,20 +1,20 @@
-import CuratedNewFinds from '@/features/home/components/CuratedNewFinds';
-import FeaturedPicks from '@/features/home/components/FeaturedPicks';
+import Discovery from '@/features/home/components/Discovery';
+import FeaturedBrands from '@/features/home/components/FeaturedBrands';
 import Hero from '@/features/home/components/Hero';
-import ProductUniverse from '@/features/home/components/ProductUniverse';
-import TopPicks from '@/features/home/components/TopPicks';
-import TrustedBrands from '@/features/home/components/TrustedBrands';
+import NewArrivals from '@/features/home/components/NewArrivals';
+import ShopbyCategory from '@/features/home/components/ShopbyCategory';
+// import TopPicks from '@/features/home/components/TopPicks';
 import WhyPerigee from '@/features/home/components/WhyPerigee';
 
 export default function Home() {
   return (
     <>
       <Hero />
-      <ProductUniverse />
-      <CuratedNewFinds />
-      <FeaturedPicks />
-      <TopPicks />
-      <TrustedBrands />
+      <ShopbyCategory />
+      <NewArrivals />
+      <FeaturedBrands />
+      {/* <TopPicks /> */}
+      <Discovery />
       <WhyPerigee />
     </>
   );
