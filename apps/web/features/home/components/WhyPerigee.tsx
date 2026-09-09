@@ -31,7 +31,7 @@ export default function WhyPerigee() {
         bg-[var(--background)]
         py-12
         
-        sm:py-14
+        sm:py-8
       "
     >
       <div className="mx-auto max-w-[1200px] px-5 sm:px-6">
@@ -63,7 +63,7 @@ export default function WhyPerigee() {
         </div>
 
         {/* Benefits */}
-        <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {benefits.map((benefit) => {
             const Icon = benefit.icon;
 

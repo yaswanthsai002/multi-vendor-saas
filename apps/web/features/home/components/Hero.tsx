@@ -33,96 +33,50 @@ const slides = [
 const AUTO_SLIDE_TIME = 15000;
 
 export default function Hero() {
-  /*
-   * Current slide:
-   *
-   * 0 = Slide 1
-   * 1 = Slide 2
-   * 2 = Slide 3
-   */
   const [current, setCurrent] = useState(0);
-
-  /*
-   * Drag position while swiping.
-   */
   const [dragX, setDragX] = useState(0);
-
-  /*
-   * Whether the user is currently dragging.
-   */
   const [dragging, setDragging] = useState(false);
-
-  /*
-   * Whether the slide movement should animate.
-   */
   const [animate, setAnimate] = useState(true);
 
-  /*
-   * Starting pointer position.
-   */
   const startX = useRef(0);
 
   /*
    * -----------------------------------------
-   * GO TO NEXT SLIDE
+   * NEXT
    * -----------------------------------------
    */
   const nextSlide = () => {
     setAnimate(true);
     setDragX(0);
 
-    setCurrent((prev) => {
-      /*
-       * If we're on the last slide,
-       * go directly back to the first slide.
-       */
-      if (prev === slides.length - 1) {
-        return 0;
-      }
-
-      return prev + 1;
-    });
+    setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
   /*
    * -----------------------------------------
-   * GO TO PREVIOUS SLIDE
+   * PREVIOUS
    * -----------------------------------------
    */
   const previousSlide = () => {
     setAnimate(true);
     setDragX(0);
 
-    setCurrent((prev) => {
-      /*
-       * If we're on the first slide,
-       * go directly to the last slide.
-       */
-      if (prev === 0) {
-        return slides.length - 1;
-      }
-
-      return prev - 1;
-    });
+    setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   /*
    * -----------------------------------------
-   * AUTOMATIC SLIDE
+   * AUTO PLAY
    * -----------------------------------------
    *
-   * Every 15 seconds:
+   * Every 15 seconds.
    *
-   * 1 → 2 → 3 → 1 → 2 → 3 ...
+   * The timer resets whenever:
+   * - slide changes
+   * - user finishes a swipe
    */
   useEffect(() => {
-    /*
-     * Don't run the timer while the user
-     * is actively swiping.
-     */
-    if (dragging) {
-      return;
-    }
+    if (dragging) return;
 
     const timer = window.setTimeout(() => {
       nextSlide();
@@ -139,22 +93,13 @@ export default function Hero() {
    * -----------------------------------------
    */
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    /*
-     * Only respond to the primary mouse button.
-     */
-    if (e.button !== 0) {
-      return;
-    }
+    if (e.button !== 0) return;
 
     startX.current = e.clientX;
 
     setDragging(true);
-
-    /*
-     * Disable transition while following
-     * the user's finger.
-     */
     setAnimate(false);
+    setDragX(0);
 
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -165,15 +110,10 @@ export default function Hero() {
    * -----------------------------------------
    */
   const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!dragging) {
-      return;
-    }
+    if (!dragging) return;
 
     const distance = e.clientX - startX.current;
 
-    /*
-     * Slight resistance.
-     */
     setDragX(distance * 0.85);
   };
 
@@ -183,74 +123,44 @@ export default function Hero() {
    * -----------------------------------------
    */
   const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    if (!dragging) {
-      return;
-    }
+    if (!dragging) return;
 
     const distance = dragX;
-    const threshold = 60;
+    const threshold = 50;
 
     setDragging(false);
 
-    /*
-     * Release pointer capture.
-     */
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
 
     /*
-     * -----------------------------------------
-     * SWIPE LEFT
-     * -----------------------------------------
+     * Swipe left = next.
      */
     if (distance < -threshold) {
       setAnimate(true);
       setDragX(0);
 
-      setCurrent((prev) => {
-        /*
-         * LAST → FIRST
-         */
-        if (prev === slides.length - 1) {
-          return 0;
-        }
-
-        return prev + 1;
-      });
+      setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
 
       return;
     }
 
     /*
-     * -----------------------------------------
-     * SWIPE RIGHT
-     * -----------------------------------------
+     * Swipe right = previous.
      */
     if (distance > threshold) {
       setAnimate(true);
       setDragX(0);
 
-      setCurrent((prev) => {
-        /*
-         * FIRST → LAST
-         */
-        if (prev === 0) {
-          return slides.length - 1;
-        }
-
-        return prev - 1;
-      });
+      setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
 
       return;
     }
 
     /*
-     * -----------------------------------------
-     * NOT ENOUGH MOVEMENT
-     * -----------------------------------------
-     *
-     * Return to the current slide.
+     * Not enough movement.
+     * Snap back.
      */
     setAnimate(true);
     setDragX(0);
@@ -278,10 +188,16 @@ export default function Hero() {
         overflow-hidden
         bg-white
         dark:bg-[#0A0D14]
+
+        px-4
+        py-3
+
+        sm:px-0
+        sm:py-0
       "
     >
       {/* ====================================== */}
-      {/* VIEWPORT */}
+      {/* HERO VIEWPORT */}
       {/* ====================================== */}
 
       <div
@@ -289,8 +205,11 @@ export default function Hero() {
           relative
           w-full
           overflow-hidden
+          rounded-[10px]
           touch-pan-y
           select-none
+
+          sm:rounded-none
         "
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -310,8 +229,8 @@ export default function Hero() {
               animate
                 ? `
                   transition-transform
-                  duration-[500ms]
-                  ease-[cubic-bezier(0.22,0.8,0.2,1)]
+                  duration-[450ms]
+                  ease-out
                 `
                 : ''
             }
@@ -334,19 +253,21 @@ export default function Hero() {
               key={slide.eyebrow}
               className="
                 relative
-                h-[360px]
+                h-[140px]
                 w-screen
                 flex-none
                 overflow-hidden
+                rounded-[10px]
 
                 sm:h-[420px]
+                sm:rounded-none
 
                 lg:h-[500px]
               "
             >
-              {/* ============================== */}
+              {/* ================================= */}
               {/* IMAGE */}
-              {/* ============================== */}
+              {/* ================================= */}
 
               <Image
                 src={slide.image}
@@ -358,15 +279,15 @@ export default function Hero() {
                 className="
                   pointer-events-none
                   object-cover
-                  object-left
+                  object-right
 
                   sm:object-center
                 "
               />
 
-              {/* ============================== */}
-              {/* MOBILE OVERLAY */}
-              {/* ============================== */}
+              {/* ================================= */}
+              {/* MOBILE BACKGROUND OVERLAY */}
+              {/* ================================= */}
 
               <div
                 className="
@@ -374,17 +295,20 @@ export default function Hero() {
                   absolute
                   inset-0
                   bg-gradient-to-r
-                  from-[#f4efe7]/95
-                  via-[#f4efe7]/75
-                  to-transparent
+                  from-[#f4efe7]
+                  from-[0%]
+                  via-[#f4efe7]/95
+                  via-[48%]
+                  to-[#f4efe7]/0
+                  to-[100%]
 
                   sm:hidden
                 "
               />
 
-              {/* ============================== */}
+              {/* ================================= */}
               {/* DESKTOP OVERLAY */}
-              {/* ============================== */}
+              {/* ================================= */}
 
               <div
                 className="
@@ -401,9 +325,9 @@ export default function Hero() {
                 "
               />
 
-              {/* ============================== */}
-              {/* CONTENT */}
-              {/* ============================== */}
+              {/* ================================= */}
+              {/* MOBILE CONTENT */}
+              {/* ================================= */}
 
               <div
                 className="
@@ -411,6 +335,126 @@ export default function Hero() {
                   absolute
                   inset-0
                   z-10
+
+                  sm:hidden
+                "
+              >
+                <div className="flex h-full items-center">
+                  <div className="w-[62%] px-3">
+                    {/* EYEBROW */}
+
+                    <p
+                      className="
+                        mb-1
+                        text-[7px]
+                        font-bold
+                        tracking-[0.3px]
+                        text-[#202936]
+                      "
+                    >
+                      {slide.eyebrow}
+                    </p>
+
+                    {/* TITLE */}
+
+                    <h2
+                      className="
+                        text-[19px]
+                        font-bold
+                        leading-[1.02]
+                        tracking-[-0.7px]
+                        text-[#111827]
+                      "
+                    >
+                      {slide.title}
+                    </h2>
+
+                    {/* DESCRIPTION */}
+
+                    <p
+                      className="
+                        mt-1
+                        max-w-[170px]
+                        text-[7px]
+                        font-medium
+                        leading-[1.25]
+                        text-[#374151]
+                      "
+                    >
+                      {slide.description}
+                    </p>
+
+                    {/* BUTTONS */}
+
+                    <div
+                      className="
+                        pointer-events-auto
+                        mt-2
+                        flex
+                        gap-1.5
+                      "
+                    >
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onPointerUp={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className="
+                          rounded-[4px]
+                          bg-[#d76542]
+                          px-2.5
+                          py-1.5
+                          text-[7px]
+                          font-bold
+                          text-white
+                          shadow-sm
+                        "
+                      >
+                        {slide.primaryAction}
+                      </button>
+
+                      <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onPointerUp={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className="
+                          rounded-[4px]
+                          bg-[#557792]
+                          px-2.5
+                          py-1.5
+                          text-[7px]
+                          font-bold
+                          text-white
+                          shadow-sm
+                        "
+                      >
+                        {slide.secondaryAction}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ================================= */}
+              {/* DESKTOP CONTENT */}
+              {/* ================================= */}
+
+              <div
+                className="
+                  pointer-events-none
+                  absolute
+                  inset-0
+                  z-10
+                  hidden
+
+                  sm:block
                 "
               >
                 <div className="flex h-full items-center">
@@ -419,10 +463,12 @@ export default function Hero() {
                       w-full
                       px-6
 
-                      sm:px-12
+                      sm:px-10
 
-                      md:px-16
+                      md:w-[48%]
+                      md:px-8
 
+                      lg:w-full
                       lg:px-20
                     "
                   >
@@ -430,7 +476,9 @@ export default function Hero() {
                       className="
                         max-w-[280px]
 
-                        sm:max-w-[440px]
+                        sm:max-w-[260px]
+
+                        md:max-w-[300px]
 
                         lg:max-w-[500px]
                       "
@@ -445,9 +493,13 @@ export default function Hero() {
                           tracking-[0.4px]
                           text-[#202936]
 
-                          sm:mb-3
-                          sm:text-[12px]
+                          sm:mb-2
+                          sm:text-[10px]
 
+                          md:mb-2
+                          md:text-[10px]
+
+                          lg:mb-3
                           lg:text-[13px]
                         "
                       >
@@ -464,9 +516,15 @@ export default function Hero() {
                           tracking-[-1.5px]
                           text-[#111827]
 
-                          sm:text-[46px]
+                          sm:text-[30px]
+                          sm:tracking-[-1px]
+
+                          md:text-[30px]
+                          md:leading-[1.05]
+                          md:tracking-[-1px]
 
                           lg:text-[58px]
+                          lg:leading-[1.02]
                           lg:tracking-[-1.8px]
                         "
                       >
@@ -484,11 +542,19 @@ export default function Hero() {
                           leading-[1.45]
                           text-[#374151]
 
-                          sm:mt-4
-                          sm:max-w-[400px]
-                          sm:text-[13px]
+                          sm:mt-3
+                          sm:max-w-[250px]
+                          sm:text-[11px]
 
+                          md:mt-3
+                          md:max-w-[260px]
+                          md:text-[11px]
+                          md:leading-[1.4]
+
+                          lg:mt-4
+                          lg:max-w-[400px]
                           lg:text-[14px]
+                          lg:leading-[1.45]
                         "
                       >
                         {slide.description}
@@ -504,8 +570,11 @@ export default function Hero() {
                           flex-wrap
                           gap-2
 
-                          sm:mt-6
-                          sm:gap-2.5
+                          sm:mt-5
+
+                          md:mt-5
+
+                          lg:mt-6
                         "
                       >
                         <button
@@ -513,11 +582,7 @@ export default function Hero() {
                           onPointerDown={(e) => {
                             e.stopPropagation();
                           }}
-                          onPointerUp={(e) => {
-                            e.stopPropagation();
-                          }}
                           className="
-                            cursor-pointer
                             rounded-[6px]
                             bg-[#d76542]
                             px-4
@@ -525,19 +590,18 @@ export default function Hero() {
                             text-[11px]
                             font-bold
                             text-white
-                            shadow-sm
 
-                            transition-all
-                            duration-200
+                            sm:px-4
+                            sm:py-2
+                            sm:text-[10px]
 
-                            hover:-translate-y-0.5
-                            hover:bg-[#c95636]
-                            hover:shadow-md
+                            md:px-4
+                            md:py-2
+                            md:text-[10px]
 
-                            active:scale-[0.98]
-
-                            sm:px-5
-                            sm:text-[12px]
+                            lg:px-5
+                            lg:py-2.5
+                            lg:text-[12px]
                           "
                         >
                           {slide.primaryAction}
@@ -548,11 +612,7 @@ export default function Hero() {
                           onPointerDown={(e) => {
                             e.stopPropagation();
                           }}
-                          onPointerUp={(e) => {
-                            e.stopPropagation();
-                          }}
                           className="
-                            cursor-pointer
                             rounded-[6px]
                             bg-[#557792]
                             px-4
@@ -560,19 +620,18 @@ export default function Hero() {
                             text-[11px]
                             font-bold
                             text-white
-                            shadow-sm
 
-                            transition-all
-                            duration-200
+                            sm:px-4
+                            sm:py-2
+                            sm:text-[10px]
 
-                            hover:-translate-y-0.5
-                            hover:bg-[#496a83]
-                            hover:shadow-md
+                            md:px-4
+                            md:py-2
+                            md:text-[10px]
 
-                            active:scale-[0.98]
-
-                            sm:px-5
-                            sm:text-[12px]
+                            lg:px-5
+                            lg:py-2.5
+                            lg:text-[12px]
                           "
                         >
                           {slide.secondaryAction}
@@ -585,6 +644,76 @@ export default function Hero() {
             </article>
           ))}
         </div>
+
+        {/* ====================================== */}
+        {/* MOBILE ARROWS */}
+        {/* ====================================== */}
+
+        {/* <button
+          type="button"
+          aria-label="Previous slide"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            previousSlide();
+          }}
+          className="
+            absolute
+            left-1
+            top-1/2
+            z-20
+            flex
+            h-7
+            w-7
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/70
+            text-[16px]
+            text-[#374151]
+            backdrop-blur-sm
+
+            sm:hidden
+          "
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          aria-label="Next slide"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            nextSlide();
+          }}
+          className="
+            absolute
+            right-1
+            top-1/2
+            z-20
+            flex
+            h-7
+            w-7
+            -translate-y-1/2
+            items-center
+            justify-center
+            rounded-full
+            bg-white/70
+            text-[16px]
+            text-[#374151]
+            backdrop-blur-sm
+
+            sm:hidden
+          "
+        >
+          ›
+        </button> */}
       </div>
 
       {/* ====================================== */}
@@ -596,11 +725,10 @@ export default function Hero() {
           flex
           items-center
           justify-center
-          gap-1.5
-          bg-[#eef1f5]
-          py-3
+          gap-1
+          py-2
 
-          dark:bg-[#0A0D14]
+          sm:py-3
         "
       >
         {slides.map((_, index) => (
@@ -614,7 +742,7 @@ export default function Hero() {
               setCurrent(index);
             }}
             className={`
-              h-[5px]
+              h-[4px]
               rounded-full
               transition-all
               duration-200
@@ -622,12 +750,12 @@ export default function Hero() {
               ${
                 current === index
                   ? `
-                    w-6
+                    w-5
                     bg-[#667585]
                     dark:bg-[#E66A45]
                   `
                   : `
-                    w-[5px]
+                    w-[4px]
                     bg-[#c6ccd3]
                     dark:bg-[#343B49]
                   `
