@@ -23,7 +23,7 @@ const products = [
     discount: '-15%',
     rating: '4.7',
     reviews: 3,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product1.jpg',
   },
   {
     brand: 'Arlo',
@@ -33,7 +33,7 @@ const products = [
     discount: '-15%',
     rating: '4.9',
     reviews: 3,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product2.jpg',
   },
   {
     brand: 'Kora',
@@ -43,7 +43,7 @@ const products = [
     discount: '-15%',
     rating: '4.8',
     reviews: 1,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product3.jpg',
   },
   {
     brand: 'Mora',
@@ -53,7 +53,7 @@ const products = [
     discount: '-15%',
     rating: '4.6',
     reviews: 3,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product4.jpg',
   },
   {
     brand: 'Arlo',
@@ -63,7 +63,7 @@ const products = [
     discount: '-15%',
     rating: '4.8',
     reviews: 3,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product5.jpg',
   },
   {
     brand: 'Kora',
@@ -83,7 +83,7 @@ const products = [
     discount: '-15%',
     rating: '4.9',
     reviews: 4,
-    image: '/assets/products/product.png',
+    image: '/assets/products/product1.jpg',
   },
 ];
 

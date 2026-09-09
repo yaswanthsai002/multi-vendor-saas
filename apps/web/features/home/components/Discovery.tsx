@@ -3,10 +3,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import mainImage from '@/assets/images/Home/discovery1.png';
+import topRight from '@/assets/images/Home/discovery2.png';
+import bottomRight from '@/assets/images/Home/discovery3.png';
+
 const discoveryImages = {
-  main: '/images/discovery/discovery-main.jpg',
-  top: '/images/discovery/discovery-top.jpg',
-  bottom: '/images/discovery/discovery-bottom.jpg',
+  main: mainImage,
+  top: topRight,
+  bottom: bottomRight,
 };
 
 export default function Discovery() {
@@ -30,33 +34,21 @@ export default function Discovery() {
           lg:px-8
         "
       >
-        <div
-          className="
-            grid
-            grid-cols-1
-            gap-6
-
-            md:grid-cols-[1.35fr_0.58fr_1fr]
-            md:items-center
-            md:gap-5
-
-            lg:gap-6
-          "
-        >
-          {/* ========================================= */}
-          {/* Main Image */}
-          {/* ========================================= */}
-
+        {/* =========================================================
+            MOBILE
+            Main image + content only
+            Secondary images are completely hidden
+        ========================================================= */}
+        <div className="grid grid-cols-2 gap-4 md:hidden">
+          {/* Main image */}
           <Link
             href="/discovery"
             className="
-              group
-              relative
-              block
-              aspect-[1.4/1]
+              group relative block
+              aspect-[0.85/1]
+              min-w-0
               overflow-hidden
               rounded-xl
-
               focus-visible:outline-none
               focus-visible:ring-2
               focus-visible:ring-[var(--border-focus)]
@@ -69,54 +61,160 @@ export default function Discovery() {
               alt="Perigee discovery collection"
               fill
               priority
-              sizes="
-                (max-width: 767px) 100vw,
-                (max-width: 1023px) 55vw,
-                52vw
-              "
+              sizes="50vw"
               className="
                 object-cover
-
                 transition-transform
                 duration-[320ms]
                 ease-[cubic-bezier(0.2,0.8,0.2,1)]
-
                 group-hover:scale-[1.025]
-
                 motion-reduce:transition-none
                 motion-reduce:group-hover:scale-100
               "
             />
           </Link>
 
-          {/* ========================================= */}
-          {/* Secondary Images */}
-          {/* ========================================= */}
+          {/* Content */}
+          <div className="flex min-w-0 flex-col items-start justify-center">
+            <p
+              className="
+                text-[10px]
+                font-semibold
+                leading-[1.4]
+                tracking-[0.02em]
+                text-[var(--text-primary)]
+              "
+            >
+              PERIGEE DISCOVERY
+            </p>
 
-          <div
-            className="
-              grid
-              grid-cols-2
-              gap-3
+            <h2
+              className="
+                mt-2
+                text-[24px]
+                font-bold
+                leading-[1.08]
+                tracking-[-0.5px]
+                text-[var(--text-primary)]
+              "
+            >
+              Find something
+              <br />
+              less ordinary.
+            </h2>
 
-              md:grid-cols-1
-              md:grid-rows-2
-              md:gap-4
-            "
-          >
-            {/* Top Image */}
+            <p
+              className="
+                mt-3
+                text-[12px]
+                leading-[1.5]
+                text-[var(--text-secondary)]
+              "
+            >
+              Thoughtfully selected products from independent brands worth discovering.
+            </p>
+
             <Link
               href="/discovery"
               className="
-                group
-                relative
-                aspect-[1.35/1]
+                mt-4
+                inline-flex
+                min-h-[40px]
+                items-center
+                justify-center
+                gap-1.5
+                rounded-md
+                bg-[var(--accent)]
+                px-3.5
+                text-[11px]
+                font-medium
+                text-[var(--on-accent)]
+                transition-[background-color,transform]
+                duration-[180ms]
+                ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                hover:bg-[var(--accent-hover)]
+                active:translate-y-px
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-[var(--border-focus)]
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-[var(--background)]
+                motion-reduce:transition-none
+              "
+            >
+              <span>Explore Discovery</span>
+              <span aria-hidden="true" className="text-[14px] leading-none">
+                →
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* =========================================================
+            TABLET + DESKTOP
+            Main image | 2 secondary images | content
+        ========================================================= */}
+        <div
+          className="
+            hidden
+            md:grid
+            md:grid-cols-[1.35fr_0.58fr_1fr]
+            md:gap-5
+            lg:gap-6
+          "
+        >
+          {/* Main image */}
+          <Link
+            href="/discovery"
+            className="
+              group relative block
+              aspect-[1.4/1]
+              min-w-0
+              overflow-hidden
+              rounded-xl
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-[var(--border-focus)]
+              focus-visible:ring-offset-2
+              focus-visible:ring-offset-[var(--background)]
+            "
+          >
+            <Image
+              src={discoveryImages.main}
+              alt="Perigee discovery collection"
+              fill
+              priority
+              sizes="(max-width: 1023px) 50vw, 52vw"
+              className="
+                object-cover
+                transition-transform
+                duration-[320ms]
+                ease-[cubic-bezier(0.2,0.8,0.2,1)]
+                group-hover:scale-[1.025]
+                motion-reduce:transition-none
+                motion-reduce:group-hover:scale-100
+              "
+            />
+          </Link>
+
+          {/* Secondary images */}
+          <div
+            className="
+              grid
+              min-w-0
+              grid-cols-1
+              grid-rows-2
+              gap-4
+            "
+          >
+            {/* Top image */}
+            <Link
+              href="/discovery"
+              className="
+                group relative
+                min-h-0
                 overflow-hidden
                 rounded-xl
-
-                md:aspect-auto
-                md:h-full
-
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--border-focus)]
@@ -128,39 +226,27 @@ export default function Discovery() {
                 src={discoveryImages.top}
                 alt="Featured Perigee discovery"
                 fill
-                sizes="
-                  (max-width: 767px) 50vw,
-                  (max-width: 1023px) 25vw,
-                  20vw
-                "
+                sizes="(max-width: 1023px) 22vw, 20vw"
                 className="
                   object-cover
-
                   transition-transform
                   duration-[320ms]
                   ease-[cubic-bezier(0.2,0.8,0.2,1)]
-
                   group-hover:scale-[1.025]
-
                   motion-reduce:transition-none
                   motion-reduce:group-hover:scale-100
                 "
               />
             </Link>
 
-            {/* Bottom Image */}
+            {/* Bottom image */}
             <Link
               href="/discovery"
               className="
-                group
-                relative
-                aspect-[1.35/1]
+                group relative
+                min-h-0
                 overflow-hidden
                 rounded-xl
-
-                md:aspect-auto
-                md:h-full
-
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--border-focus)]
@@ -172,20 +258,13 @@ export default function Discovery() {
                 src={discoveryImages.bottom}
                 alt="Featured independent brand"
                 fill
-                sizes="
-                  (max-width: 767px) 50vw,
-                  (max-width: 1023px) 25vw,
-                  20vw
-                "
+                sizes="(max-width: 1023px) 22vw, 20vw"
                 className="
                   object-cover
-
                   transition-transform
                   duration-[320ms]
                   ease-[cubic-bezier(0.2,0.8,0.2,1)]
-
                   group-hover:scale-[1.025]
-
                   motion-reduce:transition-none
                   motion-reduce:group-hover:scale-100
                 "
@@ -193,21 +272,18 @@ export default function Discovery() {
             </Link>
           </div>
 
-          {/* ========================================= */}
-          {/* Discovery Content */}
-          {/* ========================================= */}
-
+          {/* Content */}
           <div
             className="
               flex
+              min-w-0
               flex-col
               items-start
-
+              justify-center
               md:pl-2
               lg:pl-4
             "
           >
-            {/* Eyebrow */}
             <p
               className="
                 text-[12px]
@@ -220,20 +296,15 @@ export default function Discovery() {
               PERIGEE DISCOVERY
             </p>
 
-            {/* Heading */}
             <h2
               className="
                 mt-2
                 max-w-[480px]
-
                 text-[32px]
                 font-bold
                 leading-[1.08]
                 tracking-[-0.6px]
                 text-[var(--text-primary)]
-
-                sm:text-[36px]
-
                 lg:text-[40px]
                 lg:tracking-[-0.8px]
               "
@@ -243,12 +314,10 @@ export default function Discovery() {
               less ordinary.
             </h2>
 
-            {/* Description */}
             <p
               className="
                 mt-4
                 max-w-[500px]
-
                 text-[16px]
                 font-normal
                 leading-[1.5]
@@ -258,7 +327,6 @@ export default function Discovery() {
               Thoughtfully selected products from independent brands worth discovering.
             </p>
 
-            {/* CTA */}
             <Link
               href="/discovery"
               className="
@@ -268,29 +336,23 @@ export default function Discovery() {
                 items-center
                 justify-center
                 gap-2
-
                 rounded-md
                 bg-[var(--accent)]
                 px-5
-
                 text-[14px]
                 font-medium
                 leading-[1.4]
                 text-[var(--on-accent)]
-
                 transition-[background-color,transform]
                 duration-[180ms]
                 ease-[cubic-bezier(0.2,0.8,0.2,1)]
-
                 hover:bg-[var(--accent-hover)]
                 active:translate-y-px
-
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--border-focus)]
                 focus-visible:ring-offset-2
                 focus-visible:ring-offset-[var(--background)]
-
                 motion-reduce:transition-none
               "
             >

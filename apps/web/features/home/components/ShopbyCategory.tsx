@@ -82,10 +82,12 @@ export default function ShopbyCategory() {
     <section
       className="
         bg-[var(--background)]
-        pt-4
-        pb-8
+        pt-3
+        pb-6
+
         sm:pt-5
         sm:pb-10
+
         md:pt-6
         md:pb-12
       "
@@ -95,29 +97,37 @@ export default function ShopbyCategory() {
           mx-auto
           w-full
           max-w-[1280px]
+
           px-4
+
           sm:px-6
+
           lg:px-8
         "
       >
-        {/* Header */}
+        {/* ====================================== */}
+        {/* HEADER */}
+        {/* ====================================== */}
+
         <div
           className="
-            mb-5
+            mb-3
             flex
             items-center
             justify-between
+
             sm:mb-6
           "
         >
           <h2
             className="
-              text-[20px]
+              text-[17px]
               font-semibold
               leading-[1.3]
               tracking-[-0.15px]
               text-[var(--text-primary)]
-              md:text-[20px]
+
+              sm:text-[20px]
             "
           >
             Shop by category
@@ -127,40 +137,147 @@ export default function ShopbyCategory() {
             href="/categories"
             className="
               flex
-              min-h-[44px]
+              min-h-[36px]
+              shrink-0
               items-center
               gap-1
               rounded-md
-              px-2
-              text-[14px]
+              px-1
+              text-[11px]
               font-medium
               leading-[1.4]
               text-[var(--text-secondary)]
               transition-opacity
               duration-[120ms]
               hover:opacity-70
+
               focus-visible:outline-none
               focus-visible:ring-2
               focus-visible:ring-[var(--border-focus)]
               focus-visible:ring-offset-2
               focus-visible:ring-offset-[var(--background)]
+
+              sm:min-h-[44px]
+              sm:px-2
+              sm:text-[14px]
             "
           >
             <span>View all</span>
-            <span aria-hidden="true" className="text-[16px]">
+
+            <span
+              aria-hidden="true"
+              className="
+                text-[14px]
+
+                sm:text-[16px]
+              "
+            >
               →
             </span>
           </Link>
         </div>
 
-        {/* Category Grid */}
+        {/* ====================================== */}
+        {/* MOBILE CATEGORY RAIL */}
+        {/* ====================================== */}
+
         <div
           className="
-            grid
-            grid-cols-2
-            gap-x-3
-            gap-y-5
+            -mx-4
+            flex
+            gap-2
+            overflow-x-auto
+            overscroll-x-contain
+            px-4
+            pb-1
 
+            [scrollbar-width:none]
+            [-ms-overflow-style:none]
+            [&::-webkit-scrollbar]:hidden
+
+            sm:hidden
+          "
+        >
+          {categories.map((category) => (
+            <Link
+              key={category.slug}
+              href={`/category/${category.slug}`}
+              className="
+                group
+                w-[70px]
+                min-w-[70px]
+                shrink-0
+                rounded-[7px]
+
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-[var(--border-focus)]
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-[var(--background)]
+              "
+            >
+              {/* Image */}
+
+              <div
+                className="
+                  relative
+                  aspect-square
+                  w-full
+                  overflow-hidden
+                  rounded-[7px]
+                  border
+                  border-[var(--border-subtle)]
+                  bg-[var(--surface-subtle)]
+
+                  transition-transform
+                  duration-[120ms]
+                  ease-[cubic-bezier(0.2,0,0,1)]
+
+                  group-active:scale-[0.98]
+
+                  motion-reduce:transition-none
+                "
+              >
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  sizes="70px"
+                  className="
+                    object-cover
+                  "
+                />
+              </div>
+
+              {/* Category name */}
+
+              <p
+                className="
+                  mt-1.5
+                  line-clamp-2
+                  min-h-[28px]
+                  text-center
+                  text-[10px]
+                  font-medium
+                  leading-[1.25]
+                  text-[var(--text-primary)]
+                "
+              >
+                {category.name}
+              </p>
+            </Link>
+          ))}
+        </div>
+
+        {/* ====================================== */}
+        {/* TABLET / DESKTOP GRID */}
+        {/* ====================================== */}
+
+        <div
+          className="
+            hidden
+
+            sm:grid
             sm:grid-cols-3
             sm:gap-x-4
             sm:gap-y-6
@@ -181,6 +298,7 @@ export default function ShopbyCategory() {
                 block
                 min-w-0
                 rounded-lg
+
                 focus-visible:outline-none
                 focus-visible:ring-2
                 focus-visible:ring-[var(--border-focus)]
@@ -189,6 +307,7 @@ export default function ShopbyCategory() {
               "
             >
               {/* Image */}
+
               <div
                 className="
                   relative
@@ -199,10 +318,13 @@ export default function ShopbyCategory() {
                   border
                   border-[var(--border-subtle)]
                   bg-[var(--surface-subtle)]
+
                   transition-transform
                   duration-[120ms]
                   ease-[cubic-bezier(0.2,0,0,1)]
+
                   group-hover:scale-[1.01]
+
                   motion-reduce:transition-none
                   motion-reduce:group-hover:scale-100
                 "
@@ -212,7 +334,6 @@ export default function ShopbyCategory() {
                   alt={category.name}
                   fill
                   sizes="
-                    (max-width: 639px) 45vw,
                     (max-width: 767px) 30vw,
                     (max-width: 1023px) 23vw,
                     (max-width: 1279px) 16vw,
@@ -224,7 +345,8 @@ export default function ShopbyCategory() {
                 />
               </div>
 
-              {/* Category Name */}
+              {/* Category name */}
+
               <p
                 className="
                   mt-2

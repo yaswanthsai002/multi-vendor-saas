@@ -27,12 +27,12 @@ const brands = [
   {
     name: 'Sage',
     description: 'Thoughtful home goods',
-    logo: '/assets/brands/sage-mark.svg',
+    logo: '/assets/brands/sage.svg',
   },
   {
     name: 'Sage Dann',
     description: 'Thoughtful home goods',
-    logo: '/assets/brands/sage-dann.svg',
+    logo: '/assets/brands/verto.svg',
   },
 ];
 
@@ -42,8 +42,11 @@ export default function FeaturedBrands() {
       className="
         w-full
         bg-[var(--background)]
-        py-6
+
+        py-5
+
         sm:py-8
+
         md:py-10
       "
     >
@@ -52,21 +55,37 @@ export default function FeaturedBrands() {
           mx-auto
           w-full
           max-w-[1280px]
+
           px-4
+
           sm:px-6
+
           lg:px-8
         "
       >
-        {/* Header */}
-        <div className="mb-5 flex items-end justify-between sm:mb-6">
-          <div>
+        {/* ====================================== */}
+        {/* HEADER */}
+        {/* ====================================== */}
+
+        <div
+          className="
+            mb-3
+            flex
+            items-end
+            justify-between
+
+            sm:mb-6
+          "
+        >
+          <div className="min-w-0">
             <h2
               className="
-                text-[20px]
+                text-[17px]
                 font-semibold
                 leading-[1.3]
                 tracking-[-0.15px]
                 text-[var(--text-primary)]
+
                 sm:text-[22px]
               "
             >
@@ -76,10 +95,12 @@ export default function FeaturedBrands() {
             <p
               className="
                 mt-0.5
-                text-[13px]
+                text-[10px]
                 font-normal
                 leading-[1.45]
                 text-[var(--text-secondary)]
+
+                sm:text-[13px]
               "
             >
               Discover independent brands
@@ -90,12 +111,13 @@ export default function FeaturedBrands() {
             href="/brands"
             className="
               flex
-              min-h-[44px]
+              min-h-[36px]
+              shrink-0
               items-center
               gap-1
               rounded-md
               px-1
-              text-[13px]
+              text-[11px]
               font-medium
               text-[var(--text-primary)]
 
@@ -108,23 +130,160 @@ export default function FeaturedBrands() {
               focus-visible:ring-[var(--border-focus)]
               focus-visible:ring-offset-2
               focus-visible:ring-offset-[var(--background)]
+
+              sm:min-h-[44px]
+              sm:px-2
+              sm:text-[13px]
             "
           >
             <span>View all</span>
 
-            <span aria-hidden="true" className="text-[16px]">
+            <span
+              aria-hidden="true"
+              className="
+                text-[14px]
+
+                sm:text-[16px]
+              "
+            >
               →
             </span>
           </Link>
         </div>
 
-        {/* Brand Grid */}
+        {/* ====================================== */}
+        {/* MOBILE BRAND RAIL */}
+        {/* ====================================== */}
+
         <div
           className="
-            grid
-            grid-cols-2
-            gap-3
+            -mx-4
+            flex
+            gap-2
+            overflow-x-auto
+            overscroll-x-contain
+            px-4
+            pb-1
 
+            [scrollbar-width:none]
+            [-ms-overflow-style:none]
+            [&::-webkit-scrollbar]:hidden
+
+            sm:hidden
+          "
+        >
+          {brands.map((brand, index) => (
+            <Link
+              key={`${brand.name}-${index}`}
+              href={`/brands/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
+              className="
+                group
+                w-[126px]
+                min-w-[126px]
+                shrink-0
+                rounded-[8px]
+
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-[var(--border-focus)]
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-[var(--background)]
+              "
+            >
+              <article
+                className="
+                  flex
+                  h-[94px]
+                  flex-col
+                  overflow-hidden
+                  rounded-[8px]
+
+                  border
+                  border-[var(--border-default)]
+
+                  bg-[var(--surface-raised)]
+
+                  px-3
+                  py-2.5
+
+                  transition-[transform,border-color]
+                  duration-[180ms]
+                  ease-out
+
+                  group-active:scale-[0.98]
+
+                  motion-reduce:transition-none
+                "
+              >
+                {/* Logo */}
+
+                <div
+                  className="
+                    flex
+                    h-[42px]
+                    w-full
+                    items-center
+                    justify-center
+                  "
+                >
+                  <Image
+                    src={brand.logo}
+                    alt={`${brand.name} logo`}
+                    width={110}
+                    height={42}
+                    className="
+                      max-h-[34px]
+                      w-auto
+                      max-w-[90%]
+                      object-contain
+                      dark:brightness-0
+                      dark:invert
+                    "
+                  />
+                </div>
+
+                {/* Brand info */}
+
+                <div className="mt-auto min-w-0">
+                  <h3
+                    className="
+                      truncate
+                      text-[11px]
+                      font-semibold
+                      leading-[1.3]
+                      text-[var(--text-primary)]
+                    "
+                  >
+                    {brand.name}
+                  </h3>
+
+                  <p
+                    className="
+                      mt-0.5
+                      truncate
+                      text-[9px]
+                      font-normal
+                      leading-[1.3]
+                      text-[var(--text-secondary)]
+                    "
+                  >
+                    {brand.description}
+                  </p>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </div>
+
+        {/* ====================================== */}
+        {/* TABLET / DESKTOP GRID */}
+        {/* ====================================== */}
+
+        <div
+          className="
+            hidden
+
+            sm:grid
             sm:grid-cols-3
             sm:gap-4
 
@@ -183,10 +342,11 @@ export default function FeaturedBrands() {
                 "
               >
                 {/* Logo */}
+
                 <div
                   className="
                     flex
-                    h-[72px]
+                    h-[50px]
                     w-full
                     items-center
                     justify-center
@@ -209,6 +369,9 @@ export default function FeaturedBrands() {
 
                       group-hover:scale-[1.02]
 
+                      dark:brightness-0
+                      dark:invert
+
                       motion-reduce:transition-none
                       motion-reduce:group-hover:scale-100
                     "
@@ -216,6 +379,7 @@ export default function FeaturedBrands() {
                 </div>
 
                 {/* Brand Info */}
+
                 <div className="mt-auto pt-3">
                   <h3
                     className="
