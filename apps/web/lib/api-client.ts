@@ -1,5 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosError } from 'axios';
 
+import { env } from '@/lib/env';
+
 /**
  * Standard normalized API error used across apps/web.
  * Prevents raw Axios/fetch error objects from leaking to UI state.
@@ -21,7 +23,7 @@ export class ApiError extends Error {
  * Shared Axios instance preconfigured for the Perigee API.
  */
 export const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: env.NEXT_PUBLIC_API_URL,
   timeout: 15000,
   withCredentials: true,
   headers: {
