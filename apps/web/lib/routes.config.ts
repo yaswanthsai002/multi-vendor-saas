@@ -16,11 +16,20 @@ export const AUTH_ROUTES = [
 
 /**
  * Route prefixes requiring an authenticated session.
- * Initialized as an empty array; populate as protected features are developed.
  */
-export const PROTECTED_ROUTE_PREFIXES: readonly string[] = [];
+export const PROTECTED_ROUTE_PREFIXES: readonly string[] = [] as const;
+
+/**
+ * Route prefixes requiring an authenticated session and authorization.
+ */
+export const ROLE_PROTECTED_ROUTE_PREFIXES: readonly string[] = ['/admin', '/vendor'] as const;
 
 /**
  * Default fallback path for unauthenticated users attempting to access protected routes.
  */
 export const DEFAULT_UNAUTHENTICATED_REDIRECT = '/signin';
+
+/**
+ * Default fallback path for authenticated users attempting to access authorised routes.
+ */
+export const DEFAULT_AUTHENTICATED_REDIRECT = '/';
