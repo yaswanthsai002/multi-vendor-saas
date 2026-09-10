@@ -1,4 +1,4 @@
-import { makeApiRequest } from '@/lib/api-client';
+import { axiosInstance, makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export interface CurrentUserData {
@@ -20,4 +20,11 @@ export function getCurrentUser(signal?: AbortSignal) {
     method: 'GET',
     signal,
   });
+}
+
+export async function getCurrentUserServer(cookieHeader: string): Promise<CurrentUserResponse> {
+  const response = await axiosInstance.get<CurrentUserResponse>(API_ENDPOINTS.auth.me, {
+    headers: { Cookie: cookieHeader },
+  });
+  return response.data;
 }
