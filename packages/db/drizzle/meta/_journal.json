@@ -8,6 +8,13 @@
       "when": 1788790282571,
       "tag": "0000_chief_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789136783856,
+      "tag": "0001_add_marketplace_core",
+      "breakpoints": true
     }
   ]
 }
