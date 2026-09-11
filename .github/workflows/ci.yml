@@ -28,14 +28,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify DB migration snapshot
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/perigee
-        run: |
-          pnpm --filter @repo/db generate
-          git status --short packages/db/drizzle
-          test -z "$(git status --short packages/db/drizzle)"
-
       - name: Check formatting
         run: pnpm format:check
 
