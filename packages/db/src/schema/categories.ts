@@ -1,4 +1,11 @@
-import { AnyPgColumn, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  AnyPgColumn,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 export const categories = pgTable(
   'categories',
