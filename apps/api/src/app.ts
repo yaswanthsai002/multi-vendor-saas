@@ -6,6 +6,7 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
+import morgan from 'morgan';
 
 import { apiRouter } from './routes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
@@ -20,6 +21,8 @@ const app = express();
 app.disable('x-powered-by');
 
 app.use(helmet());
+
+app.use(morgan('dev'));
 
 app.use(
   cors({
