@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -29,12 +27,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Generate DB snapshot helper
-        run: |
-          git checkout origin/main -- packages/db/drizzle
-          pnpm --filter @repo/db generate
-          cat packages/db/drizzle/meta/0001_snapshot.json
 
       - name: Check formatting
         run: pnpm format:check
