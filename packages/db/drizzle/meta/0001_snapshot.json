@@ -1,0 +1,179 @@
+{
+  "id": "b5102405-bbb3-4b5a-a254-7afc5b0c9ccc",
+  "prevId": "81a600e1-4cbd-4773-974c-1cd30c60ccb8",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.authAccounts": {
+      "name": "authAccounts",
+      "schema": "",
+      "columns": {
+        "authAccountId": { "name": "authAccountId", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "userId": { "name": "userId", "type": "uuid", "primaryKey": false, "notNull": true },
+        "provider": { "name": "provider", "type": "text", "primaryKey": false, "notNull": true },
+        "providerAccountId": { "name": "providerAccountId", "type": "text", "primaryKey": false, "notNull": true },
+        "createdAt": { "name": "createdAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "authAccounts_userId_users_userId_fk": { "name": "authAccounts_userId_users_userId_fk", "tableFrom": "authAccounts", "tableTo": "users", "columnsFrom": ["userId"], "columnsTo": ["userId"], "onDelete": "cascade", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "authAccounts_provider_providerAccountId_unique": { "name": "authAccounts_provider_providerAccountId_unique", "nullsNotDistinct": false, "columns": ["provider", "providerAccountId"] }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "userId": { "name": "userId", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "fullName": { "name": "fullName", "type": "text", "primaryKey": false, "notNull": true },
+        "email": { "name": "email", "type": "text", "primaryKey": false, "notNull": true },
+        "passwordHash": { "name": "passwordHash", "type": "text", "primaryKey": false, "notNull": false },
+        "emailVerifiedAt": { "name": "emailVerifiedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": false },
+        "roles": { "name": "roles", "type": "user_role[]", "typeSchema": "public", "primaryKey": false, "notNull": true, "default": "'{\"customer\"}'" },
+        "createdAt": { "name": "createdAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updatedAt": { "name": "updatedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": { "name": "users_email_unique", "nullsNotDistinct": false, "columns": ["email"] }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vendors": {
+      "name": "vendors",
+      "schema": "",
+      "columns": {
+        "vendorId": { "name": "vendorId", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "userId": { "name": "userId", "type": "uuid", "primaryKey": false, "notNull": true },
+        "displayName": { "name": "displayName", "type": "text", "primaryKey": false, "notNull": true },
+        "slug": { "name": "slug", "type": "text", "primaryKey": false, "notNull": true },
+        "status": { "name": "status", "type": "vendor_status", "typeSchema": "public", "primaryKey": false, "notNull": true, "default": "'pending'" },
+        "createdAt": { "name": "createdAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updatedAt": { "name": "updatedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "vendors_userId_users_userId_fk": { "name": "vendors_userId_users_userId_fk", "tableFrom": "vendors", "tableTo": "users", "columnsFrom": ["userId"], "columnsTo": ["userId"], "onDelete": "restrict", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vendors_userId_unique": { "name": "vendors_userId_unique", "nullsNotDistinct": false, "columns": ["userId"] },
+        "vendors_slug_unique": { "name": "vendors_slug_unique", "nullsNotDistinct": false, "columns": ["slug"] }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "categoryId": { "name": "categoryId", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "parentCategoryId": { "name": "parentCategoryId", "type": "uuid", "primaryKey": false, "notNull": false },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "slug": { "name": "slug", "type": "text", "primaryKey": false, "notNull": true },
+        "createdAt": { "name": "createdAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updatedAt": { "name": "updatedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "categories_parentCategoryId_idx": { "name": "categories_parentCategoryId_idx", "columns": ["parentCategoryId"], "isUnique": false, "concurrently": false, "method": "btree", "with": {}, "where": "" }
+      },
+      "foreignKeys": {
+        "categories_parentCategoryId_categories_categoryId_fk": { "name": "categories_parentCategoryId_categories_categoryId_fk", "tableFrom": "categories", "tableTo": "categories", "columnsFrom": ["parentCategoryId"], "columnsTo": ["categoryId"], "onDelete": "restrict", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "categories_slug_unique": { "name": "categories_slug_unique", "nullsNotDistinct": false, "columns": ["slug"] }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.products": {
+      "name": "products",
+      "schema": "",
+      "columns": {
+        "productId": { "name": "productId", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "vendorId": { "name": "vendorId", "type": "uuid", "primaryKey": false, "notNull": true },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "slug": { "name": "slug", "type": "text", "primaryKey": false, "notNull": true },
+        "description": { "name": "description", "type": "text", "primaryKey": false, "notNull": false },
+        "price": { "name": "price", "type": "numeric(12, 2)", "primaryKey": false, "notNull": true },
+        "stock": { "name": "stock", "type": "integer", "primaryKey": false, "notNull": true, "default": 0 },
+        "deletedAt": { "name": "deletedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": false },
+        "createdAt": { "name": "createdAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updatedAt": { "name": "updatedAt", "type": "timestamp with time zone", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {
+        "products_vendorId_idx": { "name": "products_vendorId_idx", "columns": ["vendorId"], "isUnique": false, "concurrently": false, "method": "btree", "with": {}, "where": "" }
+      },
+      "foreignKeys": {
+        "products_vendorId_vendors_vendorId_fk": { "name": "products_vendorId_vendors_vendorId_fk", "tableFrom": "products", "tableTo": "vendors", "columnsFrom": ["vendorId"], "columnsTo": ["vendorId"], "onDelete": "restrict", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "products_slug_unique": { "name": "products_slug_unique", "nullsNotDistinct": false, "columns": ["slug"] }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "products_price_nonnegative_check": { "name": "products_price_nonnegative_check", "value": "\"products\".\"price\" >= 0" },
+        "products_stock_nonnegative_check": { "name": "products_stock_nonnegative_check", "value": "\"products\".\"stock\" >= 0" }
+      },
+      "isRLSEnabled": false
+    },
+    "public.productCategories": {
+      "name": "productCategories",
+      "schema": "",
+      "columns": {
+        "productId": { "name": "productId", "type": "uuid", "primaryKey": false, "notNull": true },
+        "categoryId": { "name": "categoryId", "type": "uuid", "primaryKey": false, "notNull": true }
+      },
+      "indexes": {
+        "productCategories_categoryId_idx": { "name": "productCategories_categoryId_idx", "columns": ["categoryId"], "isUnique": false, "concurrently": false, "method": "btree", "with": {}, "where": "" }
+      },
+      "foreignKeys": {
+        "productCategories_productId_products_productId_fk": { "name": "productCategories_productId_products_productId_fk", "tableFrom": "productCategories", "tableTo": "products", "columnsFrom": ["productId"], "columnsTo": ["productId"], "onDelete": "cascade", "onUpdate": "no action" },
+        "productCategories_categoryId_categories_categoryId_fk": { "name": "productCategories_categoryId_categories_categoryId_fk", "tableFrom": "productCategories", "tableTo": "categories", "columnsFrom": ["categoryId"], "columnsTo": ["categoryId"], "onDelete": "cascade", "onUpdate": "no action" }
+      },
+      "compositePrimaryKeys": {
+        "productCategories_productId_categoryId_pk": { "name": "productCategories_productId_categoryId_pk", "columns": ["productId", "categoryId"] }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": ["customer", "vendor", "admin"]
+    },
+    "public.vendor_status": {
+      "name": "vendor_status",
+      "schema": "public",
+      "values": ["pending", "active", "suspended", "rejected"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
