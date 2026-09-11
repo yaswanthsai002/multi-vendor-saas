@@ -1,0 +1,27 @@
+name: Generate DB snapshot helper
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: git checkout origin/main -- packages/db/drizzle
+      - run: pnpm --filter @repo/db generate
+      - run: cat packages/db/drizzle/meta/0001_snapshot.json
