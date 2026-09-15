@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState, useEffect, useRef } from 'react';
 
-import type { CurrentUserData } from '@/shared/hooks/use-current-user';
+import type { CurrentUserData } from '@/lib/auth/current-user';
 
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
