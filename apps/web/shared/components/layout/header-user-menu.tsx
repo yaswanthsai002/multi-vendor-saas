@@ -3,12 +3,11 @@
 import { LogOut, Settings, ShieldCheck, Store } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import * as React from 'react';
 
 import { ThemeToggle } from './theme-toggle';
 import { useUserMenu } from './use-user-menu';
 
-import type { CurrentUserData } from '@/shared/hooks/use-current-user';
+import type { CurrentUserData } from '@/lib/auth/current-user';
 
 export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
   const {
