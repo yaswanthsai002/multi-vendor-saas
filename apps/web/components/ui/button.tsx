@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'icon-sm';
   isLoading?: boolean;
 }
 
@@ -40,6 +40,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       sm: 'h-control-sm px-sm text-caption rounded-sm gap-xs',
       md: 'h-control-md px-md text-body-sm font-medium rounded-md gap-sm',
       lg: 'h-control-lg px-lg text-body-md font-medium rounded-md gap-md',
+      'icon-sm': 'h-7 w-7 p-0 rounded-full',
     };
 
     return (
