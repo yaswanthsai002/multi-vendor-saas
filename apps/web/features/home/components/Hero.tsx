@@ -220,7 +220,7 @@ export default function Hero() {
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
         </button>
 
-        <button
+        <Button
           type="button"
           onClick={nextSlide}
           aria-label="Next slide"
