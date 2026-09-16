@@ -1,10 +1,12 @@
 'use client';
 
-import { Heart, Star } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 
-const products = [
+import type { Product } from '@/shared/components/product-card/product-card.types';
+
+import { ProductCard } from '@/shared/components/product-card/product-card';
+
+const products: Product[] = [
   {
     brand: 'Kora',
     name: 'Kora Leather Tote',
@@ -12,387 +14,124 @@ const products = [
     oldPrice: '$16.00',
     discount: '-15%',
     rating: '4.8',
-    reviews: 2,
+    reviews: 24,
     image: '/assets/products/product.png',
+    badge: { text: 'Best Seller', variant: 'warning' },
   },
   {
     brand: 'Kora',
-    name: 'Kora Leather Tote',
+    name: 'Kora Classic Shoulder Bag',
     price: '$17.00',
     oldPrice: '$20.00',
     discount: '-15%',
     rating: '4.7',
-    reviews: 3,
+    reviews: 18,
     image: '/assets/products/product1.jpg',
+    badge: { text: 'New', variant: 'accent' },
   },
   {
     brand: 'Arlo',
-    name: 'Arlo Leather Boots',
+    name: 'Arlo Artisan Leather Boots',
     price: '$18.00',
     oldPrice: '$21.00',
     discount: '-15%',
     rating: '4.9',
-    reviews: 3,
+    reviews: 32,
     image: '/assets/products/product2.jpg',
+    badge: { text: 'Top Rated', variant: 'success' },
   },
   {
     brand: 'Kora',
-    name: 'Small Logo Ticlet',
+    name: 'Small Logo Leather Ticlet',
     price: '$13.00',
     oldPrice: '$16.00',
     discount: '-15%',
     rating: '4.8',
-    reviews: 1,
+    reviews: 12,
     image: '/assets/products/product3.jpg',
   },
   {
     brand: 'Mora',
-    name: 'Pocket Leather Book',
+    name: 'Pocket Handbound Leather Book',
     price: '$13.00',
     oldPrice: '$16.00',
     discount: '-15%',
     rating: '4.6',
-    reviews: 3,
+    reviews: 9,
     image: '/assets/products/product4.jpg',
   },
   {
     brand: 'Arlo',
-    name: 'Darwamhated handbag',
+    name: 'Handcrafted Minimalist Handbag',
     price: '$18.00',
     oldPrice: '$22.00',
     discount: '-15%',
     rating: '4.8',
-    reviews: 3,
+    reviews: 15,
     image: '/assets/products/product5.jpg',
+    badge: { text: 'Popular', variant: 'neutral' },
   },
   {
     brand: 'Kora',
-    name: 'Kora Leather Bag',
+    name: 'Kora Compact Travel Bag',
     price: '$13.00',
     oldPrice: '$16.00',
     discount: '-15%',
     rating: '4.7',
-    reviews: 2,
+    reviews: 14,
     image: '/assets/products/product.png',
   },
   {
     brand: 'Mora',
-    name: 'Classic Leather Tote',
+    name: 'Classic Daily Leather Tote',
     price: '$21.00',
     oldPrice: '$25.00',
     discount: '-15%',
     rating: '4.9',
-    reviews: 4,
+    reviews: 28,
     image: '/assets/products/product1.jpg',
+    badge: { text: 'Trending', variant: 'accent' },
   },
 ];
 
 export default function NewArrivals() {
+  const handleAddToCart = () => {};
+
   return (
-    <section
-      className="
-        w-full
-        bg-white dark:bg-[#11161F]
-        py-6
-        sm:py-8
-        md:py-10
-      "
-    >
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1280px]
-          px-4
-          sm:px-6
-          lg:px-8
-        "
-      >
-        {/* Header */}
+    <section className="w-full bg-surface-raised py-6 dark:bg-surface sm:py-8 md:py-10">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
         <div className="mb-4 flex items-end justify-between sm:mb-5">
           <div>
-            <h2
-              className="
-                text-[20px]
-                font-semibold
-                leading-[1.3]
-                tracking-[-0.15px]
-                text-[var(--text-primary)]
-              "
-            >
+            <h2 className="text-xl font-semibold leading-snug tracking-tight text-text-primary">
               New Arrivals
             </h2>
-
-            <p
-              className="
-                mt-0.5
-                text-[12px]
-                font-normal
-                leading-[1.4]
-                text-[var(--text-secondary)]
-              "
-            >
+            <p className="mt-0.5 text-xs font-normal leading-normal text-text-secondary">
               Fresh from brands on Perigee
             </p>
           </div>
 
           <Link
             href="/products"
-            className="
-              flex
-              min-h-[44px]
-              items-center
-              gap-1
-              rounded-md
-              px-1
-              text-[12px]
-              font-medium
-              leading-[1.4]
-              text-[var(--text-primary)]
-              transition-opacity
-              duration-[120ms]
-              hover:opacity-60
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--border-focus)]
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-[var(--background)]
-            "
+            className="flex min-h-11 items-center gap-1 rounded-md px-1 text-xs font-medium leading-normal text-text-primary transition-opacity duration-150 hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             View all
-            <span aria-hidden="true" className="text-[14px]">
+            <span aria-hidden="true" className="text-sm">
               →
             </span>
           </Link>
         </div>
 
-        {/* Horizontal Product Rail */}
-        <div
-          className="
-            -mx-4
-            overflow-x-auto
-            px-4
-            pt-3
-            pb-4
-
-            sm:-mx-6
-            sm:px-6
-            sm:pt-3
-            sm:pb-5
-
-            lg:-mx-8
-            lg:px-8
-
-            scrollbar-none
-            [scrollbar-width:none]
-            [&::-webkit-scrollbar]:hidden
-          "
-        >
-          <div
-            className="
-              flex
-              gap-2
-              sm:gap-3
-            "
-          >
+        {/* Product rail */}
+        <div className="-mx-4 overflow-x-auto px-4 pt-3 pb-4 sm:-mx-6 sm:px-6 sm:pt-3 sm:pb-5 lg:-mx-8 lg:px-8 scrollbar-none [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 sm:gap-3">
             {products.map((product, index) => (
-              <article
+              <ProductCard
                 key={`${product.name}-${index}`}
-                className="
-                    group
-                    min-w-0
-                    flex-none
-                    w-[43vw]
-                    sm:w-[30vw]
-                    md:w-[22vw]
-                    lg:w-[calc((100vw-112px)/6)]
-                    max-w-[190px]
-
-                    overflow-hidden
-                    rounded-lg
-                    border
-                    border-[var(--border-subtle)]
-                    bg-white
-                    dark:bg-[var(--surface-raised)]
-
-                    transform-gpu
-                    transition-[transform,box-shadow,border-color]
-                    duration-[240ms]
-                    ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                    will-change-transform
-
-                    hover:-translate-y-2
-                    hover:border-[var(--border-default)]
-                    hover:shadow-[0_12px_32px_rgba(30,35,45,0.14)]
-
-                    dark:hover:border-[var(--border-strong)]
-                    dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.32)]
-
-                    motion-reduce:transition-none
-                    motion-reduce:hover:translate-y-0
-                  "
-              >
-                {/* Image */}
-                <div
-                  className="
-                    relative
-                    aspect-square
-                    w-full
-                    overflow-hidden
-                    bg-[var(--surface-subtle)]
-                  "
-                >
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="
-                      (max-width: 639px) 43vw,
-                      (max-width: 767px) 30vw,
-                      (max-width: 1023px) 22vw,
-                      180px
-                    "
-                    className="object-cover"
-                  />
-
-                  {/* Wishlist */}
-                  <button
-                    type="button"
-                    aria-label={`Add ${product.name} to wishlist`}
-                    className="
-                      absolute
-                      right-1.5
-                      top-1.5
-                      flex
-                      h-7
-                      w-7
-                      items-center
-                      justify-center
-                      rounded-full
-                      border
-                      border-[var(--border-default)]
-                      bg-white/95
-                      text-[var(--text-secondary)]
-                      backdrop-blur-sm
-
-                      transition-colors
-                      duration-[120ms]
-
-                      hover:text-[var(--accent)]
-
-                      dark:bg-[var(--surface-raised)]/95
-
-                      focus-visible:outline-none
-                      focus-visible:ring-2
-                      focus-visible:ring-[var(--border-focus)]
-                    "
-                  >
-                    <Heart size={14} strokeWidth={1.7} />
-                  </button>
-                </div>
-
-                {/* Product Details */}
-                <div className="bg-white px-2.5 pb-3 pt-1.5 dark:bg-[var(--surface-raised)]">
-                  {/* Brand */}
-                  <p
-                    className="
-                      min-w-0
-                      truncate
-                      text-[10px]
-                      font-semibold
-                      leading-[1.35]
-                      text-[var(--text-primary)]
-                    "
-                  >
-                    {product.brand}
-                  </p>
-
-                  {/* Product name */}
-                  <h3
-                    className="
-                      mt-0.5
-                      truncate
-                      text-[10px]
-                      font-normal
-                      leading-[1.35]
-                      text-[var(--text-secondary)]
-                    "
-                    title={product.name}
-                  >
-                    {product.name}
-                  </h3>
-
-                  {/* Rating */}
-                  <div className="mt-1 flex items-center gap-1">
-                    <div
-                      className="flex items-center gap-[1px]"
-                      aria-label={`${product.rating} out of 5 stars`}
-                    >
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          size={9}
-                          strokeWidth={1.5}
-                          fill={
-                            star <= Math.round(Number(product.rating)) ? 'currentColor' : 'none'
-                          }
-                          className="text-[var(--warning)]"
-                        />
-                      ))}
-                    </div>
-
-                    <span
-                      className="
-                        text-[9px]
-                        leading-none
-                        text-[var(--text-secondary)]
-                      "
-                    >
-                      {product.rating} ({product.reviews})
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <span
-                      className="
-                        text-[11px]
-                        font-semibold
-                        leading-none
-                        text-[var(--text-primary)]
-                      "
-                    >
-                      {product.price}
-                    </span>
-
-                    <span
-                      className="
-                        text-[9px]
-                        leading-none
-                        text-[var(--text-tertiary)]
-                        line-through
-                      "
-                    >
-                      {product.oldPrice}
-                    </span>
-
-                    <span
-                      className="
-                        rounded-sm
-                        bg-[var(--accent-subtle)]
-                        px-1
-                        py-0.5
-                        text-[8px]
-                        font-medium
-                        leading-none
-                        text-[var(--accent)]
-                      "
-                    >
-                      {product.discount}
-                    </span>
-                  </div>
-                </div>
-              </article>
+                product={product}
+                onAddToCart={handleAddToCart}
+                className="w-[43vw] max-w-48 min-w-0 flex-none sm:w-[30vw] md:w-[22vw] lg:w-[calc((100vw-112px)/6)]"
+              />
             ))}
           </div>
         </div>

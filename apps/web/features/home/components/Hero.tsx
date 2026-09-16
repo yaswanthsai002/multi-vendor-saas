@@ -1,7 +1,10 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 
 const slides = [
   {
@@ -30,245 +33,69 @@ const slides = [
   },
 ];
 
-const AUTO_SLIDE_TIME = 15000;
+const AUTO_SLIDE_TIME = 8000;
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
-  const [dragX, setDragX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [animate, setAnimate] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const startX = useRef(0);
-
-  /*
-   * -----------------------------------------
-   * NEXT
-   * -----------------------------------------
-   */
-  const nextSlide = () => {
-    setAnimate(true);
-    setDragX(0);
-
+  const nextSlide = useCallback(() => {
     setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
+  }, []);
 
-  /*
-   * -----------------------------------------
-   * PREVIOUS
-   * -----------------------------------------
-   */
-  const previousSlide = () => {
-    setAnimate(true);
-    setDragX(0);
-
+  const previousSlide = useCallback(() => {
     setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
+  }, []);
 
-  /*
-   * -----------------------------------------
-   * AUTO PLAY
-   * -----------------------------------------
-   *
-   * Every 15 seconds.
-   *
-   * The timer resets whenever:
-   * - slide changes
-   * - user finishes a swipe
-   */
+  // Pause auto-advance on user hover/focus per WCAG 2.2.2
   useEffect(() => {
-    if (dragging) return;
+    if (isPaused) return;
 
-    const timer = window.setTimeout(() => {
+    const timer = window.setTimeout(nextSlide, AUTO_SLIDE_TIME);
+    return () => window.clearTimeout(timer);
+  }, [current, isPaused, nextSlide]);
+
+  // Keyboard navigation for assistive technologies and power users
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      previousSlide();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
       nextSlide();
-    }, AUTO_SLIDE_TIME);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [current, dragging]);
-
-  /*
-   * -----------------------------------------
-   * POINTER DOWN
-   * -----------------------------------------
-   */
-  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-
-    startX.current = e.clientX;
-
-    setDragging(true);
-    setAnimate(false);
-    setDragX(0);
-
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  /*
-   * -----------------------------------------
-   * POINTER MOVE
-   * -----------------------------------------
-   */
-  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-
-    const distance = e.clientX - startX.current;
-
-    setDragX(distance * 0.85);
-  };
-
-  /*
-   * -----------------------------------------
-   * POINTER UP
-   * -----------------------------------------
-   */
-  const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-
-    const distance = dragX;
-    const threshold = 50;
-
-    setDragging(false);
-
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-
-    /*
-     * Swipe left = next.
-     */
-    if (distance < -threshold) {
-      setAnimate(true);
-      setDragX(0);
-
-      setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-
-      return;
-    }
-
-    /*
-     * Swipe right = previous.
-     */
-    if (distance > threshold) {
-      setAnimate(true);
-      setDragX(0);
-
-      setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-
-      return;
-    }
-
-    /*
-     * Not enough movement.
-     * Snap back.
-     */
-    setAnimate(true);
-    setDragX(0);
-  };
-
-  /*
-   * -----------------------------------------
-   * POINTER CANCEL
-   * -----------------------------------------
-   */
-  const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
-    setDragging(false);
-    setAnimate(true);
-    setDragX(0);
-
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
     }
   };
 
   return (
     <section
-      className="
-        w-full
-        overflow-hidden
-        bg-white
-        dark:bg-[#0A0D14]
-
-        px-4
-        py-3
-
-        sm:px-0
-        sm:py-0
-      "
+      aria-roledescription="carousel"
+      aria-label="Featured promotions"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      className="group/hero relative w-full max-w-7xl mx-auto overflow-hidden px-4 py-3"
     >
-      {/* ====================================== */}
-      {/* HERO VIEWPORT */}
-      {/* ====================================== */}
-
-      <div
-        className="
-          relative
-          w-full
-          overflow-hidden
-          rounded-[10px]
-          touch-pan-y
-          select-none
-
-          sm:rounded-none
-        "
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-      >
-        {/* ==================================== */}
-        {/* TRACK */}
-        {/* ==================================== */}
-
+      {/* Viewport */}
+      <div className="relative w-full overflow-hidden rounded-lg">
+        {/* Animated track */}
         <div
-          className={`
-            flex
-            w-max
-
-            ${
-              animate
-                ? `
-                  transition-transform
-                  duration-[450ms]
-                  ease-out
-                `
-                : ''
-            }
-          `}
-          style={{
-            transform: `
-              translate3d(
-                calc(
-                  -${current * 100}vw
-                  + ${dragX}px
-                ),
-                0,
-                0
-              )
-            `,
-          }}
+          className="flex w-full transition-transform duration-300 ease-out"
+          style={{ transform: `translate3d(-${current * 100}%, 0, 0)` }}
+          aria-live="polite"
+          aria-atomic="true"
         >
           {slides.map((slide, index) => (
             <article
               key={slide.eyebrow}
-              className="
-                relative
-                h-[140px]
-                w-screen
-                flex-none
-                overflow-hidden
-                rounded-[10px]
-
-                sm:h-[420px]
-                sm:rounded-none
-
-                lg:h-[500px]
-              "
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${index + 1} of ${slides.length}`}
+              aria-hidden={current !== index}
+              className="relative h-36 w-full flex-none overflow-hidden rounded-lg sm:h-105 sm:rounded-none lg:h-125"
             >
-              {/* ================================= */}
-              {/* IMAGE */}
-              {/* ================================= */}
-
               <Image
                 src={slide.image}
                 alt={slide.title}
@@ -276,367 +103,84 @@ export default function Hero() {
                 priority={index === 0}
                 draggable={false}
                 sizes="100vw"
-                className="
-                  pointer-events-none
-                  object-cover
-                  object-right
-
-                  sm:object-center
-                "
+                className="pointer-events-none object-cover object-right sm:object-center"
               />
-
-              {/* ================================= */}
-              {/* MOBILE BACKGROUND OVERLAY */}
-              {/* ================================= */}
-
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  bg-gradient-to-r
-                  from-[#f4efe7]
-                  from-[0%]
-                  via-[#f4efe7]/95
-                  via-[48%]
-                  to-[#f4efe7]/0
-                  to-[100%]
-
-                  sm:hidden
-                "
-              />
-
-              {/* ================================= */}
-              {/* DESKTOP OVERLAY */}
-              {/* ================================= */}
-
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  hidden
-                  bg-gradient-to-r
-                  from-[#f4efe7]/80
-                  via-[#f4efe7]/20
-                  to-transparent
-
-                  sm:block
-                "
-              />
-
-              {/* ================================= */}
-              {/* MOBILE CONTENT */}
-              {/* ================================= */}
-
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  z-10
-
-                  sm:hidden
-                "
-              >
+              {/* Mobile overlay */}
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-[#f4efe7] via-[#f4efe7]/95 to-transparent sm:hidden" />
+              {/* Desktop overlay */}
+              <div className="pointer-events-none absolute inset-0 hidden bg-linear-to-r from-[#f4efe7]/80 via-[#f4efe7]/20 to-transparent sm:block" />
+              {/* Mobile content */}
+              <div className="pointer-events-none absolute inset-0 z-10 sm:hidden">
                 <div className="flex h-full items-center">
                   <div className="w-[62%] px-3">
-                    {/* EYEBROW */}
-
-                    <p
-                      className="
-                        mb-1
-                        text-[7px]
-                        font-bold
-                        tracking-[0.3px]
-                        text-[#202936]
-                      "
-                    >
+                    <p className="mb-1 text-[7px] font-bold tracking-wide text-text-primary">
                       {slide.eyebrow}
                     </p>
 
-                    {/* TITLE */}
-
-                    <h2
-                      className="
-                        text-[19px]
-                        font-bold
-                        leading-[1.02]
-                        tracking-[-0.7px]
-                        text-[#111827]
-                      "
-                    >
+                    <h2 className="text-lg font-bold leading-tight tracking-tight text-text-primary">
                       {slide.title}
                     </h2>
 
-                    {/* DESCRIPTION */}
-
-                    <p
-                      className="
-                        mt-1
-                        max-w-[170px]
-                        text-[7px]
-                        font-medium
-                        leading-[1.25]
-                        text-[#374151]
-                      "
-                    >
+                    <p className="mt-1 max-w-42 text-[7px] font-medium leading-tight text-text-secondary">
                       {slide.description}
                     </p>
 
-                    {/* BUTTONS */}
-
-                    <div
-                      className="
-                        pointer-events-auto
-                        mt-2
-                        flex
-                        gap-1.5
-                      "
-                    >
-                      <button
+                    <div className="pointer-events-auto mt-2 flex gap-1.5">
+                      <Button
                         type="button"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onPointerUp={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className="
-                          rounded-[4px]
-                          bg-[#d76542]
-                          px-2.5
-                          py-1.5
-                          text-[7px]
-                          font-bold
-                          text-white
-                          shadow-sm
-                        "
+                        variant="primary"
+                        size="sm"
+                        className="h-6 rounded px-2.5 py-1 text-[7px] font-bold shadow-xs"
                       >
                         {slide.primaryAction}
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onPointerUp={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className="
-                          rounded-[4px]
-                          bg-[#557792]
-                          px-2.5
-                          py-1.5
-                          text-[7px]
-                          font-bold
-                          text-white
-                          shadow-sm
-                        "
+                        variant="secondary"
+                        size="sm"
+                        className="h-6 rounded border-transparent bg-secondary-accent px-2.5 py-1 text-[7px] font-bold text-on-accent shadow-xs hover:bg-secondary-accent-hover"
                       >
                         {slide.secondaryAction}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
               </div>
+              {/* Desktop content */}
+              <div className="pointer-events-none absolute inset-0 z-10 hidden sm:flex sm:items-center">
+                <div className="w-full px-6 sm:px-10 md:w-1/2 md:px-8 lg:px-20">
+                  <div className="max-w-70 sm:max-w-65 md:max-w-75 lg:max-w-125">
+                    <p className="mb-2 text-xs font-bold tracking-wide text-text-primary lg:mb-3 lg:text-sm">
+                      {slide.eyebrow}
+                    </p>
 
-              {/* ================================= */}
-              {/* DESKTOP CONTENT */}
-              {/* ================================= */}
+                    <h1 className="text-2xl font-bold leading-tight tracking-tight text-text-primary md:text-3xl lg:text-5xl">
+                      {slide.title}
+                    </h1>
 
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  z-10
-                  hidden
+                    <p className="mt-3 max-w-xs text-xs font-medium leading-relaxed text-text-secondary lg:mt-4 lg:max-w-md lg:text-sm">
+                      {slide.description}
+                    </p>
 
-                  sm:block
-                "
-              >
-                <div className="flex h-full items-center">
-                  <div
-                    className="
-                      w-full
-                      px-6
-
-                      sm:px-10
-
-                      md:w-[48%]
-                      md:px-8
-
-                      lg:w-full
-                      lg:px-20
-                    "
-                  >
-                    <div
-                      className="
-                        max-w-[280px]
-
-                        sm:max-w-[260px]
-
-                        md:max-w-[300px]
-
-                        lg:max-w-[500px]
-                      "
-                    >
-                      {/* EYEBROW */}
-
-                      <p
-                        className="
-                          mb-2
-                          text-[10px]
-                          font-bold
-                          tracking-[0.4px]
-                          text-[#202936]
-
-                          sm:mb-2
-                          sm:text-[10px]
-
-                          md:mb-2
-                          md:text-[10px]
-
-                          lg:mb-3
-                          lg:text-[13px]
-                        "
+                    <div className="pointer-events-auto mt-5 flex flex-wrap gap-2 lg:mt-6">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="md"
+                        className="px-4 py-2 text-xs font-semibold lg:px-5 lg:py-2.5 lg:text-sm"
                       >
-                        {slide.eyebrow}
-                      </p>
+                        {slide.primaryAction}
+                      </Button>
 
-                      {/* TITLE */}
-
-                      <h1
-                        className="
-                          text-[34px]
-                          font-bold
-                          leading-[1.02]
-                          tracking-[-1.5px]
-                          text-[#111827]
-
-                          sm:text-[30px]
-                          sm:tracking-[-1px]
-
-                          md:text-[30px]
-                          md:leading-[1.05]
-                          md:tracking-[-1px]
-
-                          lg:text-[58px]
-                          lg:leading-[1.02]
-                          lg:tracking-[-1.8px]
-                        "
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="md"
+                        className="border-transparent bg-secondary-accent px-4 py-2 text-xs font-semibold hover:bg-secondary-accent-hover lg:px-5 lg:py-2.5 lg:text-sm"
                       >
-                        {slide.title}
-                      </h1>
-
-                      {/* DESCRIPTION */}
-
-                      <p
-                        className="
-                          mt-3
-                          max-w-[290px]
-                          text-[12px]
-                          font-medium
-                          leading-[1.45]
-                          text-[#374151]
-
-                          sm:mt-3
-                          sm:max-w-[250px]
-                          sm:text-[11px]
-
-                          md:mt-3
-                          md:max-w-[260px]
-                          md:text-[11px]
-                          md:leading-[1.4]
-
-                          lg:mt-4
-                          lg:max-w-[400px]
-                          lg:text-[14px]
-                          lg:leading-[1.45]
-                        "
-                      >
-                        {slide.description}
-                      </p>
-
-                      {/* BUTTONS */}
-
-                      <div
-                        className="
-                          pointer-events-auto
-                          mt-5
-                          flex
-                          flex-wrap
-                          gap-2
-
-                          sm:mt-5
-
-                          md:mt-5
-
-                          lg:mt-6
-                        "
-                      >
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="
-                            rounded-[6px]
-                            bg-[#d76542]
-                            px-4
-                            py-2.5
-                            text-[11px]
-                            font-bold
-                            text-white
-
-                            sm:px-4
-                            sm:py-2
-                            sm:text-[10px]
-
-                            md:px-4
-                            md:py-2
-                            md:text-[10px]
-
-                            lg:px-5
-                            lg:py-2.5
-                            lg:text-[12px]
-                          "
-                        >
-                          {slide.primaryAction}
-                        </button>
-
-                        <button
-                          type="button"
-                          onPointerDown={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="
-                            rounded-[6px]
-                            bg-[#557792]
-                            px-4
-                            py-2.5
-                            text-[11px]
-                            font-bold
-                            text-white
-
-                            sm:px-4
-                            sm:py-2
-                            sm:text-[10px]
-
-                            md:px-4
-                            md:py-2
-                            md:text-[10px]
-
-                            lg:px-5
-                            lg:py-2.5
-                            lg:text-[12px]
-                          "
-                        >
-                          {slide.secondaryAction}
-                        </button>
-                      </div>
+                        {slide.secondaryAction}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -645,122 +189,42 @@ export default function Hero() {
           ))}
         </div>
 
-        {/* ====================================== */}
-        {/* MOBILE ARROWS */}
-        {/* ====================================== */}
-
-        {/* <button
+        {/* Accessible Arrow Controls */}
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          onClick={previousSlide}
           aria-label="Previous slide"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            previousSlide();
-          }}
-          className="
-            absolute
-            left-1
-            top-1/2
-            z-20
-            flex
-            h-7
-            w-7
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/70
-            text-[16px]
-            text-[#374151]
-            backdrop-blur-sm
-
-            sm:hidden
-          "
+          className="absolute left-2 top-1/2 z-20 h-8 w-8 -translate-y-1/2 rounded-full p-0 bg-surface-raised/90 backdrop-blur-xs sm:left-4 sm:h-10 sm:w-10"
         >
-          ‹
-        </button>
+          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          onClick={nextSlide}
           aria-label="Next slide"
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            nextSlide();
-          }}
-          className="
-            absolute
-            right-1
-            top-1/2
-            z-20
-            flex
-            h-7
-            w-7
-            -translate-y-1/2
-            items-center
-            justify-center
-            rounded-full
-            bg-white/70
-            text-[16px]
-            text-[#374151]
-            backdrop-blur-sm
-
-            sm:hidden
-          "
+          className="absolute right-2 top-1/2 z-20 h-8 w-8 -translate-y-1/2 rounded-full p-0 bg-surface-raised/90 backdrop-blur-xs sm:right-4 sm:h-10 sm:w-10"
         >
-          ›
-        </button> */}
+          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+        </Button>
       </div>
 
-      {/* ====================================== */}
-      {/* INDICATORS */}
-      {/* ====================================== */}
-
-      <div
-        className="
-          flex
-          items-center
-          justify-center
-          gap-1
-          py-2
-
-          sm:py-3
-        "
-      >
+      {/* Slide indicators */}
+      <div className="flex items-center justify-center gap-1.5 py-2 sm:py-3">
         {slides.map((_, index) => (
           <button
             key={index}
             type="button"
             aria-label={`Go to slide ${index + 1}`}
-            onClick={() => {
-              setAnimate(true);
-              setDragX(0);
-              setCurrent(index);
-            }}
-            className={`
-              h-[4px]
-              rounded-full
-              transition-all
-              duration-200
-
-              ${
-                current === index
-                  ? `
-                    w-5
-                    bg-[#667585]
-                    dark:bg-[#E66A45]
-                  `
-                  : `
-                    w-[4px]
-                    bg-[#c6ccd3]
-                    dark:bg-[#343B49]
-                  `
-              }
-            `}
+            aria-current={current === index ? 'true' : undefined}
+            onClick={() => setCurrent(index)}
+            className={`h-1.5 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus ${
+              current === index ? 'w-6 bg-accent' : 'w-1.5 bg-border-strong hover:bg-text-tertiary'
+            }`}
           />
         ))}
       </div>

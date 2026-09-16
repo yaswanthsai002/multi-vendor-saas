@@ -79,256 +79,59 @@ const categories = [
 
 export default function ShopbyCategory() {
   return (
-    <section
-      className="
-        bg-[var(--background)]
-        pt-3
-        pb-6
-
-        sm:pt-5
-        sm:pb-10
-
-        md:pt-6
-        md:pb-12
-      "
-    >
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1280px]
-
-          px-4
-
-          sm:px-6
-
-          lg:px-8
-        "
-      >
-        {/* ====================================== */}
-        {/* HEADER */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            mb-3
-            flex
-            items-center
-            justify-between
-
-            sm:mb-6
-          "
-        >
-          <h2
-            className="
-              text-[17px]
-              font-semibold
-              leading-[1.3]
-              tracking-[-0.15px]
-              text-[var(--text-primary)]
-
-              sm:text-[20px]
-            "
-          >
+    <section className="bg-background pt-3 pb-6 sm:pt-5 sm:pb-10 md:pt-6 md:pb-12">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
+        <div className="mb-3 flex items-center justify-between sm:mb-6">
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-text-primary sm:text-xl">
             Shop by category
           </h2>
 
           <Link
             href="/categories"
-            className="
-              flex
-              min-h-[36px]
-              shrink-0
-              items-center
-              gap-1
-              rounded-md
-              px-1
-              text-[11px]
-              font-medium
-              leading-[1.4]
-              text-[var(--text-secondary)]
-              transition-opacity
-              duration-[120ms]
-              hover:opacity-70
-
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--border-focus)]
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-[var(--background)]
-
-              sm:min-h-[44px]
-              sm:px-2
-              sm:text-[14px]
-            "
+            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md px-1 text-xs font-medium leading-normal text-text-secondary transition-opacity duration-150 hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:min-h-11 sm:px-2 sm:text-sm"
           >
             <span>View all</span>
-
-            <span
-              aria-hidden="true"
-              className="
-                text-[14px]
-
-                sm:text-[16px]
-              "
-            >
+            <span aria-hidden="true" className="text-sm sm:text-base">
               →
             </span>
           </Link>
         </div>
 
-        {/* ====================================== */}
-        {/* MOBILE CATEGORY RAIL */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            -mx-4
-            flex
-            gap-2
-            overflow-x-auto
-            overscroll-x-contain
-            px-4
-            pb-1
-
-            [scrollbar-width:none]
-            [-ms-overflow-style:none]
-            [&::-webkit-scrollbar]:hidden
-
-            sm:hidden
-          "
-        >
+        {/* Mobile category rail */}
+        <div className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 scrollbar-none [-ms-overflow-style:none] sm:hidden [&::-webkit-scrollbar]:hidden">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="
-                group
-                w-[70px]
-                min-w-[70px]
-                shrink-0
-                rounded-[7px]
-
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group w-24 min-w-18 shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              {/* Image */}
-
-              <div
-                className="
-                  relative
-                  aspect-square
-                  w-full
-                  overflow-hidden
-                  rounded-[7px]
-                  border
-                  border-[var(--border-subtle)]
-                  bg-[var(--surface-subtle)]
-
-                  transition-transform
-                  duration-[120ms]
-                  ease-[cubic-bezier(0.2,0,0,1)]
-
-                  group-active:scale-[0.98]
-
-                  motion-reduce:transition-none
-                "
-              >
+              <div className="relative aspect-square w-full overflow-hidden rounded-md border border-border-subtle bg-surface-subtle transition-transform duration-150 ease-out group-active:scale-95 motion-reduce:transition-none">
                 <Image
                   src={category.image}
                   alt={category.name}
                   fill
                   sizes="70px"
-                  className="
-                    object-cover
-                  "
+                  className="object-cover"
                 />
               </div>
 
-              {/* Category name */}
-
-              <p
-                className="
-                  mt-1.5
-                  line-clamp-2
-                  min-h-[28px]
-                  text-center
-                  text-[10px]
-                  font-medium
-                  leading-[1.25]
-                  text-[var(--text-primary)]
-                "
-              >
+              <p className="mt-1.5 line-clamp-2 min-h-7 text-center text-[10px] font-medium leading-tight text-text-primary">
                 {category.name}
               </p>
             </Link>
           ))}
         </div>
 
-        {/* ====================================== */}
-        {/* TABLET / DESKTOP GRID */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            hidden
-
-            sm:grid
-            sm:grid-cols-3
-            sm:gap-x-4
-            sm:gap-y-6
-
-            md:grid-cols-4
-
-            lg:grid-cols-6
-            lg:gap-x-4
-            lg:gap-y-6
-          "
-        >
+        {/* Tablet and Desktop category grid */}
+        <div className="hidden sm:grid sm:grid-cols-3 sm:gap-x-4 sm:gap-y-6 md:grid-cols-4 lg:grid-cols-6 lg:gap-x-4 lg:gap-y-6">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="
-                group
-                block
-                min-w-0
-                rounded-lg
-
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              {/* Image */}
-
-              <div
-                className="
-                  relative
-                  aspect-[1.5/1]
-                  w-full
-                  overflow-hidden
-                  rounded-lg
-                  border
-                  border-[var(--border-subtle)]
-                  bg-[var(--surface-subtle)]
-
-                  transition-transform
-                  duration-[120ms]
-                  ease-[cubic-bezier(0.2,0,0,1)]
-
-                  group-hover:scale-[1.01]
-
-                  motion-reduce:transition-none
-                  motion-reduce:group-hover:scale-100
-                "
-              >
+              <div className="relative aspect-1.5/1 w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-subtle transition-[border-color,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:border-border-strong group-hover:shadow-xs motion-reduce:transition-none">
                 <Image
                   src={category.image}
                   alt={category.name}
@@ -339,24 +142,11 @@ export default function ShopbyCategory() {
                     (max-width: 1279px) 16vw,
                     190px
                   "
-                  className="
-                    object-cover
-                  "
+                  className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 />
               </div>
 
-              {/* Category name */}
-
-              <p
-                className="
-                  mt-2
-                  text-center
-                  text-[14px]
-                  font-medium
-                  leading-[1.4]
-                  text-[var(--text-primary)]
-                "
-              >
+              <p className="mt-2 text-center text-sm font-medium leading-normal text-text-primary">
                 {category.name}
               </p>
             </Link>
