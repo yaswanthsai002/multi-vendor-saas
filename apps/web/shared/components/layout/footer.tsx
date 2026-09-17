@@ -176,7 +176,7 @@ export function Footer() {
       </div>
 
       {/* Sub-Footer Bottom Bar */}
-      <div className="border-t border-border-subtle bg-surface-subtle/50 py-4">
+      <div className="border-t border-border-subtle py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-text-tertiary gap-2">
           <div className="flex gap-2">
             <Link href="/privacy-policy" className="hover:text-text-primary transition-colors">
