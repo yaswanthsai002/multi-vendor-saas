@@ -19,104 +19,124 @@ const categories = [
     name: 'Electronics',
     image: Electronics,
     slug: 'electronics',
+    deal: 'Up to 50% Off',
   },
   {
     name: 'Home & Living',
     image: HomeLiving,
     slug: 'home-living',
+    deal: 'From ₹499',
   },
   {
     name: 'Beauty',
     image: Beauty,
     slug: 'beauty',
+    deal: 'Min. 30% Off',
   },
   {
     name: 'Sports',
     image: Sports,
     slug: 'sports',
+    deal: 'Starting ₹299',
   },
   {
     name: 'Fashion',
     image: Fashion,
     slug: 'fashion',
+    deal: '40% - 70% Off',
   },
   {
     name: 'Books',
     image: Books,
     slug: 'books',
+    deal: 'From ₹199',
   },
   {
     name: 'Accessories',
     image: Accessories,
     slug: 'accessories',
+    deal: 'Min. 35% Off',
   },
   {
     name: 'Wellness',
     image: Wellness,
     slug: 'wellness',
+    deal: 'Up to 40% Off',
   },
   {
     name: 'Outdoor',
     image: Outdoor,
     slug: 'outdoor',
+    deal: 'Special Offers',
   },
   {
     name: 'Gifts',
     image: Gifts,
     slug: 'gifts',
+    deal: 'Under ₹999',
   },
   {
     name: 'Office',
     image: Office,
     slug: 'office',
+    deal: 'Up to 45% Off',
   },
   {
     name: 'Travel',
     image: Travel,
     slug: 'travel',
+    deal: 'Flat 30% Off',
   },
 ];
 
 export default function ShopbyCategory() {
   return (
-    <section className="bg-background pt-3 pb-6 sm:pt-5 sm:pb-10 md:pt-6 md:pb-12">
+    <section className="bg-background pt-4 pb-8 sm:pt-6 sm:pb-12">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header */}
-        <div className="mb-3 flex items-center justify-between sm:mb-6">
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-text-primary sm:text-xl">
-            Shop by category
-          </h2>
+        <div className="mb-4 flex items-end justify-between sm:mb-6">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
+              Shop by Category
+            </h2>
+            <p className="mt-0.5 text-xs text-text-secondary sm:text-sm">
+              Explore thousands of products with verified seller guarantees
+            </p>
+          </div>
 
           <Link
             href="/categories"
-            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md px-1 text-xs font-medium leading-normal text-text-secondary transition-opacity duration-150 hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:min-h-11 sm:px-2 sm:text-sm"
+            className="group flex min-h-9 shrink-0 items-center gap-1 rounded-md px-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 sm:text-sm"
           >
-            <span>View all</span>
-            <span aria-hidden="true" className="text-sm sm:text-base">
+            <span>View All Categories</span>
+            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
               →
             </span>
           </Link>
         </div>
 
         {/* Mobile category rail */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 scrollbar-none [-ms-overflow-style:none] sm:hidden [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-4 flex gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 scrollbar-none sm:hidden">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="group w-24 min-w-18 shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="group w-28 min-w-28 shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
-              <div className="relative aspect-square w-full overflow-hidden rounded-md border border-border-subtle bg-surface-subtle transition-transform duration-150 ease-out group-active:scale-95 motion-reduce:transition-none">
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border-default/80 bg-surface-subtle shadow-2xs transition-transform duration-200 group-hover:scale-102 group-active:scale-95">
                 <Image
                   src={category.image}
                   alt={category.name}
                   fill
-                  sizes="70px"
+                  sizes="112px"
                   className="object-cover"
                 />
+                <span className="absolute bottom-1.5 left-1.5 rounded-sm bg-neutral-900/85 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-2xs">
+                  {category.deal}
+                </span>
               </div>
 
-              <p className="mt-1.5 line-clamp-2 min-h-7 text-center text-[10px] font-medium leading-tight text-text-primary">
+              <p className="mt-1.5 truncate text-center text-xs font-bold text-text-primary">
                 {category.name}
               </p>
             </Link>
@@ -124,29 +144,30 @@ export default function ShopbyCategory() {
         </div>
 
         {/* Tablet and Desktop category grid */}
-        <div className="hidden sm:grid sm:grid-cols-3 sm:gap-x-4 sm:gap-y-6 md:grid-cols-4 lg:grid-cols-6 lg:gap-x-4 lg:gap-y-6">
+        <div className="hidden sm:grid sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="group block min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
-              <div className="relative aspect-1.5/1 w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-subtle transition-[border-color,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:border-border-strong group-hover:shadow-xs motion-reduce:transition-none">
+              <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl border border-border-default/70 bg-surface-subtle shadow-2xs transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:border-border-strong group-hover:shadow-md">
                 <Image
                   src={category.image}
                   alt={category.name}
                   fill
-                  sizes="
-                    (max-width: 767px) 30vw,
-                    (max-width: 1023px) 23vw,
-                    (max-width: 1279px) 16vw,
-                    190px
-                  "
-                  className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                  sizes="(max-width: 767px) 33vw, (max-width: 1023px) 25vw, 190px"
+                  className="object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-106"
                 />
+                {/* Deal Tag */}
+                <div className="absolute top-2 left-2">
+                  <span className="rounded-md bg-neutral-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs backdrop-blur-xs">
+                    {category.deal}
+                  </span>
+                </div>
               </div>
 
-              <p className="mt-2 text-center text-sm font-medium leading-normal text-text-primary">
+              <p className="mt-2 text-center text-sm font-bold text-text-primary transition-colors group-hover:text-accent">
                 {category.name}
               </p>
             </Link>
