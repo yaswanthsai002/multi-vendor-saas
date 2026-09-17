@@ -8,89 +8,89 @@ import { ProductCard } from '@/shared/components/product-card/product-card';
 
 const products: Product[] = [
   {
-    brand: 'Kora',
-    name: 'Kora Leather Tote',
-    price: '$13.00',
-    oldPrice: '$16.00',
-    discount: '-15%',
+    brand: 'TechPulse',
+    name: 'Wireless Studio Noise-Cancelling Headphones',
+    price: '₹1,899',
+    oldPrice: '₹3,499',
+    discount: '-45%',
     rating: '4.8',
-    reviews: 24,
-    image: '/assets/products/product.png',
+    reviews: 124,
+    image: '/assets/products/product2.jpg',
     badge: { text: 'Best Seller', variant: 'warning' },
   },
   {
-    brand: 'Kora',
-    name: 'Kora Classic Shoulder Bag',
-    price: '$17.00',
-    oldPrice: '$20.00',
-    discount: '-15%',
+    brand: 'UrbanVogue',
+    name: 'Casual Streetwear Full-Grain Backpack',
+    price: '₹1,299',
+    oldPrice: '₹2,199',
+    discount: '-40%',
     rating: '4.7',
-    reviews: 18,
-    image: '/assets/products/product1.jpg',
-    badge: { text: 'New', variant: 'accent' },
+    reviews: 88,
+    image: '/assets/products/product.png',
+    badge: { text: 'Trending', variant: 'accent' },
   },
   {
-    brand: 'Arlo',
-    name: 'Arlo Artisan Leather Boots',
-    price: '$18.00',
-    oldPrice: '$21.00',
-    discount: '-15%',
+    brand: 'Apex Living',
+    name: 'Compact Digital Kitchen Air Fryer',
+    price: '₹2,499',
+    oldPrice: '₹4,499',
+    discount: '-44%',
     rating: '4.9',
-    reviews: 32,
-    image: '/assets/products/product2.jpg',
+    reviews: 215,
+    image: '/assets/products/product1.jpg',
     badge: { text: 'Top Rated', variant: 'success' },
   },
   {
-    brand: 'Kora',
-    name: 'Small Logo Leather Ticlet',
-    price: '$13.00',
-    oldPrice: '$16.00',
-    discount: '-15%',
+    brand: 'SoundWave',
+    name: 'Ultra-Bass Portable Wireless Speaker',
+    price: '₹999',
+    oldPrice: '₹1,899',
+    discount: '-47%',
     rating: '4.8',
-    reviews: 12,
+    reviews: 64,
     image: '/assets/products/product3.jpg',
   },
   {
-    brand: 'Mora',
-    name: 'Pocket Handbound Leather Book',
-    price: '$13.00',
-    oldPrice: '$16.00',
-    discount: '-15%',
+    brand: 'ActiveFit',
+    name: 'Breathable Running Athletic Shoes',
+    price: '₹1,599',
+    oldPrice: '₹2,999',
+    discount: '-46%',
     rating: '4.6',
-    reviews: 9,
+    reviews: 79,
     image: '/assets/products/product4.jpg',
   },
   {
-    brand: 'Arlo',
-    name: 'Handcrafted Minimalist Handbag',
-    price: '$18.00',
-    oldPrice: '$22.00',
-    discount: '-15%',
+    brand: 'PureGlow',
+    name: 'Essential Skincare Botanical Gift Set',
+    price: '₹799',
+    oldPrice: '₹1,299',
+    discount: '-38%',
     rating: '4.8',
-    reviews: 15,
+    reviews: 135,
     image: '/assets/products/product5.jpg',
     badge: { text: 'Popular', variant: 'neutral' },
   },
   {
-    brand: 'Kora',
-    name: 'Kora Compact Travel Bag',
-    price: '$13.00',
-    oldPrice: '$16.00',
-    discount: '-15%',
+    brand: 'TechPulse',
+    name: 'Ergonomic Vertical Wireless Mouse',
+    price: '₹699',
+    oldPrice: '₹1,199',
+    discount: '-41%',
     rating: '4.7',
-    reviews: 14,
+    reviews: 54,
     image: '/assets/products/product.png',
   },
   {
-    brand: 'Mora',
-    name: 'Classic Daily Leather Tote',
-    price: '$21.00',
-    oldPrice: '$25.00',
-    discount: '-15%',
+    brand: 'UrbanVogue',
+    name: 'Classic Everyday Leather Messenger',
+    price: '₹1,699',
+    oldPrice: '₹2,899',
+    discount: '-41%',
     rating: '4.9',
-    reviews: 28,
+    reviews: 98,
     image: '/assets/products/product1.jpg',
-    badge: { text: 'Trending', variant: 'accent' },
+    badge: { text: 'New', variant: 'accent' },
   },
 ];
 
@@ -98,39 +98,39 @@ export default function NewArrivals() {
   const handleAddToCart = () => {};
 
   return (
-    <section className="w-full bg-surface-raised py-6 dark:bg-surface sm:py-8 md:py-10">
+    <section className="w-full bg-background py-6 sm:py-8 md:py-10">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="mb-4 flex items-end justify-between sm:mb-5">
           <div>
-            <h2 className="text-xl font-semibold leading-snug tracking-tight text-text-primary">
-              New Arrivals
+            <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
+              New Arrivals & Trending Drops
             </h2>
-            <p className="mt-0.5 text-xs font-normal leading-normal text-text-secondary">
-              Fresh from brands on Perigee
+            <p className="mt-0.5 text-xs text-text-secondary sm:text-sm">
+              Fresh additions from verified multi-vendor storefronts
             </p>
           </div>
 
           <Link
             href="/products"
-            className="flex min-h-11 items-center gap-1 rounded-md px-1 text-xs font-medium leading-normal text-text-primary transition-opacity duration-150 hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="group flex min-h-11 items-center gap-1 rounded-md px-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 sm:text-sm"
           >
-            View all
-            <span aria-hidden="true" className="text-sm">
+            <span>View All Products</span>
+            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
               →
             </span>
           </Link>
         </div>
 
         {/* Product rail */}
-        <div className="-mx-4 overflow-x-auto px-4 pt-3 pb-4 sm:-mx-6 sm:px-6 sm:pt-3 sm:pb-5 lg:-mx-8 lg:px-8 scrollbar-none [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-2 sm:gap-3">
+        <div className="-mx-4 overflow-x-auto px-4 pt-2 pb-4 scrollbar-none sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <div className="flex gap-3 sm:gap-4">
             {products.map((product, index) => (
               <ProductCard
                 key={`${product.name}-${index}`}
                 product={product}
                 onAddToCart={handleAddToCart}
-                className="w-[43vw] max-w-48 min-w-0 flex-none sm:w-[30vw] md:w-[22vw] lg:w-[calc((100vw-112px)/6)]"
+                className="w-[44vw] max-w-48 min-w-0 flex-none sm:w-[30vw] md:w-[22vw] lg:w-[calc((100vw-112px)/6)]"
               />
             ))}
           </div>
