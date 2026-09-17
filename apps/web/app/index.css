@@ -95,6 +95,7 @@
   --motion-duration-normal: 180ms;
   --motion-duration-moderate: 240ms;
   --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ==========================================================================

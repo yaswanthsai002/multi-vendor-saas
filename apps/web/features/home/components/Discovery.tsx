@@ -15,353 +15,119 @@ const discoveryImages = {
 
 export default function Discovery() {
   return (
-    <section
-      className="
-        w-full
-        bg-white dark:bg-[#11161F]
-        py-6
-        sm:py-8
-        md:py-10
-      "
-    >
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1280px]
-          px-4
-          sm:px-6
-          lg:px-8
-        "
-      >
-        {/* =========================================================
-            MOBILE
-            Main image + content only
-            Secondary images are completely hidden
-        ========================================================= */}
+    <section className="w-full bg-background py-6 sm:py-10 md:py-12">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Mobile Layout */}
         <div className="grid grid-cols-2 gap-4 md:hidden">
-          {/* Main image */}
           <Link
             href="/discovery"
-            className="
-              group relative block
-              aspect-[0.85/1]
-              min-w-0
-              overflow-hidden
-              rounded-xl
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--border-focus)]
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-[var(--background)]
-            "
+            className="group relative block aspect-[0.85/1] min-w-0 overflow-hidden rounded-2xl border border-border-default/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Image
               src={discoveryImages.main}
-              alt="Perigee discovery collection"
+              alt="Perigee featured marketplace showcase"
               fill
               priority
               sizes="50vw"
-              className="
-                object-cover
-                transition-transform
-                duration-[320ms]
-                ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                group-hover:scale-[1.025]
-                motion-reduce:transition-none
-                motion-reduce:group-hover:scale-100
-              "
+              className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105"
             />
           </Link>
 
-          {/* Content */}
           <div className="flex min-w-0 flex-col items-start justify-center">
-            <p
-              className="
-                text-[10px]
-                font-semibold
-                leading-[1.4]
-                tracking-[0.02em]
-                text-[var(--text-primary)]
-              "
-            >
-              PERIGEE DISCOVERY
-            </p>
+            <span className="rounded-md bg-accent/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-accent uppercase">
+              PERIGEE SPOTLIGHT
+            </span>
 
-            <h2
-              className="
-                mt-2
-                text-[24px]
-                font-bold
-                leading-[1.08]
-                tracking-[-0.5px]
-                text-[var(--text-primary)]
-              "
-            >
-              Find something
-              <br />
-              less ordinary.
+            <h2 className="mt-2 text-xl font-bold leading-tight tracking-tight text-text-primary">
+              Quality You Can Feel, Prices You Will Love.
             </h2>
 
-            <p
-              className="
-                mt-3
-                text-[12px]
-                leading-[1.5]
-                text-[var(--text-secondary)]
-              "
-            >
-              Thoughtfully selected products from independent brands worth discovering.
+            <p className="mt-2 text-xs leading-relaxed text-text-secondary">
+              Direct from verified sellers and authorized makers. No middlemen markups.
             </p>
 
             <Link
               href="/discovery"
-              className="
-                mt-4
-                inline-flex
-                min-h-[40px]
-                items-center
-                justify-center
-                gap-1.5
-                rounded-md
-                bg-[var(--accent)]
-                px-3.5
-                text-[11px]
-                font-medium
-                text-[var(--on-accent)]
-                transition-[background-color,transform]
-                duration-[180ms]
-                ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                hover:bg-[var(--accent-hover)]
-                active:translate-y-px
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-                motion-reduce:transition-none
-              "
+              className="mt-3 inline-flex min-h-9 items-center justify-center gap-1 rounded-md bg-accent px-3.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover"
             >
-              <span>Explore Discovery</span>
-              <span aria-hidden="true" className="text-[14px] leading-none">
-                →
-              </span>
+              <span>Explore Deals</span>
+              <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
 
-        {/* =========================================================
-            TABLET + DESKTOP
-            Main image | 2 secondary images | content
-        ========================================================= */}
-        <div
-          className="
-            hidden
-            md:grid
-            md:grid-cols-[1.35fr_0.58fr_1fr]
-            md:gap-5
-            lg:gap-6
-          "
-        >
-          {/* Main image */}
+        {/* Tablet and Desktop Layout */}
+        <div className="hidden md:grid md:grid-cols-[1.3fr_0.6fr_1.1fr] md:gap-5 lg:gap-6">
+          {/* Main spotlight image */}
           <Link
             href="/discovery"
-            className="
-              group relative block
-              aspect-[1.4/1]
-              min-w-0
-              overflow-hidden
-              rounded-xl
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--border-focus)]
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-[var(--background)]
-            "
+            className="group relative block aspect-[1.35/1] min-w-0 overflow-hidden rounded-2xl border border-border-default/80 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <Image
               src={discoveryImages.main}
-              alt="Perigee discovery collection"
+              alt="Perigee featured lifestyle collection"
               fill
               priority
               sizes="(max-width: 1023px) 50vw, 52vw"
-              className="
-                object-cover
-                transition-transform
-                duration-[320ms]
-                ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                group-hover:scale-[1.025]
-                motion-reduce:transition-none
-                motion-reduce:group-hover:scale-100
-              "
+              className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105"
             />
           </Link>
 
-          {/* Secondary images */}
-          <div
-            className="
-              grid
-              min-w-0
-              grid-cols-1
-              grid-rows-2
-              gap-4
-            "
-          >
-            {/* Top image */}
+          {/* Secondary feature cards */}
+          <div className="grid min-w-0 grid-cols-1 grid-rows-2 gap-4">
             <Link
               href="/discovery"
-              className="
-                group relative
-                min-h-0
-                overflow-hidden
-                rounded-xl
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group relative min-h-0 overflow-hidden rounded-xl border border-border-default/80 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               <Image
                 src={discoveryImages.top}
-                alt="Featured Perigee discovery"
+                alt="Featured modern lifestyle product"
                 fill
                 sizes="(max-width: 1023px) 22vw, 20vw"
-                className="
-                  object-cover
-                  transition-transform
-                  duration-[320ms]
-                  ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                  group-hover:scale-[1.025]
-                  motion-reduce:transition-none
-                  motion-reduce:group-hover:scale-100
-                "
+                className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105"
               />
             </Link>
 
-            {/* Bottom image */}
             <Link
               href="/discovery"
-              className="
-                group relative
-                min-h-0
-                overflow-hidden
-                rounded-xl
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group relative min-h-0 overflow-hidden rounded-xl border border-border-default/80 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               <Image
                 src={discoveryImages.bottom}
-                alt="Featured independent brand"
+                alt="Featured daily essentials"
                 fill
                 sizes="(max-width: 1023px) 22vw, 20vw"
-                className="
-                  object-cover
-                  transition-transform
-                  duration-[320ms]
-                  ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                  group-hover:scale-[1.025]
-                  motion-reduce:transition-none
-                  motion-reduce:group-hover:scale-100
-                "
+                className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform group-hover:scale-105"
               />
             </Link>
           </div>
 
-          {/* Content */}
-          <div
-            className="
-              flex
-              min-w-0
-              flex-col
-              items-start
-              justify-center
-              md:pl-2
-              lg:pl-4
-            "
-          >
-            <p
-              className="
-                text-[12px]
-                font-semibold
-                leading-[1.4]
-                tracking-[0.02em]
-                text-[var(--text-primary)]
-              "
-            >
-              PERIGEE DISCOVERY
-            </p>
+          {/* Proposition callout */}
+          <div className="flex min-w-0 flex-col items-start justify-center md:pl-2 lg:pl-6">
+            <span className="rounded-md bg-accent/10 px-2.5 py-1 text-xs font-bold tracking-wider text-accent uppercase">
+              PERIGEE SPOTLIGHT
+            </span>
 
-            <h2
-              className="
-                mt-2
-                max-w-[480px]
-                text-[32px]
-                font-bold
-                leading-[1.08]
-                tracking-[-0.6px]
-                text-[var(--text-primary)]
-                lg:text-[40px]
-                lg:tracking-[-0.8px]
-              "
-            >
-              Find something
+            <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-text-primary lg:text-3xl">
+              Quality You Can Feel,
               <br />
-              less ordinary.
+              Prices You Will Love.
             </h2>
 
-            <p
-              className="
-                mt-4
-                max-w-[500px]
-                text-[16px]
-                font-normal
-                leading-[1.5]
-                text-[var(--text-secondary)]
-              "
-            >
-              Thoughtfully selected products from independent brands worth discovering.
+            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+              Shop directly from verified manufacturers and trusted multi-vendor stores nationwide.
+              Enjoy transparent pricing, escrow buyer protection, and doorstep delivery.
             </p>
 
-            <Link
-              href="/discovery"
-              className="
-                mt-6
-                inline-flex
-                min-h-[48px]
-                items-center
-                justify-center
-                gap-2
-                rounded-md
-                bg-[var(--accent)]
-                px-5
-                text-[14px]
-                font-medium
-                leading-[1.4]
-                text-[var(--on-accent)]
-                transition-[background-color,transform]
-                duration-[180ms]
-                ease-[cubic-bezier(0.2,0.8,0.2,1)]
-                hover:bg-[var(--accent-hover)]
-                active:translate-y-px
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-                motion-reduce:transition-none
-              "
-            >
-              <span>Explore Discovery</span>
-
-              <span aria-hidden="true" className="text-[18px] leading-none">
-                →
-              </span>
-            </Link>
+            <div className="mt-6 flex items-center gap-3">
+              <Link
+                href="/discovery"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-accent px-5 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover sm:text-sm"
+              >
+                <span>Shop Featured Collections</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

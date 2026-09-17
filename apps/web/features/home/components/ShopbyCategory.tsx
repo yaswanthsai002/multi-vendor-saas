@@ -19,344 +19,155 @@ const categories = [
     name: 'Electronics',
     image: Electronics,
     slug: 'electronics',
+    deal: 'Up to 50% Off',
   },
   {
     name: 'Home & Living',
     image: HomeLiving,
     slug: 'home-living',
+    deal: 'From ₹499',
   },
   {
     name: 'Beauty',
     image: Beauty,
     slug: 'beauty',
+    deal: 'Min. 30% Off',
   },
   {
     name: 'Sports',
     image: Sports,
     slug: 'sports',
+    deal: 'Starting ₹299',
   },
   {
     name: 'Fashion',
     image: Fashion,
     slug: 'fashion',
+    deal: '40% - 70% Off',
   },
   {
     name: 'Books',
     image: Books,
     slug: 'books',
+    deal: 'From ₹199',
   },
   {
     name: 'Accessories',
     image: Accessories,
     slug: 'accessories',
+    deal: 'Min. 35% Off',
   },
   {
     name: 'Wellness',
     image: Wellness,
     slug: 'wellness',
+    deal: 'Up to 40% Off',
   },
   {
     name: 'Outdoor',
     image: Outdoor,
     slug: 'outdoor',
+    deal: 'Special Offers',
   },
   {
     name: 'Gifts',
     image: Gifts,
     slug: 'gifts',
+    deal: 'Under ₹999',
   },
   {
     name: 'Office',
     image: Office,
     slug: 'office',
+    deal: 'Up to 45% Off',
   },
   {
     name: 'Travel',
     image: Travel,
     slug: 'travel',
+    deal: 'Flat 30% Off',
   },
 ];
 
 export default function ShopbyCategory() {
   return (
-    <section
-      className="
-        bg-[var(--background)]
-        pt-3
-        pb-6
-
-        sm:pt-5
-        sm:pb-10
-
-        md:pt-6
-        md:pb-12
-      "
-    >
-      <div
-        className="
-          mx-auto
-          w-full
-          max-w-[1280px]
-
-          px-4
-
-          sm:px-6
-
-          lg:px-8
-        "
-      >
-        {/* ====================================== */}
-        {/* HEADER */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            mb-3
-            flex
-            items-center
-            justify-between
-
-            sm:mb-6
-          "
-        >
-          <h2
-            className="
-              text-[17px]
-              font-semibold
-              leading-[1.3]
-              tracking-[-0.15px]
-              text-[var(--text-primary)]
-
-              sm:text-[20px]
-            "
-          >
-            Shop by category
-          </h2>
+    <section className="bg-background pt-4 pb-8 sm:pt-6 sm:pb-12">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
+        <div className="mb-4 flex items-end justify-between sm:mb-6">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
+              Shop by Category
+            </h2>
+            <p className="mt-0.5 text-xs text-text-secondary sm:text-sm">
+              Explore thousands of products with verified seller guarantees
+            </p>
+          </div>
 
           <Link
             href="/categories"
-            className="
-              flex
-              min-h-[36px]
-              shrink-0
-              items-center
-              gap-1
-              rounded-md
-              px-1
-              text-[11px]
-              font-medium
-              leading-[1.4]
-              text-[var(--text-secondary)]
-              transition-opacity
-              duration-[120ms]
-              hover:opacity-70
-
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--border-focus)]
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-[var(--background)]
-
-              sm:min-h-[44px]
-              sm:px-2
-              sm:text-[14px]
-            "
+            className="group flex min-h-9 shrink-0 items-center gap-1 rounded-md px-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 sm:text-sm"
           >
-            <span>View all</span>
-
-            <span
-              aria-hidden="true"
-              className="
-                text-[14px]
-
-                sm:text-[16px]
-              "
-            >
+            <span>View All Categories</span>
+            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
               →
             </span>
           </Link>
         </div>
 
-        {/* ====================================== */}
-        {/* MOBILE CATEGORY RAIL */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            -mx-4
-            flex
-            gap-2
-            overflow-x-auto
-            overscroll-x-contain
-            px-4
-            pb-1
-
-            [scrollbar-width:none]
-            [-ms-overflow-style:none]
-            [&::-webkit-scrollbar]:hidden
-
-            sm:hidden
-          "
-        >
+        {/* Mobile category rail */}
+        <div className="-mx-4 flex gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 scrollbar-none sm:hidden">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="
-                group
-                w-[70px]
-                min-w-[70px]
-                shrink-0
-                rounded-[7px]
-
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group w-28 min-w-28 shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
-              {/* Image */}
-
-              <div
-                className="
-                  relative
-                  aspect-square
-                  w-full
-                  overflow-hidden
-                  rounded-[7px]
-                  border
-                  border-[var(--border-subtle)]
-                  bg-[var(--surface-subtle)]
-
-                  transition-transform
-                  duration-[120ms]
-                  ease-[cubic-bezier(0.2,0,0,1)]
-
-                  group-active:scale-[0.98]
-
-                  motion-reduce:transition-none
-                "
-              >
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border-default/80 bg-surface-subtle shadow-2xs transition-transform duration-200 group-hover:scale-102 group-active:scale-95">
                 <Image
                   src={category.image}
                   alt={category.name}
                   fill
-                  sizes="70px"
-                  className="
-                    object-cover
-                  "
+                  sizes="112px"
+                  className="object-cover"
                 />
+                <span className="absolute bottom-1.5 left-1.5 rounded-sm bg-neutral-900/85 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-2xs">
+                  {category.deal}
+                </span>
               </div>
 
-              {/* Category name */}
-
-              <p
-                className="
-                  mt-1.5
-                  line-clamp-2
-                  min-h-[28px]
-                  text-center
-                  text-[10px]
-                  font-medium
-                  leading-[1.25]
-                  text-[var(--text-primary)]
-                "
-              >
+              <p className="mt-1.5 truncate text-center text-xs font-bold text-text-primary">
                 {category.name}
               </p>
             </Link>
           ))}
         </div>
 
-        {/* ====================================== */}
-        {/* TABLET / DESKTOP GRID */}
-        {/* ====================================== */}
-
-        <div
-          className="
-            hidden
-
-            sm:grid
-            sm:grid-cols-3
-            sm:gap-x-4
-            sm:gap-y-6
-
-            md:grid-cols-4
-
-            lg:grid-cols-6
-            lg:gap-x-4
-            lg:gap-y-6
-          "
-        >
+        {/* Tablet and Desktop category grid */}
+        <div className="hidden sm:grid sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="
-                group
-                block
-                min-w-0
-                rounded-lg
-
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-[var(--border-focus)]
-                focus-visible:ring-offset-2
-                focus-visible:ring-offset-[var(--background)]
-              "
+              className="group block min-w-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
-              {/* Image */}
-
-              <div
-                className="
-                  relative
-                  aspect-[1.5/1]
-                  w-full
-                  overflow-hidden
-                  rounded-lg
-                  border
-                  border-[var(--border-subtle)]
-                  bg-[var(--surface-subtle)]
-
-                  transition-transform
-                  duration-[120ms]
-                  ease-[cubic-bezier(0.2,0,0,1)]
-
-                  group-hover:scale-[1.01]
-
-                  motion-reduce:transition-none
-                  motion-reduce:group-hover:scale-100
-                "
-              >
+              <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl border border-border-default/70 bg-surface-subtle shadow-2xs transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:border-border-strong group-hover:shadow-md">
                 <Image
                   src={category.image}
                   alt={category.name}
                   fill
-                  sizes="
-                    (max-width: 767px) 30vw,
-                    (max-width: 1023px) 23vw,
-                    (max-width: 1279px) 16vw,
-                    190px
-                  "
-                  className="
-                    object-cover
-                  "
+                  sizes="(max-width: 767px) 33vw, (max-width: 1023px) 25vw, 190px"
+                  className="object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-106"
                 />
+                {/* Deal Tag */}
+                <div className="absolute top-2 left-2">
+                  <span className="rounded-md bg-neutral-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs backdrop-blur-xs">
+                    {category.deal}
+                  </span>
+                </div>
               </div>
 
-              {/* Category name */}
-
-              <p
-                className="
-                  mt-2
-                  text-center
-                  text-[14px]
-                  font-medium
-                  leading-[1.4]
-                  text-[var(--text-primary)]
-                "
-              >
+              <p className="mt-2 text-center text-sm font-bold text-text-primary transition-colors group-hover:text-accent">
                 {category.name}
               </p>
             </Link>
