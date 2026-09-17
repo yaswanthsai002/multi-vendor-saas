@@ -1,8 +1,9 @@
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Suspense, type ReactNode } from 'react';
 
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
 
+import { AuthToastListener } from '@/components/auth-toast-listener';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryProvider } from '@/providers/query-provider';
 import { Footer } from '@/shared/components/layout/footer';
@@ -58,6 +59,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
             {/* Global toast notification system */}
             <Toaster />
+
+            {/* Global auth toast listener for unauthorised access. */}
+            <Suspense fallback={null}>
+              <AuthToastListener />
+            </Suspense>
           </ThemeProvider>
         </QueryProvider>
       </body>
