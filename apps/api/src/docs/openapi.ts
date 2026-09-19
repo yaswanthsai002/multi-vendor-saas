@@ -17,6 +17,7 @@ export const openapiSpec = {
     { name: 'Auth', description: 'Authentication and session management' },
     { name: 'OTP & Verification', description: 'One-time passcode dispatch and verification' },
     { name: 'OAuth', description: 'Third-party OAuth 2.0 social authentication' },
+    { name: 'Vendor Products', description: 'Vendor product catalog management endpoints' },
   ],
   components: {
     securitySchemes: {
@@ -144,6 +145,140 @@ export const openapiSpec = {
           emailVerifiedAt: { type: ['string', 'null'], format: 'date-time', example: null },
         },
         required: ['email', 'isVerified', 'emailVerifiedAt'],
+      },
+      VendorProduct: {
+        type: 'object',
+        properties: {
+          productId: {
+            type: 'string',
+            format: 'uuid',
+            example: '11111111-1111-4111-8111-111111111111',
+          },
+          vendorId: {
+            type: 'string',
+            format: 'uuid',
+            example: '22222222-2222-4222-8222-222222222222',
+          },
+          name: { type: 'string', example: 'Ergonomic Mechanical Keyboard' },
+          slug: { type: 'string', example: 'ergonomic-mechanical-keyboard' },
+          description: {
+            type: 'string',
+            example: 'Premium hot-swappable mechanical keyboard with RGB backlighting.',
+          },
+          images: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['https://example.com/img1.jpg'],
+          },
+          videos: { type: 'array', items: { type: 'string' }, example: [] },
+          price: { type: 'string', example: '129.99' },
+          stock: { type: 'integer', example: 50 },
+          isSoftDeleted: { type: 'boolean', example: false },
+          createdAt: { type: 'string', format: 'date-time', example: '2026-09-10T10:00:00.000Z' },
+          updatedAt: { type: 'string', format: 'date-time', example: '2026-09-10T10:00:00.000Z' },
+          categories: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                categoryId: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                slug: { type: 'string' },
+              },
+            },
+          },
+        },
+        required: [
+          'productId',
+          'vendorId',
+          'name',
+          'slug',
+          'description',
+          'images',
+          'price',
+          'stock',
+          'isSoftDeleted',
+          'createdAt',
+          'updatedAt',
+        ],
+      },
+      CreateProductInput: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 2,
+            maxLength: 255,
+            example: 'Ergonomic Mechanical Keyboard',
+          },
+          description: {
+            type: 'string',
+            minLength: 10,
+            example: 'Premium hot-swappable mechanical keyboard with RGB backlighting.',
+          },
+          price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '129.99' },
+          stock: { type: 'integer', minimum: 0, example: 50 },
+          images: {
+            type: 'array',
+            items: { type: 'string', format: 'uri' },
+            minItems: 1,
+            example: ['https://example.com/img1.jpg'],
+          },
+          videos: { type: 'array', items: { type: 'string', format: 'uri' }, example: [] },
+          categoryIds: { type: 'array', items: { type: 'string', format: 'uuid' }, example: [] },
+          slug: {
+            type: 'string',
+            pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$',
+            example: 'ergonomic-mechanical-keyboard',
+          },
+        },
+        required: ['name', 'description', 'price', 'stock', 'images'],
+      },
+      UpdateProductInput: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 2,
+            maxLength: 255,
+            example: 'Ergonomic Mechanical Keyboard Pro',
+          },
+          description: {
+            type: 'string',
+            minLength: 10,
+            example: 'Updated description for mechanical keyboard.',
+          },
+          price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '139.99' },
+          stock: { type: 'integer', minimum: 0, example: 45 },
+          images: { type: 'array', items: { type: 'string', format: 'uri' }, minItems: 1 },
+          videos: { type: 'array', items: { type: 'string', format: 'uri' } },
+          categoryIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+          slug: { type: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' },
+        },
+      },
+      ProductListResponse: {
+        type: 'object',
+        properties: {
+          products: { type: 'array', items: { $ref: '#/components/schemas/VendorProduct' } },
+          pagination: {
+            type: 'object',
+            properties: {
+              page: { type: 'integer', example: 1 },
+              limit: { type: 'integer', example: 20 },
+              total: { type: 'integer', example: 1 },
+              totalPages: { type: 'integer', example: 1 },
+            },
+            required: ['page', 'limit', 'total', 'totalPages'],
+          },
+        },
+        required: ['products', 'pagination'],
+      },
+      ProductDetailResponse: {
+        type: 'object',
+        properties: {
+          product: { $ref: '#/components/schemas/VendorProduct' },
+        },
+        required: ['product'],
       },
     },
   },
@@ -632,6 +767,333 @@ export const openapiSpec = {
                   type: 'string',
                   example: 'auth_token=jwt-token; Max-Age=7200; Path=/; HttpOnly; SameSite=Lax',
                 },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products': {
+      get: {
+        tags: ['Vendor Products'],
+        summary: 'List products owned by the authenticated vendor',
+        description:
+          'Returns a paginated list of active (non-soft-deleted) products belonging exclusively to the authenticated vendor.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, default: 1 },
+            description: 'Page number for pagination',
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+            description: 'Number of items per page',
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Case-insensitive search query matching product name or description',
+          },
+          {
+            name: 'categoryId',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', format: 'uuid' },
+            description: 'Filter products by category UUID',
+          },
+          {
+            name: 'sortBy',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              enum: ['createdAt', 'price', 'name', 'stock'],
+              default: 'createdAt',
+            },
+            description: 'Field to sort products by',
+          },
+          {
+            name: 'sortOrder',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' },
+            description: 'Sort direction',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Product list retrieved successfully.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ProductListResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required or invalid session.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Forbidden: caller lacks vendor role or does not have an active vendor profile.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        tags: ['Vendor Products'],
+        summary: 'Create a new product under the authenticated vendor',
+        description:
+          'Creates a new product with server-side vendorId assignment, automatic slug generation, and category association.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreateProductInput' },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Product created successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Product created successfully.' },
+                    product: { $ref: '#/components/schemas/VendorProduct' },
+                  },
+                  required: ['message', 'product'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Validation Error or invalid category ID.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden: caller lacks vendor role or active profile.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products/{productId}': {
+      parameters: [
+        {
+          name: 'productId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the product',
+        },
+      ],
+      get: {
+        tags: ['Vendor Products'],
+        summary: 'Get a product by ID owned by the authenticated vendor',
+        description:
+          'Returns product details including linked categories. Returns 404 if product does not belong to vendor or is deleted.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Product details retrieved successfully.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ProductDetailResponse' },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid UUID format.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden: caller lacks vendor role or active profile.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Product not found, belongs to another vendor, or is soft-deleted.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+      patch: {
+        tags: ['Vendor Products'],
+        summary: 'Update a product owned by the authenticated vendor',
+        description:
+          'Partially updates product fields and category associations. Rejects updates if product is soft-deleted or slug collides.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/UpdateProductInput' },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Product updated successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Product updated successfully.' },
+                    product: { $ref: '#/components/schemas/VendorProduct' },
+                  },
+                  required: ['message', 'product'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Validation Error or empty update body.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Product not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '409': {
+            description: 'Slug collision with another product.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ['Vendor Products'],
+        summary: 'Soft delete a product owned by the authenticated vendor',
+        description:
+          'Marks product as soft-deleted. Subsequent queries will return 404 while preserving historic order references.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Product deleted successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Product deleted successfully.' },
+                  },
+                  required: ['message'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid UUID format.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Product not found, already deleted, or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
             },
           },

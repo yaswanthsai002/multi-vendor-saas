@@ -32,6 +32,8 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
     expect(res.body.paths).toHaveProperty('/api/auth/reset-password');
     expect(res.body.paths).toHaveProperty('/api/auth/google');
     expect(res.body.paths).toHaveProperty('/api/auth/google/callback');
+    expect(res.body.paths).toHaveProperty('/api/vendor/products');
+    expect(res.body.paths).toHaveProperty('/api/vendor/products/{productId}');
   });
 
   it('should serve Swagger UI HTML page at GET /api/docs/', async () => {
