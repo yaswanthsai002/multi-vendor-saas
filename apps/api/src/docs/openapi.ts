@@ -17,6 +17,7 @@ export const openapiSpec = {
     { name: 'Auth', description: 'Authentication and session management' },
     { name: 'OTP & Verification', description: 'One-time passcode dispatch and verification' },
     { name: 'OAuth', description: 'Third-party OAuth 2.0 social authentication' },
+    { name: 'Vendor Dashboard', description: 'Vendor dashboard analytics and overview metrics' },
     { name: 'Vendor Products', description: 'Vendor product catalog management endpoints' },
   ],
   components: {
@@ -768,6 +769,159 @@ export const openapiSpec = {
                   example: 'auth_token=jwt-token; Max-Age=7200; Path=/; HttpOnly; SameSite=Lax',
                 },
               },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/dashboard': {
+      get: {
+        tags: ['Vendor Dashboard'],
+        summary: 'Get vendor dashboard overview analytics, sales chart data, recent orders, and top products',
+        description:
+          'Aggregates key vendor performance indicators (KPIs), time series chart data, recent order items, and top performing products for the specified timeframe.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'period',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['7d', '30d', '90d'], default: '7d' },
+            description: 'Timeframe filter for metrics calculation and chart grouping',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Aggregated vendor dashboard payload.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    vendor: {
+                      type: 'object',
+                      properties: {
+                        vendorId: { type: 'string', format: 'uuid' },
+                        name: { type: 'string' },
+                        slug: { type: 'string' },
+                        logoUrl: { type: ['string', 'null'] },
+                      },
+                      required: ['vendorId', 'name', 'slug'],
+                    },
+                    metrics: {
+                      type: 'object',
+                      properties: {
+                        sales: {
+                          type: 'object',
+                          properties: {
+                            value: { type: 'number' },
+                            changePercentage: { type: 'number' },
+                          },
+                          required: ['value', 'changePercentage'],
+                        },
+                        orders: {
+                          type: 'object',
+                          properties: {
+                            value: { type: 'number' },
+                            changePercentage: { type: 'number' },
+                          },
+                          required: ['value', 'changePercentage'],
+                        },
+                        unitsSold: {
+                          type: 'object',
+                          properties: {
+                            value: { type: 'number' },
+                            changePercentage: { type: 'number' },
+                          },
+                          required: ['value', 'changePercentage'],
+                        },
+                        avgOrderValue: {
+                          type: 'object',
+                          properties: {
+                            value: { type: 'number' },
+                            changePercentage: { type: 'number' },
+                          },
+                          required: ['value', 'changePercentage'],
+                        },
+                      },
+                      required: ['sales', 'orders', 'unitsSold', 'avgOrderValue'],
+                    },
+                    chart: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          label: { type: 'string' },
+                          date: { type: 'string' },
+                          sales: { type: 'number' },
+                        },
+                        required: ['label', 'date', 'sales'],
+                      },
+                    },
+                    recentOrders: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          vendorOrderId: { type: 'string', format: 'uuid' },
+                          orderId: { type: 'string', format: 'uuid' },
+                          orderNumber: { type: 'string' },
+                          itemsCount: { type: 'number' },
+                          amount: { type: 'number' },
+                          status: {
+                            type: 'string',
+                            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+                          },
+                          thumbnailUrl: { type: ['string', 'null'] },
+                          createdAt: { type: 'string', format: 'date-time' },
+                        },
+                        required: ['vendorOrderId', 'orderId', 'orderNumber', 'itemsCount', 'amount', 'status', 'createdAt'],
+                      },
+                    },
+                    topProducts: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'string', format: 'uuid' },
+                          name: { type: 'string' },
+                          category: { type: 'string' },
+                          thumbnailUrl: { type: ['string', 'null'] },
+                          unitsSold: { type: 'number' },
+                          sales: { type: 'number' },
+                          stock: { type: 'number' },
+                        },
+                        required: ['productId', 'name', 'category', 'unitsSold', 'sales', 'stock'],
+                      },
+                    },
+                  },
+                  required: ['vendor', 'metrics', 'chart', 'recentOrders', 'topProducts'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Validation error in query parameters.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '403': {
+            description: 'Vendor role or active status required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '404': {
+            description: 'Vendor profile not found.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
             },
           },
         },

@@ -103,6 +103,12 @@ export async function proxy(request: NextRequest) {
       redirectUrl.searchParams.set('error', 'unauthorized');
       return NextResponse.redirect(redirectUrl);
     }
+
+    if (pathname.startsWith('/vendor') && !isVendor) {
+      const redirectUrl = new URL(DEFAULT_AUTHENTICATED_REDIRECT, request.url);
+      redirectUrl.searchParams.set('error', 'unauthorized');
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return NextResponse.next();

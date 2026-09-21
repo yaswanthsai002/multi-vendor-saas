@@ -5,6 +5,7 @@ import { verifyToken } from '../../shared/middleware/verifyToken.js';
 import {
   createVendorProducts,
   deleteVendorProductById,
+  getVendorDashboard,
   getVendorProductById,
   getVendorProducts,
   updateVendorProductById,
@@ -16,6 +17,7 @@ export const vendorRouter = Router();
 // Enforce authentication and active vendor profile ownership on all /vendor routes
 vendorRouter.use(verifyToken, requireActiveVendor);
 
+vendorRouter.get('/dashboard', getVendorDashboard);
 vendorRouter.post('/products', createVendorProducts);
 vendorRouter.get('/products', getVendorProducts);
 vendorRouter.get('/products/:productId', getVendorProductById);

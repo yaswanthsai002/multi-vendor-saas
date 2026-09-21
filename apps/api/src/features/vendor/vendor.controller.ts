@@ -1,5 +1,6 @@
 import {
   createProductSchema,
+  getVendorDashboardQuerySchema,
   getVendorProductsQuerySchema,
   productIdParamSchema,
   updateProductSchema,
@@ -77,6 +78,18 @@ export async function deleteVendorProductById(
     const vendorId = req.vendor!.vendorId;
     const { productId } = productIdParamSchema.parse(req.params);
     const result = await vendorService.deleteVendorProductById(vendorId, productId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getVendorDashboard(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const query = getVendorDashboardQuerySchema.parse(req.query);
+    const result = await vendorService.getVendorDashboardData(vendorId, query);
 
     return res.status(200).json(result);
   } catch (error) {

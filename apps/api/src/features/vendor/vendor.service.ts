@@ -1,13 +1,22 @@
 import { randomBytes } from 'node:crypto';
 
 import { getDb } from '@repo/db';
-import { categories, productCategories, products } from '@repo/db/schema';
-import { and, asc, count, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm';
+import {
+  categories,
+  orderItems,
+  orders,
+  productCategories,
+  products,
+  vendorOrders,
+  vendors,
+} from '@repo/db/schema';
+import { and, asc, count, desc, eq, gte, ilike, inArray, lt, ne, or, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 
 import type {
   CreateProductInput,
+  GetVendorDashboardQuery,
   GetVendorProductsQuery,
   UpdateProductInput,
 } from './vendor.schema.js';
@@ -314,4 +323,280 @@ export async function deleteVendorProductById(vendorId: string, productId: strin
     .where(eq(products.productId, productId));
 
   return { message: 'Product deleted successfully.' };
+}
+
+/**
+ * Resolves aggregated vendor dashboard analytics, time series chart data,
+ * recent orders, and top performing products for the specified timeframe.
+ */
+export async function getVendorDashboardData(vendorId: string, query: GetVendorDashboardQuery) {
+  const db = getDb();
+
+  // 1. Resolve vendor details
+  const vendor = await db.query.vendors.findFirst({
+    where: eq(vendors.vendorId, vendorId),
+  });
+
+  if (!vendor) {
+    throw new AppError(404, 'VENDOR_NOT_FOUND', 'Vendor profile not found.');
+  }
+
+  // 2. Determine timeframe windows
+  const days = query.period === '90d' ? 90 : query.period === '30d' ? 30 : 7;
+  const now = new Date();
+  const currentStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const prevStart = new Date(currentStart.getTime() - days * 24 * 60 * 60 * 1000);
+
+  // 3. Current period order items & orders
+  const currentItems = await db
+    .select({
+      vendorOrderId: orderItems.vendorOrderId,
+      productId: orderItems.productId,
+      quantity: orderItems.productQuantity,
+      price: orderItems.productPriceSnapshot,
+      createdAt: vendorOrders.createdAt,
+    })
+    .from(orderItems)
+    .innerJoin(vendorOrders, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    );
+
+  const currentOrders = await db
+    .select({
+      vendorOrderId: vendorOrders.vendorOrderId,
+      status: vendorOrders.status,
+    })
+    .from(vendorOrders)
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    );
+
+  const currentSales = Math.round(
+    currentItems.reduce((acc, item) => acc + Number(item.price) * item.quantity, 0),
+  );
+  const currentOrdersCount = currentOrders.length;
+  const currentUnitsSold = currentItems.reduce((acc, item) => acc + item.quantity, 0);
+  const currentAov = currentOrdersCount > 0 ? Math.round(currentSales / currentOrdersCount) : 0;
+
+  // 4. Previous period for trend calculations
+  const prevItems = await db
+    .select({
+      quantity: orderItems.productQuantity,
+      price: orderItems.productPriceSnapshot,
+    })
+    .from(orderItems)
+    .innerJoin(vendorOrders, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, prevStart),
+        lt(vendorOrders.createdAt, currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    );
+
+  const prevOrders = await db
+    .select({ vendorOrderId: vendorOrders.vendorOrderId })
+    .from(vendorOrders)
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, prevStart),
+        lt(vendorOrders.createdAt, currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    );
+
+  const prevSales = Math.round(
+    prevItems.reduce((acc, item) => acc + Number(item.price) * item.quantity, 0),
+  );
+  const prevOrdersCount = prevOrders.length;
+  const prevUnitsSold = prevItems.reduce((acc, item) => acc + item.quantity, 0);
+  const prevAov = prevOrdersCount > 0 ? Math.round(prevSales / prevOrdersCount) : 0;
+
+  function calcChange(curr: number, prev: number): number {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return Number((((curr - prev) / prev) * 100).toFixed(1));
+  }
+
+  // 5. Generate chart data points for the period
+  const chartPoints: Array<{ label: string; date: string; sales: number }> = [];
+  const numBuckets = query.period === '90d' ? 12 : query.period === '30d' ? 10 : 7;
+  const bucketDurationMs = (days * 24 * 60 * 60 * 1000) / numBuckets;
+
+  for (let i = 0; i < numBuckets; i++) {
+    const bucketStart = new Date(currentStart.getTime() + i * bucketDurationMs);
+    const bucketEnd = new Date(currentStart.getTime() + (i + 1) * bucketDurationMs);
+
+    const bucketSales = Math.round(
+      currentItems
+        .filter((item) => {
+          const itemDate = new Date(item.createdAt);
+          return itemDate >= bucketStart && itemDate < bucketEnd;
+        })
+        .reduce((acc, item) => acc + Number(item.price) * item.quantity, 0),
+    );
+
+    const label =
+      query.period === '7d'
+        ? bucketStart.toLocaleDateString('en-US', { weekday: 'short' })
+        : bucketStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    chartPoints.push({
+      label,
+      date: bucketStart.toISOString().split('T')[0] ?? '',
+      sales: bucketSales,
+    });
+  }
+
+  // 6. Recent Orders (up to 5)
+  const recentOrdersRaw = await db
+    .select({
+      vendorOrderId: vendorOrders.vendorOrderId,
+      orderId: vendorOrders.orderId,
+      status: vendorOrders.status,
+      createdAt: vendorOrders.createdAt,
+    })
+    .from(vendorOrders)
+    .where(eq(vendorOrders.vendorId, vendorId))
+    .orderBy(desc(vendorOrders.createdAt))
+    .limit(5);
+
+  const recentOrders = await Promise.all(
+    recentOrdersRaw.map(async (ro, index) => {
+      const items = await db
+        .select({
+          quantity: orderItems.productQuantity,
+          price: orderItems.productPriceSnapshot,
+          productId: orderItems.productId,
+        })
+        .from(orderItems)
+        .where(eq(orderItems.vendorOrderId, ro.vendorOrderId));
+
+      const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalAmount = Math.round(
+        items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
+      );
+
+      let thumbnailUrl: string | undefined;
+      if (items.length > 0 && items[0]?.productId) {
+        const prod = await db.query.products.findFirst({
+          where: eq(products.productId, items[0].productId),
+          columns: { images: true },
+        });
+        thumbnailUrl = prod?.images?.[0];
+      }
+
+      const orderNumber = `#${1001 + index}`;
+
+      return {
+        vendorOrderId: ro.vendorOrderId,
+        orderId: ro.orderId,
+        orderNumber,
+        itemsCount: totalItems,
+        amount: totalAmount,
+        status: ro.status,
+        thumbnailUrl,
+        createdAt: ro.createdAt.toISOString(),
+      };
+    }),
+  );
+
+  // 7. Top Products (up to 5)
+  const vendorProducts = await db
+    .select({
+      productId: products.productId,
+      name: products.name,
+      images: products.images,
+      price: products.price,
+      stock: products.stock,
+    })
+    .from(products)
+    .where(and(eq(products.vendorId, vendorId), eq(products.isSoftDeleted, false)))
+    .limit(10);
+
+  const topProducts = await Promise.all(
+    vendorProducts.map(async (prod) => {
+      const prodItems = await db
+        .select({
+          quantity: orderItems.productQuantity,
+          price: orderItems.productPriceSnapshot,
+        })
+        .from(orderItems)
+        .innerJoin(vendorOrders, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+        .where(
+          and(
+            eq(orderItems.productId, prod.productId),
+            eq(vendorOrders.vendorId, vendorId),
+            ne(vendorOrders.status, 'cancelled'),
+          ),
+        );
+
+      const unitsSold = prodItems.reduce((sum, item) => sum + item.quantity, 0);
+      const sales = Math.round(
+        prodItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
+      );
+
+      const catMappings = await db
+        .select({
+          categoryName: categories.name,
+        })
+        .from(productCategories)
+        .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
+        .where(eq(productCategories.productId, prod.productId));
+
+      const category = catMappings.map((c) => c.categoryName).join(' · ') || 'General';
+
+      return {
+        productId: prod.productId,
+        name: prod.name,
+        category,
+        thumbnailUrl: prod.images?.[0],
+        unitsSold,
+        sales,
+        stock: prod.stock,
+      };
+    }),
+  );
+
+  topProducts.sort((a, b) => b.unitsSold - a.unitsSold || b.sales - a.sales);
+
+  return {
+    vendor: {
+      vendorId: vendor.vendorId,
+      name: vendor.name,
+      slug: vendor.slug,
+      logoUrl: vendor.logoUrl,
+    },
+    metrics: {
+      sales: {
+        value: currentSales,
+        changePercentage: calcChange(currentSales, prevSales),
+      },
+      orders: {
+        value: currentOrdersCount,
+        changePercentage: calcChange(currentOrdersCount, prevOrdersCount),
+      },
+      unitsSold: {
+        value: currentUnitsSold,
+        changePercentage: calcChange(currentUnitsSold, prevUnitsSold),
+      },
+      avgOrderValue: {
+        value: currentAov,
+        changePercentage: calcChange(currentAov, prevAov),
+      },
+    },
+    chart: chartPoints,
+    recentOrders,
+    topProducts: topProducts.slice(0, 5),
+  };
 }

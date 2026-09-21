@@ -13,4 +13,8 @@ export const API_ENDPOINTS = {
     verificationStatus: '/api/auth/verification-status',
     resetPassword: '/api/auth/reset-password',
   },
+  vendor: {
+    dashboard: '/api/vendor/dashboard',
+    products: '/api/vendor/products',
+  },
 } as const;

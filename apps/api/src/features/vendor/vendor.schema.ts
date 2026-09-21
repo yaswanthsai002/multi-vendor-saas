@@ -86,7 +86,12 @@ export const getVendorProductsQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
+export const getVendorDashboardQuerySchema = z.object({
+  period: z.enum(['7d', '30d', '90d']).default('7d'),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type GetVendorProductsQuery = z.infer<typeof getVendorProductsQuerySchema>;
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
+export type GetVendorDashboardQuery = z.infer<typeof getVendorDashboardQuerySchema>;
