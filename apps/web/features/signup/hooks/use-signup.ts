@@ -22,8 +22,9 @@ export function useSignup() {
 
   React.useEffect(() => {
     const errorParam = searchParams.get('error');
-    if (errorParam) {
+    if (errorParam && errorParam !== 'unauthorized' && errorParam !== 'unauthenticated') {
       toast.error('Authentication failed', {
+        id: 'oauth-error',
         description: errorParam,
       });
     }
