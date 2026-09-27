@@ -55,9 +55,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(target, request.url));
   }
 
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' ||
+    request.headers.get('purpose') === 'prefetch';
+
   const isProtectedRoute = PROTECTED_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isAuthenticated && isProtectedRoute) {
+    if (isPrefetch) {
+      return NextResponse.next();
+    }
     // rawToken present but invalid (expired/tampered) vs absent — either way, not authenticated.
     return toSignIn(request, Boolean(rawToken), 'unauthenticated');
   }
@@ -68,6 +75,9 @@ export async function proxy(request: NextRequest) {
 
   if (isAuthorisedRoute) {
     if (!isAuthenticated) {
+      if (isPrefetch) {
+        return NextResponse.next();
+      }
       return toSignIn(request, Boolean(rawToken), 'unauthenticated');
     }
 

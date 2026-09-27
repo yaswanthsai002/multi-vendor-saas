@@ -83,6 +83,10 @@ axiosInstance.interceptors.response.use(
           'An unexpected error occurred.';
       }
 
+      if (status === 401 && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('perigee:auth-expired'));
+      }
+
       return Promise.reject(new ApiError(status, code, message, data?.details));
     }
 

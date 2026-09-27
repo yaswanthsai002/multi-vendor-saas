@@ -1,4 +1,4 @@
-import { axiosInstance, makeApiRequest } from '@/lib/api-client';
+import { ApiError, axiosInstance, makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export interface CurrentUserData {
@@ -14,12 +14,19 @@ export interface CurrentUserResponse {
   user?: CurrentUserData | null;
 }
 
-export function getCurrentUser(signal?: AbortSignal) {
-  return makeApiRequest<CurrentUserResponse>({
-    url: API_ENDPOINTS.auth.me,
-    method: 'GET',
-    signal,
-  });
+export async function getCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse> {
+  try {
+    return await makeApiRequest<CurrentUserResponse>({
+      url: API_ENDPOINTS.auth.me,
+      method: 'GET',
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return { user: null };
+    }
+    throw error;
+  }
 }
 
 export async function getCurrentUserServer(cookieHeader: string): Promise<CurrentUserResponse> {

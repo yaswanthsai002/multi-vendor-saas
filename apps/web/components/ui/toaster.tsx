@@ -12,6 +12,8 @@ export function Toaster() {
       richColors
       closeButton
       position="top-right"
+      visibleToasts={3}
+      expand={false}
       toastOptions={{
         classNames: {
           title: 'font-semibold text-sm',
