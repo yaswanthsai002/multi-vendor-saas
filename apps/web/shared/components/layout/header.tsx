@@ -3,6 +3,7 @@
 import { Heart, ShoppingCart, User as UserIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
 import { HeaderDeliveryAddress } from './header-delivery-address';
@@ -43,9 +44,14 @@ function PerigeeBrandLogo() {
 }
 
 export function Header({ initialCartCount }: HeaderProps) {
+  const pathname = usePathname();
   const { user, isLoading, searchQuery, setSearchQuery, cartCount } = useHeader({
     initialCartCount,
   });
+
+  if (pathname?.startsWith('/vendor') || pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="w-full bg-surface-raised border-b border-border-default transition-colors duration-200 sticky top-0 z-50">
