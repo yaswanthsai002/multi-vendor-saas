@@ -24,7 +24,7 @@ export const products = pgTable(
     slug: text('slug').notNull().unique(),
     description: text('description').notNull(),
     images: text('images').array().notNull(),
-    vidoes: text('videos').array(),
+    videos: text('videos').array(),
     price: numeric('price', { precision: 12, scale: 2 }).notNull(),
     stock: integer('stock').notNull().default(0),
     isSoftDeleted: boolean('isSoftDeleted').default(false),
