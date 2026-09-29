@@ -67,6 +67,7 @@ vi.mock('./vendor.service.js', async (importOriginal) => {
     getVendorProductById: vi.fn(),
     updateVendorProductById: vi.fn(),
     deleteVendorProductById: vi.fn(),
+    getVendorDashboardData: vi.fn(),
   };
 });
 
@@ -416,6 +417,82 @@ describe('Vendor Products API (/api/vendor/products)', () => {
         validVendorId,
         validProductId,
       );
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                 GET /api/vendor/dashboard (Vendor Dashboard)               */
+  /* -------------------------------------------------------------------------- */
+  describe('GET /api/vendor/dashboard', () => {
+    it('should return 400 when an invalid period query parameter is provided', async () => {
+      const cookie = await createAuthCookie(validUserId);
+      const response = await request(app)
+        .get('/api/vendor/dashboard?period=1year')
+        .set('Cookie', [cookie]);
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation Error');
+    });
+
+    it('should return 200 with dashboard data on valid request', async () => {
+      const mockDashboardData = {
+        vendor: {
+          vendorId: validVendorId,
+          name: 'Acme Hardware',
+          slug: 'acme-hardware',
+          logoUrl: 'https://example.com/logo.png',
+        },
+        metrics: {
+          sales: { value: 124500 },
+          orders: { value: 186 },
+          unitsSold: { value: 247 },
+          avgOrderValue: { value: 669 },
+        },
+        chart: [
+          { label: 'Mon', date: '2026-09-15', sales: 1200 },
+          { label: 'Tue', date: '2026-09-16', sales: 1500 },
+        ],
+        recentOrders: [
+          {
+            vendorOrderId: 'vo-1',
+            orderId: 'o-1',
+            orderNumber: '#1001',
+            itemsCount: 2,
+            amount: 2499,
+            status: 'pending',
+            thumbnailUrl: 'https://example.com/prod1.png',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        topProducts: [
+          {
+            productId: 'p-1',
+            name: 'Sony WH-1000XM5',
+            category: 'Electronics · Headphones',
+            thumbnailUrl: 'https://example.com/headphones.png',
+            unitsSold: 42,
+            sales: 84000,
+            stock: 8,
+          },
+        ],
+      };
+
+      vi.mocked(vendorService.getVendorDashboardData).mockResolvedValue(
+        mockDashboardData as unknown as Awaited<
+          ReturnType<typeof vendorService.getVendorDashboardData>
+        >,
+      );
+
+      const cookie = await createAuthCookie(validUserId);
+      const response = await request(app)
+        .get('/api/vendor/dashboard?period=7d')
+        .set('Cookie', [cookie]);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockDashboardData);
+      expect(vendorService.getVendorDashboardData).toHaveBeenCalledWith(validVendorId, {
+        period: '7d',
+      });
     });
   });
 

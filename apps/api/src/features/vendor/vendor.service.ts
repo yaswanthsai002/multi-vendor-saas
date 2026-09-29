@@ -1,13 +1,21 @@
 import { randomBytes } from 'node:crypto';
 
 import { getDb } from '@repo/db';
-import { categories, productCategories, products } from '@repo/db/schema';
-import { and, asc, count, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm';
+import {
+  categories,
+  orderItems,
+  productCategories,
+  products,
+  vendorOrders,
+  vendors,
+} from '@repo/db/schema';
+import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 
 import type {
   CreateProductInput,
+  GetVendorDashboardQuery,
   GetVendorProductsQuery,
   UpdateProductInput,
 } from './vendor.schema.js';
@@ -314,4 +322,289 @@ export async function deleteVendorProductById(vendorId: string, productId: strin
     .where(eq(products.productId, productId));
 
   return { message: 'Product deleted successfully.' };
+}
+
+type DashboardPeriod = GetVendorDashboardQuery['period'];
+
+type DashboardTimeframe = {
+  days: number;
+  numBuckets: number;
+  currentStart: Date;
+  bucketMs: number;
+};
+
+function resolveDashboardTimeframe(period: DashboardPeriod): DashboardTimeframe {
+  const days = period === '90d' ? 90 : period === '30d' ? 30 : 7;
+
+  const numBuckets = period === '90d' ? 12 : period === '30d' ? 10 : 7;
+
+  const currentStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const bucketMs = (days * 24 * 60 * 60 * 1000) / numBuckets;
+
+  return {
+    days,
+    numBuckets,
+    currentStart,
+    bucketMs,
+  };
+}
+
+async function verifyVendorExists(vendorId: string) {
+  const db = getDb();
+
+  const vendor = await db.query.vendors.findFirst({
+    where: eq(vendors.vendorId, vendorId),
+    columns: {
+      vendorId: true,
+    },
+  });
+
+  if (!vendor) {
+    throw new AppError(404, 'VENDOR_NOT_FOUND', 'Vendor profile not found.');
+  }
+}
+
+async function getDashboardMetrics(vendorId: string, currentStart: Date) {
+  const db = getDb();
+
+  const [result] = await db
+    .select({
+      sales: sql<string>`
+        COALESCE(
+          SUM(
+            ${orderItems.productPriceSnapshot}
+            * ${orderItems.productQuantity}
+          ),
+          0
+        )
+      `,
+      orders: sql<string>`
+        COUNT(DISTINCT ${vendorOrders.vendorOrderId})
+      `,
+      unitsSold: sql<string>`
+        COALESCE(
+          SUM(${orderItems.productQuantity}),
+          0
+        )
+      `,
+    })
+    .from(vendorOrders)
+    .innerJoin(orderItems, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    );
+
+  const sales = Math.round(Number(result?.sales ?? 0));
+  const orders = Number(result?.orders ?? 0);
+  const unitsSold = Number(result?.unitsSold ?? 0);
+
+  return {
+    sales,
+    orders,
+    unitsSold,
+    avgOrderValue: orders > 0 ? Math.round(sales / orders) : 0,
+  };
+}
+
+async function getDashboardChart(
+  vendorId: string,
+  period: DashboardPeriod,
+  timeframe: DashboardTimeframe,
+) {
+  const db = getDb();
+
+  const bucketSeconds = timeframe.bucketMs / 1000;
+
+  const bucketIndex = sql<number>`
+    FLOOR(
+      EXTRACT(
+        EPOCH FROM (
+          ${vendorOrders.createdAt}
+          - ${timeframe.currentStart}
+        )
+      ) / ${bucketSeconds}
+    )
+  `;
+
+  const rows = await db
+    .select({
+      bucket: bucketIndex,
+      sales: sql<string>`
+        SUM(
+          ${orderItems.productPriceSnapshot}
+          * ${orderItems.productQuantity}
+        )
+      `,
+    })
+    .from(vendorOrders)
+    .innerJoin(orderItems, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        gte(vendorOrders.createdAt, timeframe.currentStart),
+        ne(vendorOrders.status, 'cancelled'),
+      ),
+    )
+    .groupBy(bucketIndex)
+    .orderBy(bucketIndex);
+
+  const salesByBucket = new Map<number, number>();
+
+  for (const row of rows) {
+    salesByBucket.set(Number(row.bucket), Math.round(Number(row.sales)));
+  }
+
+  return Array.from({ length: timeframe.numBuckets }, (_, index) => {
+    const bucketStart = new Date(timeframe.currentStart.getTime() + index * timeframe.bucketMs);
+
+    const label =
+      period === '7d'
+        ? bucketStart.toLocaleDateString('en-US', {
+            weekday: 'short',
+          })
+        : bucketStart.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          });
+
+    return {
+      label,
+      date: bucketStart.toISOString().split('T')[0] ?? '',
+      sales: salesByBucket.get(index) ?? 0,
+    };
+  });
+}
+
+async function getRecentOrders(vendorId: string) {
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      vendorOrderId: vendorOrders.vendorOrderId,
+      orderId: vendorOrders.orderId,
+      status: vendorOrders.status,
+      createdAt: vendorOrders.createdAt,
+      itemsCount: sql<string>`
+        SUM(${orderItems.productQuantity})
+      `,
+      amount: sql<string>`
+        SUM(
+          ${orderItems.productPriceSnapshot}
+          * ${orderItems.productQuantity}
+        )
+      `,
+    })
+    .from(vendorOrders)
+    .innerJoin(orderItems, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .where(eq(vendorOrders.vendorId, vendorId))
+    .groupBy(
+      vendorOrders.vendorOrderId,
+      vendorOrders.orderId,
+      vendorOrders.status,
+      vendorOrders.createdAt,
+    )
+    .orderBy(desc(vendorOrders.createdAt))
+    .limit(5);
+
+  return rows.map((order) => ({
+    vendorOrderId: order.vendorOrderId,
+    orderId: order.orderId,
+    itemsCount: Number(order.itemsCount),
+    amount: Math.round(Number(order.amount)),
+    status: order.status,
+    thumbnailUrl: undefined,
+    createdAt: order.createdAt.toISOString(),
+  }));
+}
+
+async function getTopProducts(vendorId: string) {
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      productId: products.productId,
+      name: products.name,
+      images: products.images,
+      stock: products.stock,
+      unitsSold: sql<string>`
+        SUM(${orderItems.productQuantity})
+      `,
+      sales: sql<string>`
+        SUM(
+          ${orderItems.productPriceSnapshot}
+          * ${orderItems.productQuantity}
+        )
+      `,
+    })
+    .from(orderItems)
+    .innerJoin(vendorOrders, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
+    .innerJoin(products, eq(orderItems.productId, products.productId))
+    .where(
+      and(
+        eq(vendorOrders.vendorId, vendorId),
+        ne(vendorOrders.status, 'cancelled'),
+        eq(products.isSoftDeleted, false),
+      ),
+    )
+    .groupBy(products.productId, products.name, products.images, products.stock)
+    .orderBy(
+      sql`
+        SUM(${orderItems.productQuantity}) DESC
+      `,
+      sql`
+        SUM(
+          ${orderItems.productPriceSnapshot}
+          * ${orderItems.productQuantity}
+        ) DESC
+      `,
+    )
+    .limit(5);
+
+  return rows.map((product) => ({
+    productId: product.productId,
+    name: product.name,
+    category: 'General',
+    thumbnailUrl: product.images?.[0],
+    unitsSold: Number(product.unitsSold),
+    sales: Math.round(Number(product.sales)),
+    stock: product.stock,
+  }));
+}
+
+export async function getVendorDashboardData(vendorId: string, query: GetVendorDashboardQuery) {
+  await verifyVendorExists(vendorId);
+
+  const timeframe = resolveDashboardTimeframe(query.period);
+
+  const [metrics, chart, recentOrders, topProducts] = await Promise.all([
+    getDashboardMetrics(vendorId, timeframe.currentStart),
+    getDashboardChart(vendorId, query.period, timeframe),
+    getRecentOrders(vendorId),
+    getTopProducts(vendorId),
+  ]);
+
+  return {
+    metrics: {
+      sales: {
+        value: metrics.sales,
+      },
+      orders: {
+        value: metrics.orders,
+      },
+      unitsSold: {
+        value: metrics.unitsSold,
+      },
+      avgOrderValue: {
+        value: metrics.avgOrderValue,
+      },
+    },
+    chart,
+    recentOrders,
+    topProducts,
+  };
 }

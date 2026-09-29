@@ -16,6 +16,7 @@ const mockRefresh = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/',
 }));
 
 vi.mock('@/lib/api-client', () => ({
