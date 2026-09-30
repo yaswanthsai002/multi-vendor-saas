@@ -11,12 +11,13 @@ import {
   vendorOrders,
   vendors,
 } from '@repo/db/schema';
-import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, ilike, inArray, ne, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { formatMediaResponse } from '../media/media.service.js';
 
 import type {
+  BulkProductActionInput,
   CreateProductInput,
   GetVendorDashboardQuery,
   GetVendorProductsQuery,
@@ -169,20 +170,141 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
 }
 
 /**
- * Lists products owned by the vendor with pagination, search, and category filtering.
+ * Validates whether a product meets all criteria required to be published.
+ * Throws specific descriptive AppErrors if validation fails.
+ */
+export async function validateProductPublishability(
+  vendorId: string,
+  productId: string,
+  pendingUpdates?: {
+    name?: string;
+    description?: string;
+    price?: string;
+    stock?: number;
+    productImageId?: string | null;
+  },
+) {
+  const db = getDb();
+
+  const product = await db.query.products.findFirst({
+    where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
+  });
+
+  if (!product) {
+    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
+  }
+
+  const name = pendingUpdates?.name ?? product.name;
+  const description = pendingUpdates?.description ?? product.description;
+  const price = pendingUpdates?.price ?? product.price;
+  const stock = pendingUpdates?.stock ?? product.stock;
+  const productImageId =
+    pendingUpdates?.productImageId !== undefined
+      ? pendingUpdates.productImageId
+      : product.productImageId;
+
+  if (!name || name.trim().length < 2) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_INVALID_NAME',
+      'Unable to publish product because the name must be at least 2 characters.',
+    );
+  }
+
+  if (!description || description.trim().length < 10) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_INVALID_DESCRIPTION',
+      'Unable to publish product because the description must be at least 10 characters.',
+    );
+  }
+
+  if (Number(price) < 0) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_INVALID_PRICE',
+      'Unable to publish product because the price cannot be negative.',
+    );
+  }
+
+  if (stock < 0) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_INVALID_STOCK',
+      'Unable to publish product because stock cannot be negative.',
+    );
+  }
+
+  // 1. Validate primary image
+  if (!productImageId) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_MISSING_IMAGE',
+      'Unable to publish product because it is missing a primary image.',
+    );
+  }
+
+  const image = await db.query.mediaLibrary.findFirst({
+    where: and(
+      eq(mediaLibrary.mediaId, productImageId),
+      eq(mediaLibrary.vendorId, vendorId),
+      eq(mediaLibrary.status, 'active'),
+    ),
+  });
+
+  if (!image) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_MISSING_IMAGE',
+      'Unable to publish product because the primary image is missing or disabled.',
+    );
+  }
+
+  // 2. Validate categories (at least 1 category)
+  const categoryCount = await db
+    .select({ count: count() })
+    .from(productCategories)
+    .where(eq(productCategories.productId, productId));
+
+  if (!categoryCount[0] || Number(categoryCount[0].count) === 0) {
+    throw new AppError(
+      400,
+      'PRODUCT_PUBLISH_MISSING_CATEGORY',
+      'Unable to publish product because it must be assigned to at least one category.',
+    );
+  }
+}
+
+/**
+ * Lists products owned by the vendor with pagination, search, status, and category filtering.
  */
 export async function getVendorProducts(vendorId: string, query: GetVendorProductsQuery) {
   const db = getDb();
-  const { page, limit, search, categoryId, sortBy, sortOrder } = query;
+  const { page, limit, search, categoryId, stock, published, archived, sortBy, sortOrder } = query;
   const offset = (page - 1) * limit;
 
-  const conditions = [eq(products.vendorId, vendorId), eq(products.isSoftDeleted, false)];
+  const conditions = [eq(products.vendorId, vendorId)];
+
+  if (archived === 'true') {
+    conditions.push(eq(products.isSoftDeleted, true));
+  } else {
+    conditions.push(eq(products.isSoftDeleted, false));
+  }
+
+  if (published === 'true') {
+    conditions.push(eq(products.published, true));
+  } else if (published === 'false') {
+    conditions.push(eq(products.published, false));
+  }
+
+  if (stock === 'in_stock') {
+    conditions.push(gt(products.stock, 0));
+  } else if (stock === 'out_of_stock') {
+    conditions.push(eq(products.stock, 0));
+  }
 
   if (search) {
-    const searchPattern = `%${search}%`;
-    conditions.push(
-      or(ilike(products.name, searchPattern), ilike(products.description, searchPattern))!,
-    );
+    conditions.push(ilike(products.name, `%${search}%`));
   }
 
   if (categoryId) {
@@ -270,9 +392,21 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
   }
 
   const enrichedProducts = productList.map((p) => ({
-    ...p,
+    productId: p.productId,
+    name: p.name,
+    slug: p.slug,
+    shortDescription: p.shortDescription ?? null,
+    description: p.description,
+    price: p.price,
+    stock: p.stock,
+    published: p.published,
+    isSoftDeleted: p.isSoftDeleted,
+    rating: null, // review domain not yet built per section 14
     primaryImage: p.productImageId ? (primaryImageById.get(p.productImageId) ?? null) : null,
     categories: categoriesByProductId[p.productId] || [],
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    softDeletedAt: p.softDeletedAt,
   }));
 
   return {
@@ -448,6 +582,13 @@ export async function updateVendorProductById(
     updatedAt: new Date(),
   };
 
+  if (input.published !== undefined) {
+    if (input.published === true && !existingProduct.published) {
+      await validateProductPublishability(vendorId, productId, input);
+    }
+    updatePayload.published = input.published;
+  }
+
   if (input.name !== undefined) updatePayload.name = input.name;
   if (input.slug !== undefined) updatePayload.slug = input.slug;
   if (input.description !== undefined) updatePayload.description = input.description;
@@ -461,17 +602,21 @@ export async function updateVendorProductById(
 }
 
 /**
- * Soft deletes a product owned by the vendor.
+ * Archives a product owned by the vendor (soft delete, preserves published state).
  */
-export async function deleteVendorProductById(vendorId: string, productId: string) {
+export async function archiveVendorProduct(vendorId: string, productId: string) {
   const db = getDb();
 
   const existingProduct = await db.query.products.findFirst({
     where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
   });
 
-  if (!existingProduct || existingProduct.isSoftDeleted) {
+  if (!existingProduct) {
     throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
+  }
+
+  if (existingProduct.isSoftDeleted) {
+    throw new AppError(400, 'PRODUCT_ALREADY_ARCHIVED', 'Product is already archived.');
   }
 
   await db
@@ -483,7 +628,108 @@ export async function deleteVendorProductById(vendorId: string, productId: strin
     })
     .where(eq(products.productId, productId));
 
-  return { message: 'Product deleted successfully.' };
+  return getVendorProductById(vendorId, productId);
+}
+
+/**
+ * Restores an archived product owned by the vendor.
+ */
+export async function restoreVendorProduct(vendorId: string, productId: string) {
+  const db = getDb();
+
+  const existingProduct = await db.query.products.findFirst({
+    where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
+  });
+
+  if (!existingProduct) {
+    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
+  }
+
+  if (!existingProduct.isSoftDeleted) {
+    throw new AppError(400, 'PRODUCT_NOT_ARCHIVED', 'Product is not archived.');
+  }
+
+  await db
+    .update(products)
+    .set({
+      isSoftDeleted: false,
+      softDeletedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(products.productId, productId));
+
+  return getVendorProductById(vendorId, productId);
+}
+
+/**
+ * Permanently deletes a product owned by the vendor.
+ */
+export async function deleteVendorProductById(vendorId: string, productId: string) {
+  const db = getDb();
+
+  const existingProduct = await db.query.products.findFirst({
+    where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
+  });
+
+  if (!existingProduct) {
+    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(productCategories).where(eq(productCategories.productId, productId));
+    await tx.delete(productMedia).where(eq(productMedia.productId, productId));
+    await tx.delete(products).where(eq(products.productId, productId));
+  });
+
+  return { message: 'Product permanently deleted.' };
+}
+
+/**
+ * Performs bulk actions (publish, unpublish, archive, restore, delete) on a list of vendor-owned product IDs.
+ */
+export async function bulkProductAction(vendorId: string, input: BulkProductActionInput) {
+  const db = getDb();
+  const { action, productIds } = input;
+  const uniqueIds = Array.from(new Set(productIds));
+
+  let processed = 0;
+  const failed: { productId: string; reason: string }[] = [];
+
+  for (const pid of uniqueIds) {
+    try {
+      if (action === 'publish') {
+        await validateProductPublishability(vendorId, pid);
+        await db
+          .update(products)
+          .set({ published: true, updatedAt: new Date() })
+          .where(and(eq(products.productId, pid), eq(products.vendorId, vendorId)));
+      } else if (action === 'unpublish') {
+        await db
+          .update(products)
+          .set({ published: false, updatedAt: new Date() })
+          .where(and(eq(products.productId, pid), eq(products.vendorId, vendorId)));
+      } else if (action === 'archive') {
+        await archiveVendorProduct(vendorId, pid);
+      } else if (action === 'restore') {
+        await restoreVendorProduct(vendorId, pid);
+      } else if (action === 'delete') {
+        await deleteVendorProductById(vendorId, pid);
+      }
+      processed++;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      failed.push({ productId: pid, reason: message });
+    }
+  }
+
+  return {
+    action,
+    total: uniqueIds.length,
+    processed,
+    failedCount: failed.length,
+    failed,
+    message: `Bulk ${action} completed: ${processed} succeeded, ${failed.length} failed.`,
+  };
 }
 
 type DashboardPeriod = GetVendorDashboardQuery['period'];

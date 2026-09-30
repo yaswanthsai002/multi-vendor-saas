@@ -56,6 +56,7 @@ export const updateProductSchema = z
       .int('Stock must be an integer.')
       .min(0, 'Stock cannot be negative.')
       .optional(),
+    published: z.boolean().optional(),
     productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
     galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).optional(),
     categoryIds: z.array(z.string().uuid('Category ID must be a valid UUID.')).optional(),
@@ -77,8 +78,19 @@ export const getVendorProductsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().optional(),
   categoryId: z.string().uuid('Invalid category ID format.').optional(),
+  stock: z.enum(['all', 'in_stock', 'out_of_stock']).default('all'),
+  published: z.enum(['all', 'true', 'false']).default('all'),
+  archived: z.enum(['true', 'false']).default('false'),
   sortBy: z.enum(['createdAt', 'price', 'name', 'stock']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export const bulkProductActionSchema = z.object({
+  action: z.enum(['publish', 'unpublish', 'archive', 'restore', 'delete']),
+  productIds: z
+    .array(z.string().uuid('Invalid product ID format.'))
+    .min(1, 'At least one product ID is required.')
+    .max(100, 'Cannot perform bulk action on more than 100 products at once.'),
 });
 
 export const getVendorDashboardQuerySchema = z.object({
@@ -88,5 +100,6 @@ export const getVendorDashboardQuerySchema = z.object({
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type GetVendorProductsQuery = z.infer<typeof getVendorProductsQuerySchema>;
+export type BulkProductActionInput = z.infer<typeof bulkProductActionSchema>;
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
 export type GetVendorDashboardQuery = z.infer<typeof getVendorDashboardQuerySchema>;

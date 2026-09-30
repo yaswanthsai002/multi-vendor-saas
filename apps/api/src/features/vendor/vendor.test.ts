@@ -67,6 +67,9 @@ vi.mock('./vendor.service.js', async (importOriginal) => {
     getVendorProductById: vi.fn(),
     updateVendorProductById: vi.fn(),
     deleteVendorProductById: vi.fn(),
+    archiveVendorProduct: vi.fn(),
+    restoreVendorProduct: vi.fn(),
+    bulkProductAction: vi.fn(),
     getVendorDashboardData: vi.fn(),
   };
 });
@@ -493,6 +496,106 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       expect(vendorService.getVendorDashboardData).toHaveBeenCalledWith(validVendorId, {
         period: '7d',
       });
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                    PATCH /api/vendor/products/:productId/archive           */
+  /* -------------------------------------------------------------------------- */
+  describe('PATCH /api/vendor/products/:productId/archive', () => {
+    it('archives product and returns 200', async () => {
+      const mockResult = {
+        productId: validProductId,
+        isSoftDeleted: true,
+      };
+      vi.mocked(vendorService.archiveVendorProduct).mockResolvedValue(
+        mockResult as unknown as Awaited<ReturnType<typeof vendorService.archiveVendorProduct>>,
+      );
+
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .patch(`/api/vendor/products/${validProductId}/archive`)
+        .set('Cookie', [cookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Product archived successfully.');
+      expect(vendorService.archiveVendorProduct).toHaveBeenCalledWith(
+        validVendorId,
+        validProductId,
+      );
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                    PATCH /api/vendor/products/:productId/restore           */
+  /* -------------------------------------------------------------------------- */
+  describe('PATCH /api/vendor/products/:productId/restore', () => {
+    it('restores archived product and returns 200', async () => {
+      const mockResult = {
+        productId: validProductId,
+        isSoftDeleted: false,
+      };
+      vi.mocked(vendorService.restoreVendorProduct).mockResolvedValue(
+        mockResult as unknown as Awaited<ReturnType<typeof vendorService.restoreVendorProduct>>,
+      );
+
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .patch(`/api/vendor/products/${validProductId}/restore`)
+        .set('Cookie', [cookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Product restored successfully.');
+      expect(vendorService.restoreVendorProduct).toHaveBeenCalledWith(
+        validVendorId,
+        validProductId,
+      );
+    });
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /*                       POST /api/vendor/products/bulk                       */
+  /* -------------------------------------------------------------------------- */
+  describe('POST /api/vendor/products/bulk', () => {
+    it('executes bulk action on products and returns 200', async () => {
+      const mockResult = {
+        action: 'publish' as const,
+        total: 1,
+        processed: 1,
+        failedCount: 0,
+        failed: [],
+        message: 'Bulk publish completed: 1 succeeded, 0 failed.',
+      };
+      vi.mocked(vendorService.bulkProductAction).mockResolvedValue(mockResult);
+
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/products/bulk')
+        .set('Cookie', [cookie])
+        .send({
+          action: 'publish',
+          productIds: [validProductId],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.processed).toBe(1);
+      expect(vendorService.bulkProductAction).toHaveBeenCalledWith(validVendorId, {
+        action: 'publish',
+        productIds: [validProductId],
+      });
+    });
+
+    it('returns 400 when bulk payload is invalid', async () => {
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/products/bulk')
+        .set('Cookie', [cookie])
+        .send({
+          action: 'invalid_action',
+          productIds: [],
+        });
+
+      expect(res.status).toBe(400);
     });
   });
 
