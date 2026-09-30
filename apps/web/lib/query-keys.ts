@@ -14,4 +14,15 @@ export const queryKeys = {
     list: (filters?: unknown) => ['vendor', 'media', 'list', filters] as const,
     detail: (id: string) => ['vendor', 'media', 'detail', id] as const,
   },
+  products: {
+    all: () => ['vendor', 'products'] as const,
+    list: (filters?: unknown) => ['vendor', 'products', 'list', filters] as const,
+    detail: (id: string) => ['vendor', 'products', 'detail', id] as const,
+  },
+  categories: {
+    all: () => ['categories'] as const,
+    list: (parentCategoryId?: string) =>
+      ['categories', 'list', parentCategoryId ?? 'root'] as const,
+    detail: (id: string) => ['categories', 'detail', id] as const,
+  },
 } as const;
