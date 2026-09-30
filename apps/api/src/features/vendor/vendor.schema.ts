@@ -18,10 +18,8 @@ export const createProductSchema = z.object({
       'Price must be a valid non-negative decimal with up to 2 decimal places.',
     ),
   stock: z.number().int('Stock must be an integer.').min(0, 'Stock cannot be negative.'),
-  images: z
-    .array(z.string().url('Each image must be a valid URL.'))
-    .min(1, 'At least 1 product image is required.'),
-  videos: z.array(z.url('Each video must be a valid URL.')).optional(),
+  productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
+  galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).optional(),
   categoryIds: z.array(z.string().uuid('Category ID must be a valid UUID.')).optional(),
   slug: z
     .string()
@@ -58,11 +56,8 @@ export const updateProductSchema = z
       .int('Stock must be an integer.')
       .min(0, 'Stock cannot be negative.')
       .optional(),
-    images: z
-      .array(z.string().url('Each image must be a valid URL.'))
-      .min(1, 'At least 1 product image is required.')
-      .optional(),
-    videos: z.array(z.string().url('Each video must be a valid URL.')).optional(),
+    productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
+    galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).optional(),
     categoryIds: z.array(z.string().uuid('Category ID must be a valid UUID.')).optional(),
     slug: z
       .string()

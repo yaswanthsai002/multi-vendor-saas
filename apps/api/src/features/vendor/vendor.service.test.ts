@@ -11,6 +11,10 @@ const { db } = vi.hoisted(() => ({
       categories: {
         findMany: vi.fn(),
       },
+      mediaLibrary: {
+        findFirst: vi.fn(),
+        findMany: vi.fn(),
+      },
     },
     insert: vi.fn(() => ({
       values: vi.fn(() => ({
@@ -22,8 +26,7 @@ const { db } = vi.hoisted(() => ({
               name: 'Sample Product',
               slug: 'sample-product',
               description: 'Sample description',
-              images: ['https://example.com/img.jpg'],
-              videos: [],
+              productImageId: null,
               price: '29.99',
               stock: 10,
               isSoftDeleted: false,
@@ -64,7 +67,11 @@ const { db } = vi.hoisted(() => ({
           })),
         })),
         innerJoin: vi.fn(() => ({
-          where: vi.fn(() => Promise.resolve([])),
+          where: vi.fn(() =>
+            Object.assign(Promise.resolve([]), {
+              orderBy: vi.fn(() => Promise.resolve([])),
+            }),
+          ),
         })),
       })),
     })),
@@ -97,7 +104,6 @@ describe('Vendor Service (vendor.service.ts)', () => {
           description: 'A great mechanical keyboard.',
           price: '99.99',
           stock: 20,
-          images: ['https://example.com/img.png'],
           categoryIds: [categoryId],
         }),
       ).rejects.toThrow('One or more specified categories do not exist.');
@@ -117,8 +123,7 @@ describe('Vendor Service (vendor.service.ts)', () => {
           name: 'Mechanical Keyboard',
           slug: 'mechanical-keyboard-abc123',
           description: 'Description',
-          images: ['https://example.com/img.png'],
-          videos: [],
+          productImageId: null,
           price: '99.99',
           stock: 10,
           isSoftDeleted: false,
@@ -131,7 +136,6 @@ describe('Vendor Service (vendor.service.ts)', () => {
         description: 'A great mechanical keyboard.',
         price: '99.99',
         stock: 20,
-        images: ['https://example.com/img.png'],
       });
 
       expect(db.insert).toHaveBeenCalled();

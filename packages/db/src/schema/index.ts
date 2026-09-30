@@ -9,3 +9,5 @@ export * from './vendorOrders.js';
 export * from './orderItems.js';
 export * from './carts.js';
 export * from './cartItems.js';
+export * from './mediaLibrary.js';
+export * from './productMedia.js';

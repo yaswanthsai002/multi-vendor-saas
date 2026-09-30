@@ -3,8 +3,10 @@ import { randomBytes } from 'node:crypto';
 import { getDb } from '@repo/db';
 import {
   categories,
+  mediaLibrary,
   orderItems,
   productCategories,
+  productMedia,
   products,
   vendorOrders,
   vendors,
@@ -12,6 +14,7 @@ import {
 import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { formatMediaResponse } from '../media/media.service.js';
 
 import type {
   CreateProductInput,
@@ -26,6 +29,31 @@ export function slugify(text: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+}
+
+/**
+ * Validates that all media IDs exist, are active, and belong to the vendor.
+ */
+async function validateVendorMedia(vendorId: string, mediaIds: string[]): Promise<void> {
+  if (mediaIds.length === 0) return;
+  const db = getDb();
+  const uniqueIds = Array.from(new Set(mediaIds));
+
+  const validMedia = await db.query.mediaLibrary.findMany({
+    where: and(
+      inArray(mediaLibrary.mediaId, uniqueIds),
+      eq(mediaLibrary.vendorId, vendorId),
+      eq(mediaLibrary.status, 'active'),
+    ),
+  });
+
+  if (validMedia.length !== uniqueIds.length) {
+    throw new AppError(
+      400,
+      'INVALID_MEDIA',
+      'One or more specified media items do not exist, are inactive, or do not belong to you.',
+    );
+  }
 }
 
 /**
@@ -46,7 +74,19 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
     finalSlug = `${baseSlug}-${randomBytes(3).toString('hex')}`;
   }
 
-  // 2. Validate category IDs if provided
+  // 2. Validate media ownership & active status
+  const mediaToValidate: string[] = [];
+  if (input.productImageId) {
+    mediaToValidate.push(input.productImageId);
+  }
+  if (input.galleryMediaIds && input.galleryMediaIds.length > 0) {
+    mediaToValidate.push(...input.galleryMediaIds);
+  }
+  if (mediaToValidate.length > 0) {
+    await validateVendorMedia(vendorId, mediaToValidate);
+  }
+
+  // 3. Validate category IDs if provided
   if (input.categoryIds && input.categoryIds.length > 0) {
     const validCategories = await db.query.categories.findMany({
       where: inArray(categories.categoryId, input.categoryIds),
@@ -57,7 +97,7 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
     }
   }
 
-  // 3. Insert product & category mappings
+  // 4. Insert product
   const [createdProduct] = await db
     .insert(products)
     .values({
@@ -65,19 +105,42 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
       name: input.name,
       slug: finalSlug,
       description: input.description,
-      images: input.images,
-      videos: input.videos || [],
+      productImageId: input.productImageId ?? null,
       price: input.price,
       stock: input.stock,
       isSoftDeleted: false,
     })
     .returning();
 
+  // 5. Insert category associations
   if (input.categoryIds && input.categoryIds.length > 0) {
     await db.insert(productCategories).values(
       input.categoryIds.map((categoryId) => ({
         productId: createdProduct.productId,
         categoryId,
+      })),
+    );
+  }
+
+  // 6. Insert product media associations (primary image + gallery media per §22)
+  const allMediaIds: string[] = [];
+  if (input.productImageId) {
+    allMediaIds.push(input.productImageId);
+  }
+  if (input.galleryMediaIds) {
+    for (const gid of input.galleryMediaIds) {
+      if (!allMediaIds.includes(gid)) {
+        allMediaIds.push(gid);
+      }
+    }
+  }
+
+  if (allMediaIds.length > 0) {
+    await db.insert(productMedia).values(
+      allMediaIds.map((mediaId, sortOrder) => ({
+        productId: createdProduct.productId,
+        mediaId,
+        sortOrder,
       })),
     );
   }
@@ -171,8 +234,24 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
     }
   }
 
+  // Batch load primary images
+  const imageIds = productList
+    .map((p) => p.productImageId)
+    .filter((id): id is string => Boolean(id));
+
+  const primaryImageById = new Map<string, ReturnType<typeof formatMediaResponse>>();
+  if (imageIds.length > 0) {
+    const mediaRows = await db.query.mediaLibrary.findMany({
+      where: inArray(mediaLibrary.mediaId, Array.from(new Set(imageIds))),
+    });
+    for (const row of mediaRows) {
+      primaryImageById.set(row.mediaId, formatMediaResponse(row));
+    }
+  }
+
   const enrichedProducts = productList.map((p) => ({
     ...p,
+    primaryImage: p.productImageId ? (primaryImageById.get(p.productImageId) ?? null) : null,
     categories: categoriesByProductId[p.productId] || [],
   }));
 
@@ -215,8 +294,32 @@ export async function getVendorProductById(vendorId: string, productId: string) 
     .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
     .where(eq(productCategories.productId, productId));
 
+  let primaryImage = null;
+  if (product.productImageId) {
+    const mediaRow = await db.query.mediaLibrary.findFirst({
+      where: eq(mediaLibrary.mediaId, product.productImageId),
+    });
+    if (mediaRow) {
+      primaryImage = formatMediaResponse(mediaRow);
+    }
+  }
+
+  const galleryRows = await db
+    .select({
+      media: mediaLibrary,
+      sortOrder: productMedia.sortOrder,
+    })
+    .from(productMedia)
+    .innerJoin(mediaLibrary, eq(productMedia.mediaId, mediaLibrary.mediaId))
+    .where(eq(productMedia.productId, productId))
+    .orderBy(asc(productMedia.sortOrder));
+
+  const galleryMedia = galleryRows.map((r) => formatMediaResponse(r.media));
+
   return {
     ...product,
+    primaryImage,
+    media: galleryMedia,
     categories: linkedCategories,
   };
 }
@@ -251,7 +354,58 @@ export async function updateVendorProductById(
     }
   }
 
-  // 3. Validate categories if updated
+  // 3. Validate media if updated
+  const mediaToValidate: string[] = [];
+  if (input.productImageId) {
+    mediaToValidate.push(input.productImageId);
+  }
+  if (input.galleryMediaIds && input.galleryMediaIds.length > 0) {
+    mediaToValidate.push(...input.galleryMediaIds);
+  }
+  if (mediaToValidate.length > 0) {
+    await validateVendorMedia(vendorId, mediaToValidate);
+  }
+
+  // 4. Update product media associations (primary image + gallery media per §22)
+  if (input.galleryMediaIds !== undefined || input.productImageId !== undefined) {
+    const targetPrimaryId =
+      input.productImageId !== undefined ? input.productImageId : existingProduct.productImageId;
+
+    let targetGalleryIds: string[];
+    if (input.galleryMediaIds !== undefined) {
+      targetGalleryIds = input.galleryMediaIds;
+    } else {
+      const existingMedia = await db
+        .select({ mediaId: productMedia.mediaId })
+        .from(productMedia)
+        .where(eq(productMedia.productId, productId))
+        .orderBy(asc(productMedia.sortOrder));
+      targetGalleryIds = existingMedia.map((m) => m.mediaId);
+    }
+
+    const combinedMediaIds: string[] = [];
+    if (targetPrimaryId) {
+      combinedMediaIds.push(targetPrimaryId);
+    }
+    for (const gid of targetGalleryIds) {
+      if (!combinedMediaIds.includes(gid)) {
+        combinedMediaIds.push(gid);
+      }
+    }
+
+    await db.delete(productMedia).where(eq(productMedia.productId, productId));
+    if (combinedMediaIds.length > 0) {
+      await db.insert(productMedia).values(
+        combinedMediaIds.map((mediaId, sortOrder) => ({
+          productId,
+          mediaId,
+          sortOrder,
+        })),
+      );
+    }
+  }
+
+  // 5. Update category associations
   if (input.categoryIds !== undefined) {
     if (input.categoryIds.length > 0) {
       const validCategories = await db.query.categories.findMany({
@@ -280,7 +434,7 @@ export async function updateVendorProductById(
     }
   }
 
-  // 4. Update product fields
+  // 6. Update product fields
   const updatePayload: Record<string, unknown> = {
     updatedAt: new Date(),
   };
@@ -288,10 +442,9 @@ export async function updateVendorProductById(
   if (input.name !== undefined) updatePayload.name = input.name;
   if (input.slug !== undefined) updatePayload.slug = input.slug;
   if (input.description !== undefined) updatePayload.description = input.description;
-  if (input.images !== undefined) updatePayload.images = input.images;
-  if (input.videos !== undefined) updatePayload.videos = input.videos;
   if (input.price !== undefined) updatePayload.price = input.price;
   if (input.stock !== undefined) updatePayload.stock = input.stock;
+  if (input.productImageId !== undefined) updatePayload.productImageId = input.productImageId;
 
   await db.update(products).set(updatePayload).where(eq(products.productId, productId));
 
@@ -529,8 +682,9 @@ async function getTopProducts(vendorId: string) {
     .select({
       productId: products.productId,
       name: products.name,
-      images: products.images,
       stock: products.stock,
+      productImageId: products.productImageId,
+      originalStorageKey: mediaLibrary.originalStorageKey,
       unitsSold: sql<string>`
         SUM(${orderItems.productQuantity})
       `,
@@ -544,6 +698,7 @@ async function getTopProducts(vendorId: string) {
     .from(orderItems)
     .innerJoin(vendorOrders, eq(orderItems.vendorOrderId, vendorOrders.vendorOrderId))
     .innerJoin(products, eq(orderItems.productId, products.productId))
+    .leftJoin(mediaLibrary, eq(products.productImageId, mediaLibrary.mediaId))
     .where(
       and(
         eq(vendorOrders.vendorId, vendorId),
@@ -551,7 +706,13 @@ async function getTopProducts(vendorId: string) {
         eq(products.isSoftDeleted, false),
       ),
     )
-    .groupBy(products.productId, products.name, products.images, products.stock)
+    .groupBy(
+      products.productId,
+      products.name,
+      products.stock,
+      products.productImageId,
+      mediaLibrary.originalStorageKey,
+    )
     .orderBy(
       sql`
         SUM(${orderItems.productQuantity}) DESC
@@ -569,7 +730,7 @@ async function getTopProducts(vendorId: string) {
     productId: product.productId,
     name: product.name,
     category: 'General',
-    thumbnailUrl: product.images?.[0],
+    thumbnailUrl: product.originalStorageKey ? `/media/${product.originalStorageKey}` : undefined,
     unitsSold: Number(product.unitsSold),
     sales: Math.round(Number(product.sales)),
     stock: product.stock,

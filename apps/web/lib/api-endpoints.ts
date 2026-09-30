@@ -16,5 +16,6 @@ export const API_ENDPOINTS = {
   vendor: {
     dashboard: '/api/vendor/dashboard',
     products: '/api/vendor/products',
+    media: '/api/vendor/media',
   },
 } as const;
