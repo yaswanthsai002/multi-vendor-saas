@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import { mediaLibrary } from './mediaLibrary.js';
 import { vendors } from './vendors.js';
 
 export const products = pgTable(
@@ -23,8 +24,9 @@ export const products = pgTable(
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
     description: text('description').notNull(),
-    images: text('images').array().notNull(),
-    videos: text('videos').array(),
+    productImageId: uuid('productImageId').references(() => mediaLibrary.mediaId, {
+      onDelete: 'set null',
+    }),
     price: numeric('price', { precision: 12, scale: 2 }).notNull(),
     stock: integer('stock').notNull().default(0),
     isSoftDeleted: boolean('isSoftDeleted').default(false),
@@ -34,6 +36,7 @@ export const products = pgTable(
   },
   (table) => [
     index('products_vendorId_idx').on(table.vendorId),
+    index('products_productImageId_idx').on(table.productImageId),
     check('products_price_nonnegative_check', sql`${table.price} >= 0`),
     check('products_stock_nonnegative_check', sql`${table.stock} >= 0`),
   ],

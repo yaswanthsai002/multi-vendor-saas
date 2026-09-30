@@ -11,6 +11,7 @@ import morgan from 'morgan';
 import { apiRouter } from './routes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { notFoundHandler } from './shared/middleware/notFound.js';
+import { storageService } from './shared/storage/storage.service.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, '../../../.env') });
@@ -20,7 +21,12 @@ const app = express();
 
 app.disable('x-powered-by');
 
-app.use(helmet());
+// ponytail: allow frontend on port 3000 to load media assets from port 4000
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
 
 app.use(morgan('dev'));
 
@@ -28,6 +34,17 @@ app.use(
   cors({
     origin: process.env.WEB_ORIGIN,
     credentials: true,
+  }),
+);
+
+// Statically serve media library files
+app.use(
+  '/media',
+  express.static(storageService.getStorageRoot(), {
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', process.env.WEB_ORIGIN || '*');
+    },
   }),
 );
 

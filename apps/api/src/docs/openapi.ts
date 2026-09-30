@@ -19,6 +19,7 @@ export const openapiSpec = {
     { name: 'OAuth', description: 'Third-party OAuth 2.0 social authentication' },
     { name: 'Vendor Dashboard', description: 'Vendor dashboard analytics and overview metrics' },
     { name: 'Vendor Products', description: 'Vendor product catalog management endpoints' },
+    { name: 'Vendor Media', description: 'Vendor media library management endpoints' },
   ],
   components: {
     securitySchemes: {
@@ -166,12 +167,18 @@ export const openapiSpec = {
             type: 'string',
             example: 'Premium hot-swappable mechanical keyboard with RGB backlighting.',
           },
-          images: {
-            type: 'array',
-            items: { type: 'string' },
-            example: ['https://example.com/img1.jpg'],
+          productImageId: {
+            type: ['string', 'null'],
+            format: 'uuid',
+            example: 'd3b07384-d113-4ec3-a6d8-9990886c9fd2',
           },
-          videos: { type: 'array', items: { type: 'string' }, example: [] },
+          primaryImage: {
+            $ref: '#/components/schemas/MediaItem',
+          },
+          media: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/MediaItem' },
+          },
           price: { type: 'string', example: '129.99' },
           stock: { type: 'integer', example: 50 },
           isSoftDeleted: { type: 'boolean', example: false },
@@ -195,7 +202,6 @@ export const openapiSpec = {
           'name',
           'slug',
           'description',
-          'images',
           'price',
           'stock',
           'isSoftDeleted',
@@ -219,13 +225,12 @@ export const openapiSpec = {
           },
           price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '129.99' },
           stock: { type: 'integer', minimum: 0, example: 50 },
-          images: {
+          productImageId: { type: ['string', 'null'], format: 'uuid', example: null },
+          galleryMediaIds: {
             type: 'array',
-            items: { type: 'string', format: 'uri' },
-            minItems: 1,
-            example: ['https://example.com/img1.jpg'],
+            items: { type: 'string', format: 'uuid' },
+            example: [],
           },
-          videos: { type: 'array', items: { type: 'string', format: 'uri' }, example: [] },
           categoryIds: { type: 'array', items: { type: 'string', format: 'uuid' }, example: [] },
           slug: {
             type: 'string',
@@ -233,7 +238,7 @@ export const openapiSpec = {
             example: 'ergonomic-mechanical-keyboard',
           },
         },
-        required: ['name', 'description', 'price', 'stock', 'images'],
+        required: ['name', 'description', 'price', 'stock'],
       },
       UpdateProductInput: {
         type: 'object',
@@ -251,8 +256,8 @@ export const openapiSpec = {
           },
           price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '139.99' },
           stock: { type: 'integer', minimum: 0, example: 45 },
-          images: { type: 'array', items: { type: 'string', format: 'uri' }, minItems: 1 },
-          videos: { type: 'array', items: { type: 'string', format: 'uri' } },
+          productImageId: { type: ['string', 'null'], format: 'uuid' },
+          galleryMediaIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
           categoryIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
           slug: { type: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' },
         },
@@ -1250,6 +1255,464 @@ export const openapiSpec = {
           },
           '404': {
             description: 'Product not found, already deleted, or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/media': {
+      post: {
+        tags: ['Vendor Media'],
+        summary: 'Upload a media asset (image or video)',
+        description:
+          'Uploads an image or video file for the authenticated vendor. Automatically processes image variants or extracts a video poster frame.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: {
+                  file: {
+                    type: 'string',
+                    format: 'binary',
+                    description:
+                      'Image (max 10MB; jpeg, png, webp) or video (max 100MB; mp4, webm, quicktime)',
+                  },
+                },
+                required: ['file'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Media uploaded and processed successfully.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MediaUploadResponse' },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Validation Error, missing file, unsupported MIME type, or file too large.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden: caller lacks vendor role or active profile.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '500': {
+            description: 'Internal server error during media processing or persistence.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+      get: {
+        tags: ['Vendor Media'],
+        summary: 'List vendor media assets with pagination and filtering',
+        description:
+          'Returns a paginated list of media assets owned by the authenticated vendor, filterable by status, media type, and filename search.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'status',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['active', 'disabled', 'all'], default: 'active' },
+            description: 'Filter assets by lifecycle status.',
+          },
+          {
+            name: 'mediaType',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['image', 'video'] },
+            description: 'Filter assets by media type.',
+          },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Case-insensitive partial filename search.',
+          },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 },
+            description: 'Page index (1-based).',
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 20 },
+            description: 'Number of assets per page (max 100).',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated list of media assets.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MediaListResponse' },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid query parameters.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden: caller lacks vendor role or active profile.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/media/{mediaId}': {
+      parameters: [
+        {
+          name: 'mediaId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the media asset.',
+        },
+      ],
+      get: {
+        tags: ['Vendor Media'],
+        summary: 'Get single media asset by ID',
+        description:
+          'Returns full metadata and resolved URLs for a specific media asset owned by the vendor.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Media asset retrieved successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    media: { $ref: '#/components/schemas/MediaItem' },
+                  },
+                  required: ['media'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid mediaId UUID format.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Media asset not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        tags: ['Vendor Media'],
+        summary: 'Permanently delete a disabled, unreferenced media asset',
+        description:
+          'Deletes the database record and removes all physical files from disk. Only permitted when media is in disabled status and has zero product references.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '204': {
+            description: 'Media asset permanently deleted.',
+          },
+          '400': {
+            description: 'Media asset is not disabled.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Media asset not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '409': {
+            description: 'Media asset is in use by products and cannot be deleted.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/media/{mediaId}/disable': {
+      parameters: [
+        {
+          name: 'mediaId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the media asset.',
+        },
+      ],
+      patch: {
+        tags: ['Vendor Media'],
+        summary: 'Disable a media asset and unlink product associations',
+        description:
+          'Marks media status as disabled, removes all ProductMedia references, and nullifies productImageId on affected products within a transaction.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Media disabled successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Media disabled successfully.' },
+                    media: { $ref: '#/components/schemas/MediaItem' },
+                  },
+                  required: ['message', 'media'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid UUID format or media is already disabled.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Media asset not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/media/{mediaId}/enable': {
+      parameters: [
+        {
+          name: 'mediaId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the media asset.',
+        },
+      ],
+      patch: {
+        tags: ['Vendor Media'],
+        summary: 'Re-activate a disabled media asset',
+        description:
+          'Transitions media status from disabled back to active, making it eligible again for product assignment.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Media enabled successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Media enabled successfully.' },
+                    media: { $ref: '#/components/schemas/MediaItem' },
+                  },
+                  required: ['message', 'media'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Media is already active.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Forbidden.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '404': {
+            description: 'Media asset not found.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/media/bulk': {
+      post: {
+        tags: ['Vendor Media'],
+        summary: 'Perform bulk action on vendor media assets',
+        description:
+          'Bulk enables, disables, or permanently deletes a list of vendor media assets.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  action: { type: 'string', enum: ['enable', 'disable', 'delete'] },
+                  mediaIds: {
+                    type: 'array',
+                    items: { type: 'string', format: 'uuid' },
+                    minItems: 1,
+                    maxItems: 100,
+                  },
+                },
+                required: ['action', 'mediaIds'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Bulk action completed with summary report.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string', enum: ['enable', 'disable', 'delete'] },
+                    total: { type: 'integer' },
+                    processed: { type: 'integer' },
+                    failedCount: { type: 'integer' },
+                    message: { type: 'string' },
+                  },
+                  required: ['action', 'total', 'processed', 'failedCount', 'message'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Validation error.',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },

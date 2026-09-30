@@ -195,8 +195,8 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       description: 'Ultra responsive RGB mechanical gaming keyboard with brown switches.',
       price: '89.99',
       stock: 25,
-      images: ['https://example.com/keyboard1.png', 'https://example.com/keyboard2.png'],
-      videos: ['https://example.com/video1.mp4'],
+      productImageId: '55555555-5555-4555-8555-555555555555',
+      galleryMediaIds: ['66666666-6666-4666-8666-666666666666'],
       categoryIds: [validCategoryId],
     };
 
@@ -249,19 +249,19 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       expect(res.body.details.properties.stock).toBeDefined();
     });
 
-    it('should reject request with 400 if images array is empty', async () => {
+    it('should reject request with 400 if productImageId is not a valid UUID', async () => {
       const authCookie = await createAuthCookie(validUserId);
       const res = await request(app)
         .post('/api/vendor/products')
         .set('Cookie', [authCookie])
         .send({
           ...validProductPayload,
-          images: [],
+          productImageId: 'invalid-uuid',
         });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation Error');
-      expect(res.body.details.properties.images).toBeDefined();
+      expect(res.body.details.properties.productImageId).toBeDefined();
     });
   });
 
