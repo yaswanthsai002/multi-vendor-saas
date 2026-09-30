@@ -22,6 +22,13 @@
       "when": 1790682678811,
       "tag": "0002_loud_meltdown",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790745311616,
+      "tag": "0003_complete_xavin",
+      "breakpoints": true
     }
   ]
 }

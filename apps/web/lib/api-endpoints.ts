@@ -13,6 +13,11 @@ export const API_ENDPOINTS = {
     verificationStatus: '/api/auth/verification-status',
     resetPassword: '/api/auth/reset-password',
   },
+  categories: {
+    list: '/api/categories',
+    create: '/api/categories',
+    detail: (id: string) => `/api/categories/${id}` as const,
+  },
   vendor: {
     dashboard: '/api/vendor/dashboard',
     products: '/api/vendor/products',

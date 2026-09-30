@@ -32,6 +32,32 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Validates that all category IDs exist and are leaf categories (no subcategories).
+ */
+async function validateLeafCategories(categoryIds: string[]): Promise<void> {
+  const db = getDb();
+  const validCategories = await db.query.categories.findMany({
+    where: inArray(categories.categoryId, categoryIds),
+  });
+
+  if (validCategories.length !== categoryIds.length) {
+    throw new AppError(400, 'INVALID_CATEGORY', 'One or more specified categories do not exist.');
+  }
+
+  const childCategories = await db.query.categories.findMany({
+    where: inArray(categories.parentCategoryId, categoryIds),
+  });
+
+  if (childCategories.length > 0) {
+    throw new AppError(
+      400,
+      'INVALID_CATEGORY',
+      'Only leaf categories (categories without subcategories) can be assigned to a product.',
+    );
+  }
+}
+
+/**
  * Validates that all media IDs exist, are active, and belong to the vendor.
  */
 async function validateVendorMedia(vendorId: string, mediaIds: string[]): Promise<void> {
@@ -88,13 +114,7 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
 
   // 3. Validate category IDs if provided
   if (input.categoryIds && input.categoryIds.length > 0) {
-    const validCategories = await db.query.categories.findMany({
-      where: inArray(categories.categoryId, input.categoryIds),
-    });
-
-    if (validCategories.length !== input.categoryIds.length) {
-      throw new AppError(400, 'INVALID_CATEGORY', 'One or more specified categories do not exist.');
-    }
+    await validateLeafCategories(input.categoryIds);
   }
 
   // 4. Insert product
@@ -408,20 +428,9 @@ export async function updateVendorProductById(
   // 5. Update category associations
   if (input.categoryIds !== undefined) {
     if (input.categoryIds.length > 0) {
-      const validCategories = await db.query.categories.findMany({
-        where: inArray(categories.categoryId, input.categoryIds),
-      });
-
-      if (validCategories.length !== input.categoryIds.length) {
-        throw new AppError(
-          400,
-          'INVALID_CATEGORY',
-          'One or more specified categories do not exist.',
-        );
-      }
+      await validateLeafCategories(input.categoryIds);
     }
 
-    // Replace category associations
     await db.delete(productCategories).where(eq(productCategories.productId, productId));
 
     if (input.categoryIds.length > 0) {
