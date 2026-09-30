@@ -21,6 +21,10 @@ export const API_ENDPOINTS = {
   vendor: {
     dashboard: '/api/vendor/dashboard',
     products: '/api/vendor/products',
+    productDetail: (id: string) => `/api/vendor/products/${id}` as const,
+    productArchive: (id: string) => `/api/vendor/products/${id}/archive` as const,
+    productRestore: (id: string) => `/api/vendor/products/${id}/restore` as const,
+    productsBulk: '/api/vendor/products/bulk',
     media: '/api/vendor/media',
   },
 } as const;

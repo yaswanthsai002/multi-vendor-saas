@@ -1031,6 +1031,27 @@ export const openapiSpec = {
             description: 'Filter products by category UUID',
           },
           {
+            name: 'stock',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['all', 'in_stock', 'out_of_stock'], default: 'all' },
+            description: 'Filter products by stock status',
+          },
+          {
+            name: 'published',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['all', 'true', 'false'], default: 'all' },
+            description: 'Filter products by publication status',
+          },
+          {
+            name: 'archived',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['true', 'false'], default: 'false' },
+            description: 'Filter products by archived (soft-deleted) state',
+          },
+          {
             name: 'sortBy',
             in: 'query',
             required: false,
@@ -1129,6 +1150,86 @@ export const openapiSpec = {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products/bulk': {
+      post: {
+        tags: ['Vendor Products'],
+        summary: 'Perform bulk action on products',
+        description:
+          'Executes publish, unpublish, archive, restore, or delete action on a batch of vendor-owned products.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  action: {
+                    type: 'string',
+                    enum: ['publish', 'unpublish', 'archive', 'restore', 'delete'],
+                  },
+                  productIds: {
+                    type: 'array',
+                    items: { type: 'string', format: 'uuid' },
+                    minItems: 1,
+                    maxItems: 100,
+                  },
+                },
+                required: ['action', 'productIds'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Bulk product action completed.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    action: { type: 'string' },
+                    total: { type: 'integer' },
+                    processed: { type: 'integer' },
+                    failedCount: { type: 'integer' },
+                    failed: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'string', format: 'uuid' },
+                          reason: { type: 'string' },
+                        },
+                      },
+                    },
+                    message: { type: 'string' },
+                  },
+                  required: ['action', 'total', 'processed', 'failedCount', 'failed', 'message'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid input payload.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '403': {
+            description: 'Forbidden: caller lacks vendor role or active profile.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
             },
           },
         },
@@ -1316,6 +1417,112 @@ export const openapiSpec = {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
               },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products/{productId}/archive': {
+      parameters: [
+        {
+          name: 'productId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the product to archive',
+        },
+      ],
+      patch: {
+        tags: ['Vendor Products'],
+        summary: 'Archive a product',
+        description:
+          'Soft-deletes a product, moving it to Archived state while preserving publication status.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Product archived successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Product archived successfully.' },
+                    product: { $ref: '#/components/schemas/VendorProduct' },
+                  },
+                  required: ['message', 'product'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Product already archived or invalid UUID.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '404': {
+            description: 'Product not found.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products/{productId}/restore': {
+      parameters: [
+        {
+          name: 'productId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          description: 'UUID of the product to restore',
+        },
+      ],
+      patch: {
+        tags: ['Vendor Products'],
+        summary: 'Restore an archived product',
+        description:
+          'Restores an archived product back to its previous Published/Unpublished state.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Product restored successfully.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Product restored successfully.' },
+                    product: { $ref: '#/components/schemas/VendorProduct' },
+                  },
+                  required: ['message', 'product'],
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Product not archived or invalid UUID.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '404': {
+            description: 'Product not found.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
             },
           },
         },

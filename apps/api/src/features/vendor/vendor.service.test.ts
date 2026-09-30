@@ -75,6 +75,7 @@ const { db } = vi.hoisted(() => ({
         })),
       })),
     })),
+    transaction: vi.fn(<T>(cb: (tx: unknown) => Promise<T>) => cb(db)),
   },
 }));
 
@@ -212,7 +213,7 @@ describe('Vendor Service (vendor.service.ts)', () => {
       );
     });
 
-    it('should perform soft-delete by setting isSoftDeleted: true', async () => {
+    it('should permanently delete the product and its associations', async () => {
       vi.mocked(db.query.products.findFirst).mockResolvedValueOnce({
         productId,
         vendorId,
@@ -221,7 +222,31 @@ describe('Vendor Service (vendor.service.ts)', () => {
 
       const res = await vendorService.deleteVendorProductById(vendorId, productId);
 
-      expect(res.message).toBe('Product deleted successfully.');
+      expect(res.message).toBe('Product permanently deleted.');
+      expect(db.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('archiveVendorProduct & restoreVendorProduct', () => {
+    it('should archive an active product', async () => {
+      vi.mocked(db.query.products.findFirst).mockResolvedValue({
+        productId,
+        vendorId,
+        isSoftDeleted: false,
+      } as never);
+
+      await vendorService.archiveVendorProduct(vendorId, productId);
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    it('should restore an archived product', async () => {
+      vi.mocked(db.query.products.findFirst).mockResolvedValue({
+        productId,
+        vendorId,
+        isSoftDeleted: true,
+      } as never);
+
+      await vendorService.restoreVendorProduct(vendorId, productId);
       expect(db.update).toHaveBeenCalled();
     });
   });

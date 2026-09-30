@@ -1,4 +1,5 @@
 import {
+  bulkProductActionSchema,
   createProductSchema,
   getVendorDashboardQuerySchema,
   getVendorProductsQuerySchema,
@@ -64,6 +65,48 @@ export async function updateVendorProductById(
       message: 'Product updated successfully.',
       product,
     });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function archiveVendorProduct(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const { productId } = productIdParamSchema.parse(req.params);
+    const product = await vendorService.archiveVendorProduct(vendorId, productId);
+
+    return res.status(200).json({
+      message: 'Product archived successfully.',
+      product,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function restoreVendorProduct(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const { productId } = productIdParamSchema.parse(req.params);
+    const product = await vendorService.restoreVendorProduct(vendorId, productId);
+
+    return res.status(200).json({
+      message: 'Product restored successfully.',
+      product,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function bulkProductAction(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const validatedData = bulkProductActionSchema.parse(req.body);
+    const result = await vendorService.bulkProductAction(vendorId, validatedData);
+
+    return res.status(200).json(result);
   } catch (error) {
     return next(error);
   }
