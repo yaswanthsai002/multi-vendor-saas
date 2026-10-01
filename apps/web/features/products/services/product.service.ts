@@ -1,9 +1,12 @@
 import type {
   BulkProductAction,
   BulkProductActionResponse,
+  CreateProductInput,
+  ProductDetail,
   ProductItem,
   ProductListFilters,
   ProductListResponse,
+  UpdateProductInput,
 } from '../types/product.types';
 
 import { makeApiRequest } from '@/lib/api-client';
@@ -19,16 +22,28 @@ export async function fetchVendorProducts(
   });
 }
 
+export async function fetchVendorProductById(
+  productId: string,
+): Promise<{ product: ProductDetail }> {
+  return makeApiRequest<{ product: ProductDetail }>({
+    url: API_ENDPOINTS.vendor.productDetail(productId),
+    method: 'GET',
+  });
+}
+
+export async function createVendorProduct(
+  data: CreateProductInput,
+): Promise<{ message: string; product: ProductItem }> {
+  return makeApiRequest<{ message: string; product: ProductItem }>({
+    url: API_ENDPOINTS.vendor.products,
+    method: 'POST',
+    data,
+  });
+}
+
 export async function updateVendorProduct(
   productId: string,
-  data: {
-    name?: string;
-    description?: string;
-    price?: string;
-    stock?: number;
-    published?: boolean;
-    productImageId?: string | null;
-  },
+  data: UpdateProductInput,
 ): Promise<{ message: string; product: ProductItem }> {
   return makeApiRequest<{ message: string; product: ProductItem }>({
     url: API_ENDPOINTS.vendor.productDetail(productId),

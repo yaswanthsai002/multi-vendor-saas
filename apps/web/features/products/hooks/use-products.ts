@@ -6,13 +6,20 @@ import { toast } from 'sonner';
 import {
   archiveVendorProduct,
   bulkProductAction,
+  createVendorProduct,
   deleteVendorProduct,
+  fetchVendorProductById,
   fetchVendorProducts,
   restoreVendorProduct,
   updateVendorProduct,
 } from '../services/product.service';
 
-import type { BulkProductAction, ProductListFilters } from '../types/product.types';
+import type {
+  BulkProductAction,
+  CreateProductInput,
+  ProductListFilters,
+  UpdateProductInput,
+} from '../types/product.types';
 
 import { queryKeys } from '@/lib/query-keys';
 
@@ -24,24 +31,35 @@ export function useVendorProducts(filters: ProductListFilters = {}) {
   });
 }
 
+export function useProductDetail(productId: string) {
+  return useQuery({
+    queryKey: queryKeys.products.detail(productId),
+    queryFn: () => fetchVendorProductById(productId),
+    enabled: Boolean(productId),
+  });
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateProductInput) => createVendorProduct(data),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all() });
+      toast.success(res.message || 'Product created.');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to create product.');
+    },
+  });
+}
+
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      productId,
-      data,
-    }: {
-      productId: string;
-      data: {
-        name?: string;
-        description?: string;
-        price?: string;
-        stock?: number;
-        published?: boolean;
-        productImageId?: string | null;
-      };
-    }) => updateVendorProduct(productId, data),
+    mutationFn: ({ productId, data }: { productId: string; data: UpdateProductInput }) =>
+      updateVendorProduct(productId, data),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.products.all() });
       toast.success(res.message || 'Product updated.');

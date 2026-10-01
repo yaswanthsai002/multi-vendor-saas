@@ -47,25 +47,57 @@ const { db } = vi.hoisted(() => ({
     })),
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          orderBy: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              offset: vi.fn(() =>
+        where: vi.fn(() =>
+          Object.assign(
+            Promise.resolve([
+              {
+                productId: '33333333-3333-4333-8333-333333333333',
+                vendorId: '22222222-2222-4222-8222-222222222222',
+                name: 'Sample Product',
+                slug: 'sample-product',
+                description: 'Sample description that is long enough',
+                price: '29.99',
+                stock: 0,
+                isSoftDeleted: false,
+                productImageId: '11111111-1111-4111-8111-111111111111',
+              },
+            ]),
+            {
+              limit: vi.fn(() =>
                 Promise.resolve([
                   {
                     productId: '33333333-3333-4333-8333-333333333333',
                     vendorId: '22222222-2222-4222-8222-222222222222',
                     name: 'Sample Product',
                     slug: 'sample-product',
+                    description: 'Sample description that is long enough',
                     price: '29.99',
-                    stock: 10,
+                    stock: 0,
                     isSoftDeleted: false,
+                    productImageId: '11111111-1111-4111-8111-111111111111',
                   },
                 ]),
               ),
-            })),
-          })),
-        })),
+              orderBy: vi.fn(() => ({
+                limit: vi.fn(() => ({
+                  offset: vi.fn(() =>
+                    Promise.resolve([
+                      {
+                        productId: '33333333-3333-4333-8333-333333333333',
+                        vendorId: '22222222-2222-4222-8222-222222222222',
+                        name: 'Sample Product',
+                        slug: 'sample-product',
+                        price: '29.99',
+                        stock: 10,
+                        isSoftDeleted: false,
+                      },
+                    ]),
+                  ),
+                })),
+              })),
+            },
+          ),
+        ),
         innerJoin: vi.fn(() => ({
           where: vi.fn(() =>
             Object.assign(Promise.resolve([]), {
@@ -248,6 +280,24 @@ describe('Vendor Service (vendor.service.ts)', () => {
 
       await vendorService.restoreVendorProduct(vendorId, productId);
       expect(db.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('validateProductPublishability', () => {
+    it('should throw 400 PRODUCT_PUBLISH_INVALID_STOCK when stock is 0 or negative', async () => {
+      vi.mocked(db.query.products.findFirst).mockResolvedValueOnce({
+        productId,
+        vendorId,
+        name: 'Valid Product Name',
+        description: 'This is a valid product description.',
+        price: '50.00',
+        stock: 0,
+        productImageId: '11111111-1111-4111-8111-111111111111',
+      } as never);
+
+      await expect(
+        vendorService.validateProductPublishability(vendorId, productId),
+      ).rejects.toThrow('Unable to publish product because stock must be at least 1.');
     });
   });
 });

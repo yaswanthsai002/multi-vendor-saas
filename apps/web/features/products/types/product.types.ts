@@ -4,6 +4,7 @@ export interface ProductCategoryRef {
   categoryId: string;
   name: string;
   slug: string;
+  imageUrl?: string | null;
 }
 
 export interface ProductItem {
@@ -17,6 +18,7 @@ export interface ProductItem {
   published: boolean;
   isSoftDeleted: boolean;
   rating: number | null;
+  productImageId?: string | null;
   primaryImage: MediaItem | null;
   categories: ProductCategoryRef[];
   createdAt: string;
@@ -59,4 +61,36 @@ export interface BulkProductActionResponse {
   failedCount: number;
   failed: Array<{ productId: string; reason: string }>;
   message: string;
+}
+
+export interface GalleryMediaItem extends MediaItem {
+  sortOrder: number;
+}
+
+export interface ProductDetail extends ProductItem {
+  gallery?: GalleryMediaItem[];
+}
+
+export interface CreateProductInput {
+  name: string;
+  shortDescription?: string | null;
+  description?: string;
+  price: string;
+  stock: number;
+  productImageId?: string | null;
+  galleryMediaIds?: string[];
+  categoryIds?: string[];
+  published?: boolean;
+}
+
+export interface UpdateProductInput {
+  name?: string;
+  shortDescription?: string | null;
+  description?: string;
+  price?: string;
+  stock?: number;
+  productImageId?: string | null;
+  galleryMediaIds?: string[];
+  categoryIds?: string[];
+  published?: boolean;
 }
