@@ -56,7 +56,7 @@ export function MediaDeleteDialog({
         {/* Header & Body */}
         <div className="p-6 pb-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex shrink-0 items-center justify-center h-10 w-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500">
+            <div className="flex shrink-0 items-center justify-center h-10 w-10 rounded-xl bg-red-500/10 border border-danger-500/20 text-red-500">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
@@ -101,7 +101,7 @@ export function MediaDeleteDialog({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 text-white transition-all shadow-md shadow-red-950/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/30"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 text-white transition-all shadow-md shadow-red-950/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-danger-500/30"
           >
             {isDeleting ? (
               <>
