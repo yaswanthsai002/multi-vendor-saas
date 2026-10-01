@@ -10,17 +10,30 @@ export const createProductSchema = z.object({
     .trim()
     .min(2, 'Product name must be at least 2 characters.')
     .max(255, 'Product name cannot exceed 255 characters.'),
-  description: z.string().trim().min(10, 'Product description must be at least 10 characters.'),
+  shortDescription: z
+    .string()
+    .trim()
+    .max(500, 'Short description cannot exceed 500 characters.')
+    .nullable()
+    .optional(),
+  description: z.string().default(''),
   price: z
     .string()
     .regex(
       /^\d{1,10}(\.\d{1,2})?$/,
       'Price must be a valid non-negative decimal with up to 2 decimal places.',
     ),
-  stock: z.number().int('Stock must be an integer.').min(0, 'Stock cannot be negative.'),
+  stock: z
+    .number({ message: 'Stock is required.' })
+    .int('Stock must be an integer.')
+    .min(1, 'Stock must be at least 1.'),
   productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
-  galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).optional(),
-  categoryIds: z.array(z.string().uuid('Category ID must be a valid UUID.')).optional(),
+  galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).default([]),
+  categoryIds: z
+    .array(z.string().uuid('Category ID must be a valid UUID.'))
+    .max(1, 'A product can belong to at most one category.')
+    .default([]),
+  published: z.boolean().default(false),
   slug: z
     .string()
     .trim()
@@ -39,11 +52,13 @@ export const updateProductSchema = z
       .min(2, 'Product name must be at least 2 characters.')
       .max(255, 'Product name cannot exceed 255 characters.')
       .optional(),
-    description: z
+    shortDescription: z
       .string()
       .trim()
-      .min(10, 'Product description must be at least 10 characters.')
+      .max(500, 'Short description cannot exceed 500 characters.')
+      .nullable()
       .optional(),
+    description: z.string().optional(),
     price: z
       .string()
       .regex(
@@ -54,12 +69,15 @@ export const updateProductSchema = z
     stock: z
       .number()
       .int('Stock must be an integer.')
-      .min(0, 'Stock cannot be negative.')
+      .min(1, 'Stock must be at least 1.')
       .optional(),
     published: z.boolean().optional(),
     productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
     galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).optional(),
-    categoryIds: z.array(z.string().uuid('Category ID must be a valid UUID.')).optional(),
+    categoryIds: z
+      .array(z.string().uuid('Category ID must be a valid UUID.'))
+      .max(1, 'A product can belong to at most one category.')
+      .optional(),
     slug: z
       .string()
       .trim()
@@ -97,7 +115,7 @@ export const getVendorDashboardQuerySchema = z.object({
   period: z.enum(['7d', '30d', '90d']).default('7d'),
 });
 
-export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type CreateProductInput = z.input<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type GetVendorProductsQuery = z.infer<typeof getVendorProductsQuerySchema>;
 export type BulkProductActionInput = z.infer<typeof bulkProductActionSchema>;

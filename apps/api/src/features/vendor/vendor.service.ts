@@ -77,20 +77,25 @@ async function validateVendorMedia(vendorId: string, mediaIds: string[]): Promis
   const db = getDb();
   const uniqueIds = Array.from(new Set(mediaIds));
 
-  const validMedia = await db.query.mediaLibrary.findMany({
-    where: and(
-      inArray(mediaLibrary.mediaId, uniqueIds),
-      eq(mediaLibrary.vendorId, vendorId),
-      eq(mediaLibrary.status, 'active'),
-    ),
+  const foundMedia = await db.query.mediaLibrary.findMany({
+    where: inArray(mediaLibrary.mediaId, uniqueIds),
   });
 
-  if (validMedia.length !== uniqueIds.length) {
-    throw new AppError(
-      400,
-      'INVALID_MEDIA',
-      'One or more specified media items do not exist, are inactive, or do not belong to you.',
-    );
+  if (foundMedia.length !== uniqueIds.length) {
+    throw new AppError(404, 'MEDIA_NOT_FOUND', 'One or more specified media items do not exist.');
+  }
+
+  for (const m of foundMedia) {
+    if (m.vendorId !== vendorId) {
+      throw new AppError(
+        403,
+        'MEDIA_ACCESS_DENIED',
+        'You do not own one or more of the specified media assets.',
+      );
+    }
+    if (m.status !== 'active') {
+      throw new AppError(400, 'MEDIA_DISABLED', `Media asset "${m.originalFileName}" is disabled.`);
+    }
   }
 }
 
@@ -181,55 +186,51 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
     }
   }
 
-  // 4. Insert product
-  const [createdProduct] = await db
-    .insert(products)
-    .values({
-      vendorId,
-      name: input.name,
-      slug: finalSlug,
-      description: input.description,
-      productImageId: input.productImageId ?? null,
-      price: input.price,
-      stock: input.stock,
-      isSoftDeleted: false,
-    })
-    .returning();
+  // 4. Atomic transaction
+  const createdProductId = await db.transaction(async (tx) => {
+    // Insert product
+    const [createdProduct] = await tx
+      .insert(products)
+      .values({
+        vendorId,
+        name: input.name,
+        slug: finalSlug,
+        shortDescription: input.shortDescription ?? null,
+        description: input.description ?? '',
+        productImageId: input.productImageId ?? null,
+        price: input.price,
+        stock: input.stock,
+        published: Boolean(input.published),
+        isSoftDeleted: false,
+      })
+      .returning();
 
-  // 5. Insert category associations
-  if (input.categoryIds && input.categoryIds.length > 0) {
-    await db.insert(productCategories).values(
-      input.categoryIds.map((categoryId) => ({
-        productId: createdProduct.productId,
-        categoryId,
-      })),
-    );
-  }
-
-  // 6. Insert product media associations (primary image + gallery media per §22)
-  const allMediaIds: string[] = [];
-  if (input.productImageId) {
-    allMediaIds.push(input.productImageId);
-  }
-  if (input.galleryMediaIds) {
-    for (const gid of input.galleryMediaIds) {
-      if (!allMediaIds.includes(gid)) {
-        allMediaIds.push(gid);
-      }
+    // Insert category associations
+    if (uniqueCategoryIds.length > 0) {
+      await tx.insert(productCategories).values(
+        uniqueCategoryIds.map((categoryId) => ({
+          productId: createdProduct.productId,
+          categoryId,
+        })),
+      );
     }
-  }
 
-  if (allMediaIds.length > 0) {
-    await db.insert(productMedia).values(
-      allMediaIds.map((mediaId, sortOrder) => ({
-        productId: createdProduct.productId,
-        mediaId,
-        sortOrder,
-      })),
-    );
-  }
+    // Insert gallery media associations
+    const uniqueGalleryIds = Array.from(new Set(input.galleryMediaIds || []));
+    if (uniqueGalleryIds.length > 0) {
+      await tx.insert(productMedia).values(
+        uniqueGalleryIds.map((mediaId, sortOrder) => ({
+          productId: createdProduct.productId,
+          mediaId,
+          sortOrder,
+        })),
+      );
+    }
 
-  return getVendorProductById(vendorId, createdProduct.productId);
+    return createdProduct.productId;
+  });
+
+  return getVendorProductById(vendorId, createdProductId);
 }
 
 /**
@@ -246,12 +247,15 @@ export async function validateProductPublishability(
     stock?: number;
     productImageId?: string | null;
   },
+  executor?: Parameters<Parameters<ReturnType<typeof getDb>['transaction']>[0]>[0],
 ) {
-  const db = getDb();
+  const db = executor ?? getDb();
 
-  const product = await db.query.products.findFirst({
-    where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
-  });
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.productId, productId), eq(products.vendorId, vendorId)))
+    .limit(1);
 
   if (!product) {
     throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
@@ -290,11 +294,11 @@ export async function validateProductPublishability(
     );
   }
 
-  if (stock < 0) {
+  if (stock < 1) {
     throw new AppError(
       400,
       'PRODUCT_PUBLISH_INVALID_STOCK',
-      'Unable to publish product because stock cannot be negative.',
+      'Unable to publish product because stock must be at least 1.',
     );
   }
 
@@ -307,13 +311,17 @@ export async function validateProductPublishability(
     );
   }
 
-  const image = await db.query.mediaLibrary.findFirst({
-    where: and(
-      eq(mediaLibrary.mediaId, productImageId),
-      eq(mediaLibrary.vendorId, vendorId),
-      eq(mediaLibrary.status, 'active'),
-    ),
-  });
+  const [image] = await db
+    .select()
+    .from(mediaLibrary)
+    .where(
+      and(
+        eq(mediaLibrary.mediaId, productImageId),
+        eq(mediaLibrary.vendorId, vendorId),
+        eq(mediaLibrary.status, 'active'),
+      ),
+    )
+    .limit(1);
 
   if (!image) {
     throw new AppError(
@@ -412,7 +420,7 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
   const productIds = productList.map((p) => p.productId);
   const categoriesByProductId: Record<
     string,
-    Array<{ categoryId: string; name: string; slug: string }>
+    Array<{ categoryId: string; name: string; slug: string; imageUrl: string | null }>
   > = {};
 
   if (productIds.length > 0) {
@@ -422,6 +430,7 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
         categoryId: categories.categoryId,
         name: categories.name,
         slug: categories.slug,
+        imageUrl: categories.imageUrl,
       })
       .from(productCategories)
       .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
@@ -435,6 +444,7 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
         categoryId: row.categoryId,
         name: row.name,
         slug: row.slug,
+        imageUrl: row.imageUrl,
       });
     }
   }
@@ -506,6 +516,7 @@ export async function getVendorProductById(vendorId: string, productId: string) 
       categoryId: categories.categoryId,
       name: categories.name,
       slug: categories.slug,
+      imageUrl: categories.imageUrl,
     })
     .from(productCategories)
     .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
@@ -531,11 +542,15 @@ export async function getVendorProductById(vendorId: string, productId: string) 
     .where(eq(productMedia.productId, productId))
     .orderBy(asc(productMedia.sortOrder));
 
-  const galleryMedia = galleryRows.map((r) => formatMediaResponse(r.media));
+  const galleryMedia = galleryRows.map((r) => ({
+    ...formatMediaResponse(r.media),
+    sortOrder: r.sortOrder,
+  }));
 
   return {
     ...product,
     primaryImage,
+    gallery: galleryMedia,
     media: galleryMedia,
     categories: linkedCategories,
   };
@@ -551,115 +566,101 @@ export async function updateVendorProductById(
 ) {
   const db = getDb();
 
-  // 1. Verify existence, ownership, and non-deleted status
-  const existingProduct = await db.query.products.findFirst({
-    where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
-  });
-
-  if (!existingProduct || existingProduct.isSoftDeleted) {
-    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
-  }
-
-  // 2. Validate slug uniqueness if updated
-  if (input.slug && input.slug !== existingProduct.slug) {
-    const slugConflict = await db.query.products.findFirst({
-      where: and(eq(products.slug, input.slug), ne(products.productId, productId)),
+  await db.transaction(async (tx) => {
+    // 1. Verify existence, ownership, and non-deleted status
+    const existingProduct = await tx.query.products.findFirst({
+      where: and(eq(products.productId, productId), eq(products.vendorId, vendorId)),
     });
 
-    if (slugConflict) {
-      throw new AppError(409, 'SLUG_COLLISION', 'A product with this slug already exists.');
-    }
-  }
-
-  // 3. Validate media if updated
-  const mediaToValidate: string[] = [];
-  if (input.productImageId) {
-    mediaToValidate.push(input.productImageId);
-  }
-  if (input.galleryMediaIds && input.galleryMediaIds.length > 0) {
-    mediaToValidate.push(...input.galleryMediaIds);
-  }
-  if (mediaToValidate.length > 0) {
-    await validateVendorMedia(vendorId, mediaToValidate);
-  }
-
-  // 4. Update product media associations (primary image + gallery media per §22)
-  if (input.galleryMediaIds !== undefined || input.productImageId !== undefined) {
-    const targetPrimaryId =
-      input.productImageId !== undefined ? input.productImageId : existingProduct.productImageId;
-
-    let targetGalleryIds: string[];
-    if (input.galleryMediaIds !== undefined) {
-      targetGalleryIds = input.galleryMediaIds;
-    } else {
-      const existingMedia = await db
-        .select({ mediaId: productMedia.mediaId })
-        .from(productMedia)
-        .where(eq(productMedia.productId, productId))
-        .orderBy(asc(productMedia.sortOrder));
-      targetGalleryIds = existingMedia.map((m) => m.mediaId);
+    if (!existingProduct || existingProduct.isSoftDeleted) {
+      throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
     }
 
-    const combinedMediaIds: string[] = [];
-    if (targetPrimaryId) {
-      combinedMediaIds.push(targetPrimaryId);
-    }
-    for (const gid of targetGalleryIds) {
-      if (!combinedMediaIds.includes(gid)) {
-        combinedMediaIds.push(gid);
+    // 2. Validate slug uniqueness if updated
+    if (input.slug && input.slug !== existingProduct.slug) {
+      const slugConflict = await tx.query.products.findFirst({
+        where: and(eq(products.slug, input.slug), ne(products.productId, productId)),
+      });
+
+      if (slugConflict) {
+        throw new AppError(409, 'SLUG_COLLISION', 'A product with this slug already exists.');
       }
     }
 
-    await db.delete(productMedia).where(eq(productMedia.productId, productId));
-    if (combinedMediaIds.length > 0) {
-      await db.insert(productMedia).values(
-        combinedMediaIds.map((mediaId, sortOrder) => ({
-          productId,
-          mediaId,
-          sortOrder,
-        })),
-      );
+    // 3. Validate media if updated (Option A: independent primary and gallery)
+    const mediaToValidate: string[] = [];
+    if (input.productImageId) {
+      mediaToValidate.push(input.productImageId);
     }
-  }
-
-  // 5. Update category associations
-  if (input.categoryIds !== undefined) {
-    if (input.categoryIds.length > 0) {
-      await validateLeafCategories(input.categoryIds);
+    if (input.galleryMediaIds && input.galleryMediaIds.length > 0) {
+      mediaToValidate.push(...input.galleryMediaIds);
+    }
+    if (mediaToValidate.length > 0) {
+      await validateVendorMedia(vendorId, mediaToValidate);
     }
 
-    await db.delete(productCategories).where(eq(productCategories.productId, productId));
-
-    if (input.categoryIds.length > 0) {
-      await db.insert(productCategories).values(
-        input.categoryIds.map((categoryId) => ({
-          productId,
-          categoryId,
-        })),
-      );
+    // 4. Update product gallery media associations (Option A: independent galleryMediaIds)
+    if (input.galleryMediaIds !== undefined) {
+      const uniqueGalleryIds = Array.from(new Set(input.galleryMediaIds));
+      await tx.delete(productMedia).where(eq(productMedia.productId, productId));
+      if (uniqueGalleryIds.length > 0) {
+        await tx.insert(productMedia).values(
+          uniqueGalleryIds.map((mediaId, sortOrder) => ({
+            productId,
+            mediaId,
+            sortOrder,
+          })),
+        );
+      }
     }
-  }
 
-  // 6. Update product fields
-  const updatePayload: Record<string, unknown> = {
-    updatedAt: new Date(),
-  };
+    // 5. Update category associations
+    if (input.categoryIds !== undefined) {
+      const uniqueCategoryIds = Array.from(new Set(input.categoryIds));
+      if (uniqueCategoryIds.length > 0) {
+        await validateLeafCategories(uniqueCategoryIds);
+      }
 
-  if (input.published !== undefined) {
-    if (input.published === true && !existingProduct.published) {
-      await validateProductPublishability(vendorId, productId, input);
+      await tx.delete(productCategories).where(eq(productCategories.productId, productId));
+
+      if (uniqueCategoryIds.length > 0) {
+        await tx.insert(productCategories).values(
+          uniqueCategoryIds.map((categoryId) => ({
+            productId,
+            categoryId,
+          })),
+        );
+      }
     }
-    updatePayload.published = input.published;
-  }
 
-  if (input.name !== undefined) updatePayload.name = input.name;
-  if (input.slug !== undefined) updatePayload.slug = input.slug;
-  if (input.description !== undefined) updatePayload.description = input.description;
-  if (input.price !== undefined) updatePayload.price = input.price;
-  if (input.stock !== undefined) updatePayload.stock = input.stock;
-  if (input.productImageId !== undefined) updatePayload.productImageId = input.productImageId;
+    // 6. Update product fields
+    const updatePayload: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
 
-  await db.update(products).set(updatePayload).where(eq(products.productId, productId));
+    if (input.published !== undefined) {
+      if (input.published === true && !existingProduct.published) {
+        await validateProductPublishability(vendorId, productId, input, tx);
+      }
+      updatePayload.published = input.published;
+    } else if (existingProduct.published) {
+      // If product is already published, ensure pending changes don't violate publishability
+      await validateProductPublishability(vendorId, productId, input, tx);
+    }
+
+    if (input.name !== undefined) updatePayload.name = input.name;
+    if (input.slug !== undefined) updatePayload.slug = input.slug;
+    if (input.shortDescription !== undefined)
+      updatePayload.shortDescription = input.shortDescription;
+    if (input.description !== undefined) updatePayload.description = input.description;
+    if (input.price !== undefined) updatePayload.price = input.price;
+    if (input.stock !== undefined) updatePayload.stock = input.stock;
+    if (input.productImageId !== undefined) updatePayload.productImageId = input.productImageId;
+
+    await tx.update(products).set(updatePayload).where(eq(products.productId, productId));
+
+    return productId;
+  });
 
   return getVendorProductById(vendorId, productId);
 }

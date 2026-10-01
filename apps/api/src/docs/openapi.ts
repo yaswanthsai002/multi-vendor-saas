@@ -275,13 +275,18 @@ export const openapiSpec = {
             maxLength: 255,
             example: 'Ergonomic Mechanical Keyboard',
           },
+          shortDescription: {
+            type: ['string', 'null'],
+            maxLength: 500,
+            example: 'Premium wireless mechanical keyboard.',
+          },
           description: {
             type: 'string',
-            minLength: 10,
             example: 'Premium hot-swappable mechanical keyboard with RGB backlighting.',
           },
           price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '129.99' },
           stock: { type: 'integer', minimum: 0, example: 50 },
+          published: { type: 'boolean', default: false, example: false },
           productImageId: { type: ['string', 'null'], format: 'uuid', example: null },
           galleryMediaIds: {
             type: 'array',
@@ -295,7 +300,7 @@ export const openapiSpec = {
             example: 'ergonomic-mechanical-keyboard',
           },
         },
-        required: ['name', 'description', 'price', 'stock'],
+        required: ['name', 'price'],
       },
       UpdateProductInput: {
         type: 'object',
@@ -306,13 +311,18 @@ export const openapiSpec = {
             maxLength: 255,
             example: 'Ergonomic Mechanical Keyboard Pro',
           },
+          shortDescription: {
+            type: ['string', 'null'],
+            maxLength: 500,
+            example: 'Updated short summary.',
+          },
           description: {
             type: 'string',
-            minLength: 10,
             example: 'Updated description for mechanical keyboard.',
           },
           price: { type: 'string', pattern: '^\\d{1,10}(\\.\\d{1,2})?$', example: '139.99' },
           stock: { type: 'integer', minimum: 0, example: 45 },
+          published: { type: 'boolean', example: true },
           productImageId: { type: ['string', 'null'], format: 'uuid' },
           galleryMediaIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
           categoryIds: { type: 'array', items: { type: 'string', format: 'uuid' } },

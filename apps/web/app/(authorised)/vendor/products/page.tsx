@@ -127,59 +127,85 @@ function VendorProductsContent() {
   const deleteMutation = useDeleteProduct();
   const bulkActionMutation = useBulkProductAction();
 
-  const products = data?.products || [];
+  const products = React.useMemo(() => data?.products || [], [data?.products]);
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 };
 
   // Filter change handlers (resets page and clears selection)
-  const handleTabChange = (newTab: ProductTab) => {
-    setSelectedIds([]);
-    updateParams({ tab: newTab === 'all' ? null : newTab });
-  };
+  const handleTabChange = React.useCallback(
+    (newTab: ProductTab) => {
+      setSelectedIds([]);
+      updateParams({ tab: newTab === 'all' ? null : newTab });
+    },
+    [updateParams],
+  );
 
-  const handleSearchChange = (newSearch: string) => {
-    setSelectedIds([]);
-    updateParams({ search: newSearch.trim() || null });
-  };
+  const handleSearchChange = React.useCallback(
+    (newSearch: string) => {
+      setSelectedIds([]);
+      updateParams({ search: newSearch.trim() || null });
+    },
+    [updateParams],
+  );
 
-  const handleCategoryChange = (newCatId?: string) => {
-    setSelectedIds([]);
-    updateParams({ category: newCatId || null });
-  };
+  const handleCategoryChange = React.useCallback(
+    (newCatId?: string) => {
+      setSelectedIds([]);
+      updateParams({ category: newCatId || null });
+    },
+    [updateParams],
+  );
 
-  const handleStockChange = (newStock: 'all' | 'in_stock' | 'out_of_stock') => {
-    setSelectedIds([]);
-    updateParams({ stock: newStock === 'all' ? null : newStock });
-  };
+  const handleStockChange = React.useCallback(
+    (newStock: 'all' | 'in_stock' | 'out_of_stock') => {
+      setSelectedIds([]);
+      updateParams({ stock: newStock === 'all' ? null : newStock });
+    },
+    [updateParams],
+  );
 
-  const handleSortChange = (
-    newSortBy: 'createdAt' | 'price' | 'name' | 'stock',
-    newSortOrder: 'asc' | 'desc',
-  ) => {
+  const handleSortChange = React.useCallback(
+    (newSortBy: 'createdAt' | 'price' | 'name' | 'stock', newSortOrder: 'asc' | 'desc') => {
+      setSelectedIds([]);
+      updateParams({
+        sortBy: newSortBy === 'createdAt' ? null : newSortBy,
+        sortOrder: newSortOrder === 'desc' ? null : newSortOrder,
+      });
+    },
+    [updateParams],
+  );
+
+  const handlePageChange = React.useCallback(
+    (newPage: number) => {
+      setSelectedIds([]);
+      updateParams({ page: newPage.toString() }, false);
+    },
+    [updateParams],
+  );
+
+  const handleResetFilters = React.useCallback(() => {
     setSelectedIds([]);
     updateParams({
-      sortBy: newSortBy === 'createdAt' ? null : newSortBy,
-      sortOrder: newSortOrder === 'desc' ? null : newSortOrder,
+      search: null,
+      category: null,
+      stock: null,
+      sortBy: null,
+      sortOrder: null,
     });
-  };
+  }, [updateParams]);
 
-  const handlePageChange = (newPage: number) => {
-    setSelectedIds([]);
-    updateParams({ page: newPage.toString() }, false);
-  };
-
-  const handleClearAllFilters = () => {
+  const handleClearAllFilters = React.useCallback(() => {
     setSelectedIds([]);
     router.replace(pathname);
-  };
+  }, [router, pathname]);
 
   // Selection handlers
-  const handleToggleSelect = (id: string) => {
+  const handleToggleSelect = React.useCallback((id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
-  };
+  }, []);
 
-  const handleToggleSelectAll = () => {
+  const handleToggleSelectAll = React.useCallback(() => {
     const pageIds = products.map((p) => p.productId);
     const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
     if (allSelected) {
@@ -187,7 +213,7 @@ function VendorProductsContent() {
     } else {
       setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
     }
-  };
+  }, [products, selectedIds]);
 
   // Single row actions
   const handleTogglePublish = async (productId: string, nextPublished: boolean) => {
@@ -282,6 +308,7 @@ function VendorProductsContent() {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onReset={handleResetFilters}
       />
 
       {/* 4. Bulk Action Bar (when items selected) */}
