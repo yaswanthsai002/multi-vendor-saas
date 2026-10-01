@@ -40,6 +40,11 @@
   --color-warning-subtle: var(--warning-subtle);
   --color-danger: var(--danger);
   --color-danger-subtle: var(--danger-subtle);
+  --color-danger-50: var(--danger-subtle);
+  --color-danger-100: var(--danger-subtle);
+  --color-danger-500: var(--danger);
+  --color-danger-600: var(--danger);
+  --color-danger-700: var(--danger);
   --color-info: var(--info);
   --color-info-subtle: var(--info-subtle);
 }
