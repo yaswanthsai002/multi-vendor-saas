@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const listCategoriesQuerySchema = z.object({
   parentCategoryId: z.string().uuid('Invalid parentCategoryId format').optional(),
+  search: z.string().trim().optional(),
 });
 
 export const categoryIdParamSchema = z.object({

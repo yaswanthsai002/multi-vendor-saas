@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import { getDb } from '@repo/db';
 import { categories, productCategories } from '@repo/db/schema';
-import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, ne, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 
@@ -78,15 +78,17 @@ async function detectCycle(categoryId: string, targetParentId: string): Promise<
 }
 
 /**
- * Lists categories. Defaults to root categories (parentCategoryId IS NULL)
- * or filters by the supplied parentCategoryId.
+ * Lists categories. Supports searching by name across all categories,
+ * filtering by parentCategoryId, or defaulting to root categories.
  */
-export async function listCategories(parentCategoryId?: string) {
+export async function listCategories(parentCategoryId?: string, search?: string) {
   const db = getDb();
 
-  const filter = parentCategoryId
-    ? eq(categories.parentCategoryId, parentCategoryId)
-    : isNull(categories.parentCategoryId);
+  const filter = search
+    ? ilike(categories.name, `%${search}%`)
+    : parentCategoryId
+      ? eq(categories.parentCategoryId, parentCategoryId)
+      : isNull(categories.parentCategoryId);
 
   const rows = await db
     .select({

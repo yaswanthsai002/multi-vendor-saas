@@ -36,23 +36,34 @@ export function slugify(text: string): string {
  * Validates that all category IDs exist and are leaf categories (no subcategories).
  */
 async function validateLeafCategories(categoryIds: string[]): Promise<void> {
+  if (categoryIds.length === 0) return;
   const db = getDb();
+  const uniqueIds = Array.from(new Set(categoryIds));
+
+  if (uniqueIds.length > 1) {
+    throw new AppError(
+      400,
+      'MULTIPLE_CATEGORIES_NOT_ALLOWED',
+      'A product can belong to at most one leaf category.',
+    );
+  }
+
   const validCategories = await db.query.categories.findMany({
-    where: inArray(categories.categoryId, categoryIds),
+    where: inArray(categories.categoryId, uniqueIds),
   });
 
-  if (validCategories.length !== categoryIds.length) {
-    throw new AppError(400, 'INVALID_CATEGORY', 'One or more specified categories do not exist.');
+  if (validCategories.length !== uniqueIds.length) {
+    throw new AppError(404, 'CATEGORY_NOT_FOUND', 'One or more specified categories do not exist.');
   }
 
   const childCategories = await db.query.categories.findMany({
-    where: inArray(categories.parentCategoryId, categoryIds),
+    where: inArray(categories.parentCategoryId, uniqueIds),
   });
 
   if (childCategories.length > 0) {
     throw new AppError(
       400,
-      'INVALID_CATEGORY',
+      'CATEGORY_NOT_ASSIGNABLE',
       'Only leaf categories (categories without subcategories) can be assigned to a product.',
     );
   }
@@ -114,8 +125,60 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
   }
 
   // 3. Validate category IDs if provided
-  if (input.categoryIds && input.categoryIds.length > 0) {
-    await validateLeafCategories(input.categoryIds);
+  const uniqueCategoryIds = Array.from(new Set(input.categoryIds || []));
+  if (uniqueCategoryIds.length > 0) {
+    await validateLeafCategories(uniqueCategoryIds);
+  }
+
+  // If published is requested (Save & Publish), validate publishability upfront before DB write
+  if (input.published) {
+    if (!input.name || input.name.trim().length < 2) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_INVALID_NAME',
+        'Unable to publish product because the name must be at least 2 characters.',
+      );
+    }
+
+    if (!input.description || input.description.trim().length < 10) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_INVALID_DESCRIPTION',
+        'Unable to publish product because the description must be at least 10 characters.',
+      );
+    }
+
+    if (Number(input.price) < 0) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_INVALID_PRICE',
+        'Unable to publish product because the price cannot be negative.',
+      );
+    }
+
+    if (!input.stock || input.stock < 1) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_INVALID_STOCK',
+        'Unable to publish product because stock must be at least 1.',
+      );
+    }
+
+    if (!input.productImageId) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_MISSING_IMAGE',
+        'Unable to publish product because it is missing a primary image.',
+      );
+    }
+
+    if (uniqueCategoryIds.length === 0) {
+      throw new AppError(
+        400,
+        'PRODUCT_PUBLISH_MISSING_CATEGORY',
+        'Unable to publish product because it must be assigned to at least one category.',
+      );
+    }
   }
 
   // 4. Insert product

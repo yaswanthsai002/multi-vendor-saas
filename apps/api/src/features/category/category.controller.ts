@@ -11,7 +11,7 @@ import type { NextFunction, Request, Response } from 'express';
 export async function listCategories(req: Request, res: Response, next: NextFunction) {
   try {
     const query = listCategoriesQuerySchema.parse(req.query);
-    const categories = await categoryService.listCategories(query.parentCategoryId);
+    const categories = await categoryService.listCategories(query.parentCategoryId, query.search);
 
     return res.status(200).json(categories);
   } catch (error) {

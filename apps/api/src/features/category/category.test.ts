@@ -193,6 +193,33 @@ describe('Category Feature', () => {
       expect(res.status).toBe(400);
     });
 
+    it('GET /api/categories?search=<text> - returns categories matching search query', async () => {
+      const mockResult = [
+        {
+          categoryId: mockChildCategory.categoryId,
+          name: 'Audio',
+          slug: 'audio',
+          parentCategoryId: rootCategoryId,
+          imageUrl: null,
+          hasChildren: false,
+        },
+      ];
+
+      (db.select as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            orderBy: vi.fn().mockResolvedValue(mockResult),
+          }),
+        }),
+      });
+
+      const res = await request(app).get('/api/categories?search=aud');
+
+      expect(res.status).toBe(200);
+      expect(res.body[0].name).toBe('Audio');
+      expect(res.body[0].hasChildren).toBe(false);
+    });
+
     it('GET /api/categories/:categoryId - returns category by ID', async () => {
       const mockResult = [
         {
