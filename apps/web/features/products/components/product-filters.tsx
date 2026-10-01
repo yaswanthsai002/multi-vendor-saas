@@ -1,7 +1,18 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Folder, Loader2, Search, X } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Loader2,
+  RotateCcw,
+  Search,
+  Tag,
+  X,
+} from 'lucide-react';
+import Image from 'next/image';
 import * as React from 'react';
 
 import { makeApiRequest } from '@/lib/api-client';
@@ -13,6 +24,7 @@ interface CategoryItem {
   name: string;
   slug: string;
   parentCategoryId: string | null;
+  imageUrl?: string | null;
   hasChildren: boolean;
 }
 
@@ -29,6 +41,7 @@ interface ProductFiltersProps {
     sortBy: 'createdAt' | 'price' | 'name' | 'stock',
     sortOrder: 'asc' | 'desc',
   ) => void;
+  onReset?: () => void;
 }
 
 const SORT_OPTIONS: Array<{
@@ -57,6 +70,7 @@ export function ProductFilters({
   sortBy,
   sortOrder,
   onSortChange,
+  onReset,
 }: ProductFiltersProps) {
   // Search local state with debounce
   const [localSearch, setLocalSearch] = React.useState(search);
@@ -68,11 +82,35 @@ export function ProductFilters({
   }
 
   React.useEffect(() => {
+    if (localSearch === search) return;
     const handler = setTimeout(() => {
       onSearchChange(localSearch);
     }, 300);
     return () => clearTimeout(handler);
-  }, [localSearch, onSearchChange]);
+  }, [localSearch, search, onSearchChange]);
+
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    localSearch.trim() ||
+    categoryId ||
+    stock !== 'all' ||
+    sortBy !== 'createdAt' ||
+    sortOrder !== 'desc',
+  );
+
+  const handleReset = () => {
+    setLocalSearch('');
+    setActiveParentId(undefined);
+    setParentPath([]);
+    if (onReset) {
+      onReset();
+    } else {
+      onSearchChange('');
+      onCategoryChange(undefined);
+      onStockChange('all');
+      onSortChange('createdAt', 'desc');
+    }
+  };
 
   // Dropdown open states
   const [categoryOpen, setCategoryOpen] = React.useState(false);
@@ -147,7 +185,7 @@ export function ProductFilters({
           onChange={(e) => setLocalSearch(e.target.value)}
           placeholder="Search products..."
           aria-label="Search products"
-          className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-xl text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-border-focus focus:border-transparent transition-colors"
+          className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors"
         />
         {localSearch ? (
           <button
@@ -171,13 +209,13 @@ export function ProductFilters({
           <button
             type="button"
             onClick={() => setCategoryOpen((prev) => !prev)}
-            className={`inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-colors cursor-pointer ${
+            className={`inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all duration-150 cursor-pointer ${
               categoryId
-                ? 'bg-blue-50/70 border-blue-200 text-blue-700 dark:bg-atmospheric-blue-950/70 dark:border-atmospheric-blue-800 dark:text-atmospheric-blue-200'
+                ? 'bg-surface-raised dark:bg-surface-raised text-text-primary font-semibold border-border-default shadow-xs'
                 : 'bg-surface dark:bg-surface-subtle border-border-default hover:bg-surface-hover text-text-secondary hover:text-text-primary'
             }`}
           >
-            <span className="truncate max-w-[130px]">
+            <span className="truncate max-w-32.5">
               {selectedCategoryDetail ? selectedCategoryDetail.name : 'Category'}
             </span>
             <ChevronDown className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
@@ -207,7 +245,7 @@ export function ProductFilters({
                           setActiveParentId(item.id);
                           setParentPath((prev) => prev.slice(0, idx + 1));
                         }}
-                        className={`hover:text-text-primary hover:underline cursor-pointer truncate max-w-[80px] ${
+                        className={`hover:text-text-primary hover:underline cursor-pointer truncate max-w-20 ${
                           idx === parentPath.length - 1 ? 'font-semibold text-text-primary' : ''
                         }`}
                       >
@@ -223,16 +261,18 @@ export function ProductFilters({
                 type="button"
                 onClick={() => {
                   onCategoryChange(undefined);
+                  setActiveParentId(undefined);
+                  setParentPath([]);
                   setCategoryOpen(false);
                 }}
                 className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
                   !categoryId
-                    ? 'bg-blue-50 text-blue-700 dark:bg-atmospheric-blue-950/80 dark:text-atmospheric-blue-200'
-                    : 'text-text-primary hover:bg-surface-hover'
+                    ? 'bg-surface-hover text-text-primary font-semibold'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                 }`}
               >
                 <span>All Categories</span>
-                {!categoryId ? <span className="text-xs font-bold">✓</span> : null}
+                {!categoryId ? <Check className="h-3.5 w-3.5 text-text-primary" /> : null}
               </button>
 
               <div className="h-px bg-border-subtle my-1" />
@@ -244,46 +284,85 @@ export function ProductFilters({
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 ) : categoriesData && categoriesData.length > 0 ? (
-                  categoriesData.map((cat) => (
-                    <div
-                      key={cat.categoryId}
-                      className="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-surface-hover transition-colors"
-                    >
+                  categoriesData.map((cat) => {
+                    const isLeaf = !cat.hasChildren;
+                    const isSelected = categoryId === cat.categoryId;
+
+                    if (isLeaf) {
+                      /* Leaf category: Clicking selects the filter */
+                      return (
+                        <button
+                          key={cat.categoryId}
+                          type="button"
+                          onClick={() => {
+                            onCategoryChange(cat.categoryId);
+                            setCategoryOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-surface-hover text-text-primary font-semibold'
+                              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            {cat.imageUrl ? (
+                              <div className="relative h-4 w-4 rounded-sm overflow-hidden shrink-0 border border-border-default/60 bg-surface-subtle">
+                                <Image
+                                  src={cat.imageUrl}
+                                  alt={cat.name}
+                                  fill
+                                  unoptimized
+                                  sizes="16px"
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <Tag className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
+                            )}
+                            <span className="truncate">{cat.name}</span>
+                          </div>
+                          {isSelected ? (
+                            <Check className="h-3.5 w-3.5 text-text-primary shrink-0 ml-1" />
+                          ) : null}
+                        </button>
+                      );
+                    }
+
+                    /* Parent category: Drills down on click, cannot be selected directly */
+                    return (
                       <button
+                        key={cat.categoryId}
                         type="button"
                         onClick={() => {
-                          onCategoryChange(cat.categoryId);
-                          setCategoryOpen(false);
+                          setActiveParentId(cat.categoryId);
+                          setParentPath((prev) => [
+                            ...prev,
+                            { id: cat.categoryId, name: cat.name },
+                          ]);
                         }}
-                        className={`flex-1 flex items-center gap-2 text-xs font-medium text-left cursor-pointer truncate ${
-                          categoryId === cat.categoryId
-                            ? 'text-blue-700 dark:text-atmospheric-blue-200 font-semibold'
-                            : 'text-text-primary'
-                        }`}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover cursor-pointer transition-colors text-left"
                       >
-                        <Folder className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
-                        <span className="truncate">{cat.name}</span>
+                        <div className="flex items-center gap-2 truncate">
+                          {cat.imageUrl ? (
+                            <div className="relative h-4 w-4 rounded-sm overflow-hidden shrink-0 border border-border-default/60 bg-surface-subtle">
+                              <Image
+                                src={cat.imageUrl}
+                                alt={cat.name}
+                                fill
+                                unoptimized
+                                sizes="16px"
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <Folder className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
+                          )}
+                          <span className="truncate">{cat.name}</span>
+                        </div>
+                        <ChevronRight className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
                       </button>
-
-                      {cat.hasChildren ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveParentId(cat.categoryId);
-                            setParentPath((prev) => [
-                              ...prev,
-                              { id: cat.categoryId, name: cat.name },
-                            ]);
-                          }}
-                          aria-label={`Explore subcategories of ${cat.name}`}
-                          className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-surface transition-colors cursor-pointer"
-                        >
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
-                      ) : null}
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-3 text-center text-xs text-text-tertiary">
                     No subcategories found.
@@ -299,9 +378,9 @@ export function ProductFilters({
           <button
             type="button"
             onClick={() => setStockOpen((prev) => !prev)}
-            className={`inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-colors cursor-pointer ${
+            className={`inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all duration-150 cursor-pointer ${
               stock !== 'all'
-                ? 'bg-blue-50/70 border-blue-200 text-blue-700 dark:bg-atmospheric-blue-950/70 dark:border-atmospheric-blue-800 dark:text-atmospheric-blue-200'
+                ? 'bg-surface-raised dark:bg-surface-raised text-text-primary font-semibold border-border-default shadow-xs'
                 : 'bg-surface dark:bg-surface-subtle border-border-default hover:bg-surface-hover text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -321,14 +400,14 @@ export function ProductFilters({
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
                     stock === opt
-                      ? 'bg-blue-50 text-blue-700 dark:bg-atmospheric-blue-950/80 dark:text-atmospheric-blue-200 font-semibold'
-                      : 'text-text-primary hover:bg-surface-hover'
+                      ? 'bg-surface-hover text-text-primary font-semibold'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                   }`}
                 >
                   <span>
                     {opt === 'all' ? 'All' : opt === 'in_stock' ? 'In stock' : 'Out of stock'}
                   </span>
-                  {stock === opt ? <span className="text-xs font-bold">✓</span> : null}
+                  {stock === opt ? <Check className="h-3.5 w-3.5 text-text-primary" /> : null}
                 </button>
               ))}
             </div>
@@ -340,7 +419,11 @@ export function ProductFilters({
           <button
             type="button"
             onClick={() => setSortOpen((prev) => !prev)}
-            className="inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+            className={`inline-flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium border transition-all duration-150 cursor-pointer ${
+              sortBy !== 'createdAt' || sortOrder !== 'desc'
+                ? 'bg-surface-raised dark:bg-surface-raised text-text-primary font-semibold border-border-default shadow-xs'
+                : 'bg-surface dark:bg-surface-subtle border-border-default hover:bg-surface-hover text-text-secondary hover:text-text-primary'
+            }`}
           >
             <span>Sort: {currentSortOption.label}</span>
             <ChevronDown className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
@@ -360,18 +443,31 @@ export function ProductFilters({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-left cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-blue-50 text-blue-700 dark:bg-atmospheric-blue-950/80 dark:text-atmospheric-blue-200 font-semibold'
-                        : 'text-text-primary hover:bg-surface-hover'
+                        ? 'bg-surface-hover text-text-primary font-semibold'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                     }`}
                   >
                     <span>{opt.label}</span>
-                    {isSelected ? <span className="text-xs font-bold">✓</span> : null}
+                    {isSelected ? <Check className="h-3.5 w-3.5 text-text-primary" /> : null}
                   </button>
                 );
               })}
             </div>
           ) : null}
         </div>
+
+        {/* Reset Filters Button */}
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={handleReset}
+            aria-label="Reset all filters"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover border border-border-default/70 hover:border-border-default transition-all duration-150 cursor-pointer animate-in fade-in-50"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset</span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

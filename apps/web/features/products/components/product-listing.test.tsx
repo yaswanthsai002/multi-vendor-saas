@@ -5,11 +5,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ProductBulkBar } from './product-bulk-bar';
 import { ProductEmptyState } from './product-empty-state';
+import { ProductFilters } from './product-filters';
 import { ProductHeader } from './product-header';
 import { ProductTable } from './product-table';
 import { ProductTabs } from './product-tabs';
 
 import type { ProductItem } from '../types/product.types';
+
+import { QueryProvider } from '@/providers/query-provider';
 
 describe('Product Listing Components', () => {
   afterEach(() => {
@@ -35,14 +38,64 @@ describe('Product Listing Components', () => {
       const handleTabChange = vi.fn();
       render(<ProductTabs activeTab="all" onTabChange={handleTabChange} />);
 
-      expect(screen.getByRole('button', { name: 'All Products' })).toBeDefined();
-      expect(screen.getByRole('button', { name: 'Published' })).toBeDefined();
-      expect(screen.getByRole('button', { name: 'Unpublished' })).toBeDefined();
-      expect(screen.getByRole('button', { name: 'Archived' })).toBeDefined();
+      expect(screen.getByRole('tab', { name: 'All Products' })).toBeDefined();
+      expect(screen.getByRole('tab', { name: 'Published' })).toBeDefined();
+      expect(screen.getByRole('tab', { name: 'Unpublished' })).toBeDefined();
+      expect(screen.getByRole('tab', { name: 'Archived' })).toBeDefined();
 
-      const publishedBtn = screen.getByRole('button', { name: 'Published' });
+      const publishedBtn = screen.getByRole('tab', { name: 'Published' });
       await userEvent.click(publishedBtn);
       expect(handleTabChange).toHaveBeenCalledWith('published');
+    });
+  });
+
+  describe('ProductFilters', () => {
+    it('renders search input and dropdown triggers without reset button when no filters are active', () => {
+      render(
+        <QueryProvider>
+          <ProductFilters
+            search=""
+            onSearchChange={vi.fn()}
+            onCategoryChange={vi.fn()}
+            stock="all"
+            onStockChange={vi.fn()}
+            sortBy="createdAt"
+            sortOrder="desc"
+            onSortChange={vi.fn()}
+            onReset={vi.fn()}
+          />
+        </QueryProvider>,
+      );
+
+      expect(screen.getByPlaceholderText(/search products/i)).toBeDefined();
+      expect(screen.getByRole('button', { name: /category/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /^stock$/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /sort: newest/i })).toBeDefined();
+      expect(screen.queryByRole('button', { name: /reset all filters/i })).toBeNull();
+    });
+
+    it('renders reset button when a filter is active and triggers onReset when clicked', async () => {
+      const handleReset = vi.fn();
+      render(
+        <QueryProvider>
+          <ProductFilters
+            search="Headphones"
+            onSearchChange={vi.fn()}
+            onCategoryChange={vi.fn()}
+            stock="in_stock"
+            onStockChange={vi.fn()}
+            sortBy="price"
+            sortOrder="asc"
+            onSortChange={vi.fn()}
+            onReset={handleReset}
+          />
+        </QueryProvider>,
+      );
+
+      const resetBtn = screen.getByRole('button', { name: /reset all filters/i });
+      expect(resetBtn).toBeDefined();
+      await userEvent.click(resetBtn);
+      expect(handleReset).toHaveBeenCalledTimes(1);
     });
   });
 
