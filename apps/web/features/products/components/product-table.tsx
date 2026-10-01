@@ -1,21 +1,12 @@
 'use client';
 
 import { Switch } from '@base-ui-components/react/switch';
-import {
-  Archive,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  MoreHorizontal,
-  Package,
-  Pencil,
-  RotateCcw,
-  Star,
-  Trash2,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
+
+import { ProductTableActionsMenu } from './product-table-actions-menu';
 
 import type { ProductItem, ProductTab } from '../types/product.types';
 
@@ -71,20 +62,6 @@ export function ProductTable({
     }
   }, [someOnPageSelected]);
 
-  // Actions dropdown menu state per row
-  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
-  const menuRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenMenuId(null);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   // Broken image fallback tracker
   const [imgErrors, setImgErrors] = React.useState<Record<string, boolean>>({});
 
@@ -139,22 +116,22 @@ export function ProductTable({
               </th>
 
               {/* Product Header */}
-              <th className="py-3.5 px-4 min-w-[260px]">Product</th>
+              <th className="py-3.5 px-4 min-w-65">Product</th>
 
               {/* Categories Header */}
-              <th className="py-3.5 px-4 min-w-[200px]">Categories</th>
+              <th className="py-3.5 px-4 min-w-50">Categories</th>
 
               {/* Price Header */}
-              <th className="py-3.5 px-4 min-w-[110px]">Price</th>
+              <th className="py-3.5 px-4 min-w-27">Price</th>
 
               {/* Stock Header */}
-              <th className="py-3.5 px-4 min-w-[90px]">Stock</th>
+              <th className="py-3.5 px-4 min-w-25">Stock</th>
 
               {/* Rating Header */}
-              <th className="py-3.5 px-4 min-w-[90px]">Rating</th>
+              <th className="py-3.5 px-4 min-w-22">Rating</th>
 
               {/* Published Switch Header */}
-              <th className="py-3.5 px-4 min-w-[100px]">Published</th>
+              <th className="py-3.5 px-4 min-w-25">Published</th>
 
               {/* Actions Header */}
               <th className="py-3.5 pl-4 pr-6 w-14 text-right">Actions</th>
@@ -213,7 +190,7 @@ export function ProductTable({
                         )}
                       </div>
 
-                      <div className="min-w-0 max-w-[220px] sm:max-w-xs">
+                      <div className="min-w-0 max-w-55 sm:max-w-xs">
                         <Link
                           href={`/vendor/products/${product.productId}/edit`}
                           className="font-semibold text-text-primary hover:text-accent truncate block transition-colors tracking-tight text-sm"
@@ -289,97 +266,21 @@ export function ProductTable({
                       disabled={isUpdatingPublish || product.isSoftDeleted}
                       onCheckedChange={(checked) => onTogglePublish(product.productId, checked)}
                       aria-label={`Toggle published status for ${product.name}`}
-                      className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent data-[checked]:bg-sky-600 data-[unchecked]:bg-slate-300 dark:data-[unchecked]:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent data-checked:bg-sky-600 data-unchecked:bg-slate-300 dark:data-unchecked:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Switch.Thumb className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out data-[checked]:translate-x-5 data-[unchecked]:translate-x-0" />
+                      <Switch.Thumb className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out data-checked:translate-x-5 data-unchecked:translate-x-0" />
                     </Switch.Root>
                   </td>
 
                   {/* Actions Dropdown */}
                   <td className="py-3.5 pl-4 pr-6 text-right whitespace-nowrap">
-                    <div
-                      className="relative inline-block text-left"
-                      ref={openMenuId === product.productId ? menuRef : undefined}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenMenuId((curr) =>
-                            curr === product.productId ? null : product.productId,
-                          )
-                        }
-                        aria-label={`Actions for ${product.name}`}
-                        className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-
-                      {openMenuId === product.productId ? (
-                        <div className="absolute right-0 mt-1 w-44 rounded-xl bg-surface-raised dark:bg-surface border border-border-default shadow-xl py-1.5 z-30 animate-in fade-in-50 zoom-in-95 duration-100 text-left">
-                          {/* View Product */}
-                          <Link
-                            href={`/vendor/products/${product.productId}`}
-                            onClick={() => setOpenMenuId(null)}
-                            className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-text-primary hover:bg-surface-hover transition-colors"
-                          >
-                            <Eye className="h-3.5 w-3.5 text-text-tertiary" />
-                            <span>View details</span>
-                          </Link>
-
-                          {/* Edit Product */}
-                          <Link
-                            href={`/vendor/products/${product.productId}/edit`}
-                            onClick={() => setOpenMenuId(null)}
-                            className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-text-primary hover:bg-surface-hover transition-colors"
-                          >
-                            <Pencil className="h-3.5 w-3.5 text-text-tertiary" />
-                            <span>Edit product</span>
-                          </Link>
-
-                          <div className="h-px bg-border-subtle my-1" />
-
-                          {/* Archive or Restore */}
-                          {product.isSoftDeleted || isArchivedTab ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onRestore(product.productId);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
-                            >
-                              <RotateCcw className="h-3.5 w-3.5 text-text-tertiary" />
-                              <span>Restore product</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onArchive(product.productId);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
-                            >
-                              <Archive className="h-3.5 w-3.5 text-text-tertiary" />
-                              <span>Archive product</span>
-                            </button>
-                          )}
-
-                          {/* Delete permanently */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onDelete(product);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-danger-500 hover:bg-danger-500/10 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete permanently</span>
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
+                    <ProductTableActionsMenu
+                      product={product}
+                      isArchivedTab={isArchivedTab}
+                      onArchive={onArchive}
+                      onRestore={onRestore}
+                      onDelete={onDelete}
+                    />
                   </td>
                 </tr>
               );
@@ -389,12 +290,20 @@ export function ProductTable({
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-border-subtle bg-surface-subtle/30 dark:bg-surface/30">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-border-default bg-surface-subtle/40 dark:bg-surface/60">
         <span className="text-xs sm:text-sm text-text-secondary">
-          Showing {from}–{to} of {total} products
+          Showing{' '}
+          <span className="font-medium text-text-primary">
+            {from}–{to}
+          </span>{' '}
+          of <span className="font-medium text-text-primary">{total}</span> products
         </span>
 
-        {totalPages > 1 ? (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-tertiary">
+            Page {page} of {totalPages}
+          </span>
+
           <div className="flex items-center gap-1">
             {/* Prev Page Button */}
             <button
@@ -402,41 +311,45 @@ export function ProductTable({
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
               aria-label="Previous page"
-              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            {/* Page Numbers */}
-            {getPageNumbers().map((p, idx) => {
-              if (typeof p === 'string') {
-                return (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="px-2 py-1 text-xs text-text-tertiary select-none"
-                  >
-                    ...
-                  </span>
-                );
-              }
-              const isActive = p === page;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => onPageChange(p)}
-                  aria-label={`Page ${p}`}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`min-w-8 h-8 px-2 flex items-center justify-center rounded-lg text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-sky-600 text-white shadow-2xs'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
+            {/* Page Numbers (when multiple pages) */}
+            {totalPages > 1 ? (
+              <>
+                {getPageNumbers().map((p, idx) => {
+                  if (typeof p === 'string') {
+                    return (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-2 py-1 text-xs text-text-tertiary select-none"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  const isActive = p === page;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => onPageChange(p)}
+                      aria-label={`Page ${p}`}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`min-w-8 h-8 px-2 flex items-center justify-center rounded-lg text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
+                        isActive
+                          ? 'bg-surface-raised dark:bg-surface-raised text-text-primary border border-border-default shadow-xs'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </>
+            ) : null}
 
             {/* Next Page Button */}
             <button
@@ -444,12 +357,12 @@ export function ProductTable({
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
               aria-label="Next page"
-              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
