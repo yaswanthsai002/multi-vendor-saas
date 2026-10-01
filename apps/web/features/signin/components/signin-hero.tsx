@@ -1,11 +1,13 @@
 import Image from 'next/image';
 
+import heroImage from '@/assets/images/auth/signup-hero.jpg';
+
 export function SigninHero() {
   return (
     <div className="relative w-full h-full min-h-[500px] lg:min-h-full overflow-hidden bg-surface-subtle select-none">
       {/* Background Image */}
       <Image
-        src="/images/signup-hero.jpg"
+        src={heroImage}
         alt="Curated artisan goods and products on display in a sunlit studio"
         fill
         priority
