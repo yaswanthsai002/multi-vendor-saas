@@ -21,7 +21,8 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
     });
 
     // Verify critical documented paths exist
-    expect(res.body.paths).toHaveProperty('/');
+    expect(res.body.paths).toHaveProperty('/api/health/live');
+    expect(res.body.paths).toHaveProperty('/api/health/ready');
     expect(res.body.paths).toHaveProperty('/api/auth/signup');
     expect(res.body.paths).toHaveProperty('/api/auth/signin');
     expect(res.body.paths).toHaveProperty('/api/auth/signout');
