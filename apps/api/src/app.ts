@@ -55,12 +55,6 @@ app.use(
 
 app.use(cookieParser());
 
-app.get('/', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-  });
-});
-
 // Mount the main API router under /api prefix
 app.use('/api', apiRouter);
 
