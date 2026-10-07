@@ -1,7 +1,7 @@
 import csvParser from 'csv-parser';
 import ExcelJS from 'exceljs';
 
-import { r2Service } from '../../shared/storage/r2.client.js';
+import { storageService } from '../../shared/storage/storage.service.js';
 
 export interface ParsedFileRow {
   rowNumber: number;
@@ -9,10 +9,10 @@ export interface ParsedFileRow {
 }
 
 /**
- * Parses products rows from Cloudflare R2 object storage supporting both Excel (.xlsx) and CSV (.csv) formats.
+ * Parses products rows from object storage supporting both Excel (.xlsx) and CSV (.csv) formats.
  */
 export async function parseRowsFromR2(objectKey: string): Promise<ParsedFileRow[]> {
-  const stream = await r2Service.getObjectStream(objectKey);
+  const stream = await storageService.getObjectStream(objectKey);
   const isXlsx = objectKey.toLowerCase().endsWith('.xlsx');
 
   if (isXlsx) {

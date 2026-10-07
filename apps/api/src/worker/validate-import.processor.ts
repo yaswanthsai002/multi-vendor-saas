@@ -6,7 +6,7 @@ import {
 } from '../features/bulk-import/bulk-import.service.js';
 import { getCategoryTaxonomy } from '../features/category/category.cache.js';
 import { redis } from '../shared/redis/redis.client.js';
-import { r2Service } from '../shared/storage/r2.client.js';
+import { storageService } from '../shared/storage/storage.service.js';
 
 import type { BulkImportState } from '../features/bulk-import/bulk-import.types.js';
 import type { ValidateImportJobData } from '../shared/queue/queues.js';
@@ -143,7 +143,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
       const errorCsvContent = csvHeader + csvLines.join('\n');
       errorsKey = `bulk-imports/${vendorId}/${importId}/errors.csv`;
 
-      await r2Service.putObject(errorsKey, errorCsvContent, 'text/csv');
+      await storageService.putObject(errorsKey, errorCsvContent, 'text/csv');
     }
 
     // Update Redis state with 24-hour review TTL
@@ -194,7 +194,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
     let errorsUrl: string | undefined;
     if (errorsKey) {
       try {
-        errorsUrl = await r2Service.generatePresignedGetUrl(errorsKey, 3600);
+        errorsUrl = await storageService.generatePresignedGetUrl(errorsKey, 3600);
       } catch {
         // Non-fatal
       }

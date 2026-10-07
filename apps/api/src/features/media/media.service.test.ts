@@ -5,7 +5,7 @@ import * as mediaService from './media.service.js';
 
 import type { mediaLibrary, productMedia } from '@repo/db/schema';
 
-const { db, mockStorageService } = vi.hoisted(() => ({
+const { db, mockR2Service } = vi.hoisted(() => ({
   db: {
     query: {
       mediaLibrary: {
@@ -46,14 +46,12 @@ const { db, mockStorageService } = vi.hoisted(() => ({
     })),
     transaction: vi.fn(<T>(cb: (tx: unknown) => Promise<T>) => cb(db)),
   },
-  mockStorageService: {
-    save: vi.fn().mockResolvedValue(undefined),
-    read: vi.fn().mockResolvedValue(Buffer.from('test')),
-    delete: vi.fn().mockResolvedValue(undefined),
-    deleteDirectory: vi.fn().mockResolvedValue(undefined),
+  mockR2Service: {
+    putObject: vi.fn().mockResolvedValue(undefined),
+    getObjectStream: vi.fn(),
+    deleteObject: vi.fn().mockResolvedValue(undefined),
+    deletePrefix: vi.fn().mockResolvedValue(undefined),
     resolveUrl: vi.fn((key: string) => `http://localhost:4000/media/${key}`),
-    getAbsolutePath: vi.fn((key: string) => `/storage/${key}`),
-    getStorageRoot: vi.fn(() => '/storage'),
   },
 }));
 
@@ -62,7 +60,16 @@ vi.mock('@repo/db', () => ({
 }));
 
 vi.mock('../../shared/storage/storage.service.js', () => ({
-  storageService: mockStorageService,
+  STORAGE_BUCKETS: {
+    productMedia: 'perigee-product-media',
+    bulkImports: 'perigee-products-bulk-upload',
+  },
+  getStorageConfig: vi.fn(() => ({
+    productMediaBucket: 'perigee-product-media',
+    bulkImportsBucket: 'perigee-products-bulk-upload',
+    endpoint: 'http://localhost:9000',
+  })),
+  storageService: mockR2Service,
 }));
 
 vi.mock('./media.processor.js', () => ({
@@ -73,6 +80,7 @@ vi.mock('./media.processor.js', () => ({
 describe('Media Service (media.service.ts)', () => {
   const vendorA = '11111111-1111-4111-8111-111111111111';
   const vendorB = '22222222-2222-4222-8222-222222222222';
+
   const userId = '33333333-3333-4333-8333-333333333333';
   const mediaId = '44444444-4444-4444-8444-444444444444';
 
@@ -117,7 +125,7 @@ describe('Media Service (media.service.ts)', () => {
 
       const result = await mediaService.uploadMedia(vendorA, userId, mockFile);
 
-      expect(mockStorageService.save).toHaveBeenCalled();
+      expect(mockR2Service.putObject).toHaveBeenCalled();
       expect(mediaProcessor.processImage).toHaveBeenCalled();
       expect(result.mediaId).toBe(mediaId);
       expect(result.type).toBe('image');
@@ -175,7 +183,7 @@ describe('Media Service (media.service.ts)', () => {
       await expect(mediaService.uploadMedia(vendorA, userId, mockFile)).rejects.toThrow(
         'DB failure',
       );
-      expect(mockStorageService.deleteDirectory).toHaveBeenCalled();
+      expect(mockR2Service.deletePrefix).toHaveBeenCalled();
     });
   });
 
@@ -363,8 +371,9 @@ describe('Media Service (media.service.ts)', () => {
       await mediaService.deleteMedia(vendorA, mediaId);
 
       expect(db.delete).toHaveBeenCalled();
-      expect(mockStorageService.deleteDirectory).toHaveBeenCalledWith(
+      expect(mockR2Service.deletePrefix).toHaveBeenCalledWith(
         `vendors/${vendorA}/media/${mediaId}`,
+        'perigee-product-media',
       );
     });
   });

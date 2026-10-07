@@ -8,7 +8,7 @@ import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
 
-import { storageService } from '../../shared/storage/storage.service.js';
+import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 // register static cross-platform ffmpeg & ffprobe binaries if available
 if (ffmpegInstaller && ffmpegInstaller.path) {
@@ -30,12 +30,13 @@ export interface VideoProcessingResult {
 }
 
 /**
- * Generates thumbnail, medium, and large variants from an image buffer and saves them to storage.
+ * Generates thumbnail, medium, and large variants from an image buffer and saves them to object storage.
  */
 export async function processImage(
   buffer: Buffer,
   storagePrefix: string,
 ): Promise<ImageProcessingResult> {
+  const bucket = STORAGE_BUCKETS.productMedia;
   const metadata = await sharp(buffer).metadata();
   const width = metadata.width ?? null;
   const height = metadata.height ?? null;
@@ -45,21 +46,31 @@ export async function processImage(
     .resize(150, 150, { fit: 'cover' })
     .webp({ quality: 80 })
     .toBuffer();
-  await storageService.save(`${storagePrefix}/thumbnail.webp`, thumbnailBuffer);
+  await storageService.putObject(
+    `${storagePrefix}/thumbnail.webp`,
+    thumbnailBuffer,
+    'image/webp',
+    bucket,
+  );
 
   // 2. Medium variant (600x600, inside fit, preserve aspect ratio)
   const mediumBuffer = await sharp(buffer)
     .resize(600, 600, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 85 })
     .toBuffer();
-  await storageService.save(`${storagePrefix}/medium.webp`, mediumBuffer);
+  await storageService.putObject(
+    `${storagePrefix}/medium.webp`,
+    mediumBuffer,
+    'image/webp',
+    bucket,
+  );
 
   // 3. Large variant (1200x1200, inside fit, preserve aspect ratio)
   const largeBuffer = await sharp(buffer)
     .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 90 })
     .toBuffer();
-  await storageService.save(`${storagePrefix}/large.webp`, largeBuffer);
+  await storageService.putObject(`${storagePrefix}/large.webp`, largeBuffer, 'image/webp', bucket);
 
   return { width, height };
 }
@@ -71,6 +82,8 @@ export async function processVideo(
   videoFilePath: string,
   storagePrefix: string,
 ): Promise<VideoProcessingResult> {
+  const bucket = STORAGE_BUCKETS.productMedia;
+
   // 1. Probe video metadata
   const metadata = await new Promise<ffmpeg.FfprobeData>((resolve, reject) => {
     ffmpeg.ffprobe(videoFilePath, (err, data) => {
@@ -101,9 +114,14 @@ export async function processVideo(
   });
 
   try {
-    // 3. Convert extracted poster frame to webp via sharp and save
+    // 3. Convert extracted poster frame to webp via sharp and save to R2
     const posterWebpBuffer = await sharp(tempPosterPath).webp({ quality: 85 }).toBuffer();
-    await storageService.save(`${storagePrefix}/poster.webp`, posterWebpBuffer);
+    await storageService.putObject(
+      `${storagePrefix}/poster.webp`,
+      posterWebpBuffer,
+      'image/webp',
+      bucket,
+    );
   } finally {
     // Clean up temporary screenshot
     await unlink(tempPosterPath).catch(() => {});
