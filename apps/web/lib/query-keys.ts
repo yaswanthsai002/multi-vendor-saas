@@ -25,4 +25,8 @@ export const queryKeys = {
       ['categories', 'list', parentCategoryId ?? 'root'] as const,
     detail: (id: string) => ['categories', 'detail', id] as const,
   },
+  bulkImports: {
+    all: () => ['vendor', 'bulk-imports'] as const,
+    active: () => ['vendor', 'bulk-imports', 'active'] as const,
+  },
 } as const;

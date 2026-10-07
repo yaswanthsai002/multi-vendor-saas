@@ -26,5 +26,15 @@ export const API_ENDPOINTS = {
     productRestore: (id: string) => `/api/vendor/products/${id}/restore` as const,
     productsBulk: '/api/vendor/products/bulk',
     media: '/api/vendor/media',
+    bulkImports: {
+      template: '/api/vendor/products/bulk-imports/template',
+      initiate: '/api/vendor/products/bulk-imports/initiate',
+      active: '/api/vendor/products/bulk-imports/active',
+      uploaded: (id: string) => `/api/vendor/products/bulk-imports/${id}/uploaded` as const,
+      errors: (id: string) => `/api/vendor/products/bulk-imports/${id}/errors` as const,
+      start: (id: string) => `/api/vendor/products/bulk-imports/${id}/start` as const,
+      cancel: (id: string) => `/api/vendor/products/bulk-imports/${id}` as const,
+      events: (id: string) => `/api/vendor/products/bulk-imports/${id}/events` as const,
+    },
   },
 } as const;

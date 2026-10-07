@@ -6,6 +6,8 @@ import { and, asc, eq, ilike, isNull, ne, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 
+import { invalidateCategoryMap } from './category.cache.js';
+
 import type { CreateCategoryInput, UpdateCategoryInput } from './category.schema.js';
 
 export function slugify(text: string): string {
@@ -172,6 +174,8 @@ export async function createCategory(input: CreateCategoryInput) {
       imageUrl: categories.imageUrl,
     });
 
+  await invalidateCategoryMap();
+
   return {
     ...created,
     hasChildren: false,
@@ -228,6 +232,7 @@ export async function updateCategory(categoryId: string, input: UpdateCategoryIn
   }
 
   await db.update(categories).set(updatePayload).where(eq(categories.categoryId, categoryId));
+  await invalidateCategoryMap();
 
   return getCategoryById(categoryId);
 }
@@ -276,6 +281,7 @@ export async function deleteCategory(categoryId: string) {
   }
 
   await db.delete(categories).where(eq(categories.categoryId, categoryId));
+  await invalidateCategoryMap();
 
   return { message: 'Category deleted successfully.' };
 }

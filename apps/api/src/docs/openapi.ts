@@ -19,6 +19,10 @@ export const openapiSpec = {
     { name: 'OAuth', description: 'Third-party OAuth 2.0 social authentication' },
     { name: 'Vendor Dashboard', description: 'Vendor dashboard analytics and overview metrics' },
     { name: 'Vendor Products', description: 'Vendor product catalog management endpoints' },
+    {
+      name: 'Vendor Bulk Import',
+      description: 'Vendor CSV bulk product import workflow endpoints',
+    },
     { name: 'Vendor Media', description: 'Vendor media library management endpoints' },
     { name: 'Categories', description: 'Global category taxonomy and management' },
   ],
@@ -2384,6 +2388,175 @@ export const openapiSpec = {
               },
             },
           },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/template': {
+      get: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Download bulk product import Excel template (.xlsx)',
+        description:
+          'Generates a pre-formatted 2-sheet Excel (.xlsx) template. Sheet 1 contains product columns with data validation dropdown referencing category hierarchy in Sheet 2.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Excel (.xlsx) template file download.',
+            content: {
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+                schema: {
+                  type: 'string',
+                  format: 'binary',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+          '403': {
+            description: 'Active vendor profile required.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/initiate': {
+      post: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Initiate bulk Excel/CSV product import session',
+        description: 'Acquires single-active-import lock and returns presigned R2 PUT URL.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  filename: { type: 'string', example: 'products.xlsx' },
+                },
+                required: ['filename'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Import session initiated.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        importId: { type: 'string', format: 'uuid' },
+                        uploadUrl: { type: 'string' },
+                        objectKey: { type: 'string' },
+                        expiresIn: { type: 'number', example: 900 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '409': { description: 'Import already in progress.' },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/active': {
+      get: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Get current active import session',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Active import session or null.',
+          },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/{importId}/uploaded': {
+      post: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Confirm CSV upload and enqueue validation',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'importId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Validation job enqueued.' },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/{importId}/start': {
+      post: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Start creating valid products in database',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'importId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Product creation enqueued.' },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/{importId}': {
+      delete: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Cancel import session and cleanup storage',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'importId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Import session cancelled.' },
+        },
+      },
+    },
+    '/api/vendor/products/bulk-imports/{importId}/errors': {
+      get: {
+        tags: ['Vendor Bulk Import'],
+        summary: 'Get presigned download URL for errors CSV',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'importId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Presigned download URL returned.' },
         },
       },
     },
