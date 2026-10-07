@@ -1,16 +1,103 @@
 services:
-  postgres:
-    image: postgres:17
-    container_name: multi-vendor-saas-postgres
+  redis:
+    image: redis:7-alpine
+    container_name: perigee-redis
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1259
-      POSTGRES_DB: multi_vendor_saas
-    ports:
-      - '5432:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: perigee-api
+    restart: unless-stopped
+    # Compose Watch replaces host bind mounts for development
+    develop:
+      watch:
+        # Sync api source files when changed
+        - action: sync
+          path: ./apps/api/src
+          target: /app/apps/api/src
+        # Sync shared database package source files when changed
+        - action: sync
+          path: ./packages/db/src
+          target: /app/packages/db/src
+        # Rebuild image if dependencies change
+        - action: rebuild
+          path: ./apps/api/package.json
+        - action: rebuild
+          path: ./pnpm-lock.yaml
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: 4000
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_API_TOKEN: ${R2_API_TOKEN}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BULK_IMPORTS_BUCKET: ${R2_BULK_IMPORTS_BUCKET}
+      R2_PRODUCT_MEDIA_BUCKET: ${R2_PRODUCT_MEDIA_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      CHUNK_SIZE: ${CHUNK_SIZE}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: perigee-worker
+    command: ['pnpm', '--filter', 'api', 'worker']
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/api/src
+          target: /app/apps/api/src
+        - action: sync
+          path: ./packages/db/src
+          target: /app/packages/db/src
+        - action: rebuild
+          path: ./apps/api/package.json
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_API_TOKEN: ${R2_API_TOKEN}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BULK_IMPORTS_BUCKET: ${R2_BULK_IMPORTS_BUCKET}
+      R2_PRODUCT_MEDIA_BUCKET: ${R2_PRODUCT_MEDIA_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      CHUNK_SIZE: ${CHUNK_SIZE}
+
+  nginx:
+    image: nginx:alpine
+    container_name: perigee-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
 
 volumes:
-  postgres_data:
+  redis_data:
