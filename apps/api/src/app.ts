@@ -1,9 +1,5 @@
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { config } from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -12,10 +8,6 @@ import { apiRouter } from './routes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { notFoundHandler } from './shared/middleware/notFound.js';
 import { storageService } from './shared/storage/storage.service.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, '../../../.env') });
-config();
 
 const app = express();
 
