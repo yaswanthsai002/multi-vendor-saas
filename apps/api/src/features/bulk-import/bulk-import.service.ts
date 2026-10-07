@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs';
 import { AppError } from '../../shared/errors/AppError.js';
 import { bulkImportQueue } from '../../shared/queue/queues.js';
 import { redis } from '../../shared/redis/redis.client.js';
-import { r2Service } from '../../shared/storage/r2.client.js';
+import { storageService } from '../../shared/storage/storage.service.js';
 import { getCategoryTaxonomy } from '../category/category.cache.js';
 
 import type { InitiateBulkImportInput } from './bulk-import.schema.js';
@@ -180,7 +180,7 @@ export class BulkImportService {
       BULK_IMPORT_TTL_UPLOAD_SECONDS,
     );
 
-    const uploadUrl = await r2Service.generatePresignedPutUrl(
+    const uploadUrl = await storageService.generatePresignedPutUrl(
       objectKey,
       undefined,
       BULK_IMPORT_TTL_UPLOAD_SECONDS,
@@ -262,7 +262,7 @@ export class BulkImportService {
     let errorsUrl: string | undefined;
     if (state.errorsKey) {
       try {
-        errorsUrl = await r2Service.generatePresignedGetUrl(state.errorsKey, 3600);
+        errorsUrl = await storageService.generatePresignedGetUrl(state.errorsKey, 3600);
       } catch {
         // Non-fatal
       }
@@ -284,7 +284,7 @@ export class BulkImportService {
       throw new AppError(404, 'NOT_FOUND', 'No errors report found for this import session.');
     }
 
-    const url = await r2Service.generatePresignedGetUrl(state.errorsKey, 3600);
+    const url = await storageService.generatePresignedGetUrl(state.errorsKey, 3600);
     return { url, expiresIn: 3600 };
   }
 
@@ -353,7 +353,7 @@ export class BulkImportService {
     await redis.del(`bulk-import:${importId}`);
 
     // Clean up files in R2 storage
-    await r2Service.deletePrefix(`bulk-imports/${vendorId}/${importId}/`);
+    await storageService.deletePrefix(`bulk-imports/${vendorId}/${importId}/`);
 
     await this.publishEvent(importId, {
       importId,

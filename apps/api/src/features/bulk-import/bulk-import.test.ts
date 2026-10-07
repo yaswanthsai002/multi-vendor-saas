@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import app from '../../app.js';
 import { bulkImportQueue } from '../../shared/queue/queues.js';
 import { redis } from '../../shared/redis/redis.client.js';
-import { r2Service } from '../../shared/storage/r2.client.js';
+import { storageService } from '../../shared/storage/storage.service.js';
 import { processImportProducts } from '../../worker/import-products.processor.js';
 import { processValidateImport } from '../../worker/validate-import.processor.js';
 import * as categoryCache from '../category/category.cache.js';
@@ -332,7 +332,7 @@ describe('Bulk Product Import API', () => {
 
   describe('DELETE /api/vendor/products/bulk-imports/:importId', () => {
     it('cancels import and cleans up Redis keys and R2 objects', async () => {
-      const deletePrefixSpy = vi.spyOn(r2Service, 'deletePrefix').mockResolvedValue();
+      const deletePrefixSpy = vi.spyOn(storageService, 'deletePrefix').mockResolvedValue();
 
       const cookie = await createAuthCookie(userId);
       const initRes = await request(app)
@@ -401,8 +401,8 @@ Invalid Price Product,Description of the product with bad price,abc,10,electroni
 Nonexistent Category,Valid description for this product,49.99,20,clothing
 `;
 
-    vi.spyOn(r2Service, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));
-    const putObjectSpy = vi.spyOn(r2Service, 'putObject').mockResolvedValue();
+    vi.spyOn(storageService, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));
+    const putObjectSpy = vi.spyOn(storageService, 'putObject').mockResolvedValue();
 
     const mockJob = {
       data: {
@@ -437,7 +437,7 @@ Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,50,e
 Another Great Product,High quality wireless bluetooth earphones,89.99,100,electronics
 `;
 
-    vi.spyOn(r2Service, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));
+    vi.spyOn(storageService, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));
 
     // Seed state in Redis
     await redis.set(

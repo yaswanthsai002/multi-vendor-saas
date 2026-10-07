@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { extname } from 'node:path';
+import { unlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { extname, join } from 'node:path';
 
 import { getDb } from '@repo/db';
 import { mediaLibrary, productMedia, products } from '@repo/db/schema';
 import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
-import { storageService } from '../../shared/storage/storage.service.js';
+import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import { processImage, processVideo } from './media.processor.js';
 import {
@@ -42,8 +44,9 @@ export interface FormattedMediaItem {
 
 // single serializer formatting DB row into contract representation with resolved URLs
 export function formatMediaResponse(row: typeof mediaLibrary.$inferSelect): FormattedMediaItem {
+  const bucket = STORAGE_BUCKETS.productMedia;
   const dirPrefix = `vendors/${row.vendorId}/media/${row.mediaId}`;
-  const originalUrl = storageService.resolveUrl(row.originalStorageKey);
+  const originalUrl = storageService.resolveUrl(row.originalStorageKey, bucket);
 
   const base: FormattedMediaItem = {
     mediaId: row.mediaId,
@@ -62,17 +65,17 @@ export function formatMediaResponse(row: typeof mediaLibrary.$inferSelect): Form
 
   if (row.mediaType === 'image') {
     base.variants = {
-      thumbnail: storageService.resolveUrl(`${dirPrefix}/thumbnail.webp`),
-      medium: storageService.resolveUrl(`${dirPrefix}/medium.webp`),
-      large: storageService.resolveUrl(`${dirPrefix}/large.webp`),
+      thumbnail: storageService.resolveUrl(`${dirPrefix}/thumbnail.webp`, bucket),
+      medium: storageService.resolveUrl(`${dirPrefix}/medium.webp`, bucket),
+      large: storageService.resolveUrl(`${dirPrefix}/large.webp`, bucket),
     };
   } else {
     base.durationSeconds = row.durationSeconds;
-    base.poster = storageService.resolveUrl(`${dirPrefix}/poster.webp`);
+    base.poster = storageService.resolveUrl(`${dirPrefix}/poster.webp`, bucket);
     base.variants = {
-      thumbnail: storageService.resolveUrl(`${dirPrefix}/poster.webp`),
-      medium: storageService.resolveUrl(`${dirPrefix}/poster.webp`),
-      large: storageService.resolveUrl(`${dirPrefix}/poster.webp`),
+      thumbnail: storageService.resolveUrl(`${dirPrefix}/poster.webp`, bucket),
+      medium: storageService.resolveUrl(`${dirPrefix}/poster.webp`, bucket),
+      large: storageService.resolveUrl(`${dirPrefix}/poster.webp`, bucket),
     };
   }
 
@@ -87,6 +90,7 @@ export async function uploadMedia(
   userId: string,
   file: Express.Multer.File,
 ): Promise<FormattedMediaItem> {
+  const bucket = STORAGE_BUCKETS.productMedia;
   const mimeType = file.mimetype;
   const isImage = (ALLOWED_IMAGE_MIMES as readonly string[]).includes(mimeType);
   const isVideo = (ALLOWED_VIDEO_MIMES as readonly string[]).includes(mimeType);
@@ -109,8 +113,8 @@ export async function uploadMedia(
   const dirPrefix = `vendors/${vendorId}/media/${mediaId}`;
   const originalStorageKey = `${dirPrefix}/original${safeExt}`;
 
-  // 1. Save original file to storage
-  await storageService.save(originalStorageKey, file.buffer);
+  // 1. Save original file to R2 storage
+  await storageService.putObject(originalStorageKey, file.buffer, mimeType, bucket);
 
   let width: number | null;
   let height: number | null;
@@ -123,11 +127,16 @@ export async function uploadMedia(
       width = imgRes.width;
       height = imgRes.height;
     } else {
-      const originalDiskPath = storageService.getAbsolutePath(originalStorageKey);
-      const vidRes = await processVideo(originalDiskPath, dirPrefix);
-      width = vidRes.width;
-      height = vidRes.height;
-      durationSeconds = vidRes.durationSeconds;
+      const tempVideoPath = join(tmpdir(), `upload-${randomUUID()}${safeExt}`);
+      try {
+        await writeFile(tempVideoPath, file.buffer);
+        const vidRes = await processVideo(tempVideoPath, dirPrefix);
+        width = vidRes.width;
+        height = vidRes.height;
+        durationSeconds = vidRes.durationSeconds;
+      } finally {
+        await unlink(tempVideoPath).catch(() => {});
+      }
     }
 
     // 3. Persist MediaLibrary DB record
@@ -153,7 +162,7 @@ export async function uploadMedia(
     return formatMediaResponse(inserted);
   } catch (err) {
     // Cleanup generated files on failure to avoid orphans per section 13
-    await storageService.deleteDirectory(dirPrefix);
+    await storageService.deletePrefix(dirPrefix, bucket);
     throw err;
   }
 }
@@ -324,8 +333,8 @@ export async function deleteMedia(vendorId: string, mediaId: string): Promise<vo
   // Delete DB row first
   await db.delete(mediaLibrary).where(eq(mediaLibrary.mediaId, mediaId));
 
-  // Clean up physical directory
-  await storageService.deleteDirectory(dirPrefix);
+  // Clean up physical directory in R2
+  await storageService.deletePrefix(dirPrefix, STORAGE_BUCKETS.productMedia);
 }
 
 /**
