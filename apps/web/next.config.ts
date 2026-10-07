@@ -1,4 +1,13 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import type { NextConfig } from 'next';
+
+// Load root monorepo .env before Next.js builds/inlines env vars
+const rootEnv = resolve(process.cwd(), '../../.env');
+if (existsSync(rootEnv) && typeof process.loadEnvFile === 'function') {
+  process.loadEnvFile(rootEnv);
+}
 
 const nextConfig: NextConfig = {
   images: {
