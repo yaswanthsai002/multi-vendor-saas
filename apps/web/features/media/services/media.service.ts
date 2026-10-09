@@ -24,6 +24,7 @@ export async function uploadMediaAsset(
     url: API_ENDPOINTS.vendor.media,
     method: 'POST',
     data: formData,
+    timeout: 120000, // 2 minutes for uploading & processing.
     headers: {
       'Content-Type': 'multipart/form-data',
     },
