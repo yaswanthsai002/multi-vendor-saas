@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { users } from './users.js';
 
@@ -11,6 +11,7 @@ export const orderStatusEnum = pgEnum('order_status', [
 
 export const orders = pgTable('orders', {
   orderId: uuid('orderId').defaultRandom().primaryKey(),
+  orderNumber: text('orderNumber').notNull().unique(),
   userId: uuid('userId')
     .notNull()
     .references(() => users.userId, { onDelete: 'restrict' }),

@@ -11,3 +11,5 @@ export * from './carts.js';
 export * from './cartItems.js';
 export * from './mediaLibrary.js';
 export * from './productMedia.js';
+export * from './orderDeliveryAddresses.js';
+export * from './customerAddresses.js';
