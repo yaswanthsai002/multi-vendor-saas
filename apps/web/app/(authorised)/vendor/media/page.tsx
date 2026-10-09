@@ -1,9 +1,8 @@
 'use client';
 
-import { Ban, Check, CheckSquare, Trash2, X, XCircle } from 'lucide-react';
+import { Ban, Check, CheckSquare, CloudUpload, Loader2, Trash2, X, XCircle } from 'lucide-react';
 import * as React from 'react';
-
-import type { ListMediaFilters, MediaItem } from '@/features/media/types/media.types';
+import { toast } from 'sonner';
 
 import { MediaDeleteDialog } from '@/features/media/components/media-delete-dialog';
 import { MediaGrid } from '@/features/media/components/media-grid';
@@ -17,14 +16,26 @@ import {
   useDisableMedia,
   useEnableMedia,
   useMediaList,
+  useUploadMedia,
 } from '@/features/media/hooks/use-media';
+import {
+  type ListMediaFilters,
+  type MediaItem,
+  validateMediaFiles,
+} from '@/features/media/types/media.types';
 
 export default function VendorMediaPage() {
   const [activeTab, setActiveTab] = React.useState<MediaTab>('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
+  const [droppedFiles, setDroppedFiles] = React.useState<File[]>([]);
+  const [isBackgroundUploading, setIsBackgroundUploading] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
+  // Drag and drop upload state for entire listing
+  const [isDraggingOver, setIsDraggingOver] = React.useState(false);
+  const dragCounter = React.useRef(0);
 
   // Cross-tab selection state (mediaId -> MediaItem)
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
@@ -54,10 +65,68 @@ export default function VendorMediaPage() {
   }, [activeTab, searchQuery, page]);
 
   const { data, isLoading, isFetching } = useMediaList(filters);
+  const uploadMutation = useUploadMedia();
   const disableMutation = useDisableMedia();
   const enableMutation = useEnableMedia();
   const deleteMutation = useDeleteMedia();
   const bulkActionMutation = useBulkMediaAction();
+
+  // ponytail: background upload execution with floating top-right progress
+  const handleBackgroundUpload = async (files: File[]) => {
+    setIsBackgroundUploading(true);
+    try {
+      await uploadMutation.mutateAsync(files);
+    } catch {
+      // Error toast handled by useUploadMedia hook
+    } finally {
+      setIsBackgroundUploading(false);
+    }
+  };
+
+  // ponytail: handle drag-and-drop file upload across entire listing by opening modal with files
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDraggingOver(false);
+
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+
+    const { valid, errors } = validateMediaFiles(e.dataTransfer.files);
+    if (errors.length > 0) {
+      toast.error(errors.join('. '));
+    }
+
+    if (valid.length > 0) {
+      setDroppedFiles(valid);
+      setIsUploadOpen(true);
+    }
+  };
 
   // ponytail: use all-tab counts summary from API; reflect filtered count on active tab when searching
   const counts = data?.counts
@@ -164,9 +233,41 @@ export default function VendorMediaPage() {
   const selectedIds = Array.from(selectedMap.keys());
 
   return (
-    <div className="space-y-6 relative pb-16">
+    <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className="space-y-6 relative pb-16 min-h-125"
+    >
+      {/* Drag overlay indicator */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 rounded-2xl border-2 border-dashed border-accent bg-surface/90 dark:bg-surface-subtle/90 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center pointer-events-none animate-in fade-in duration-150">
+          <div className="p-4 rounded-full bg-accent/10 text-accent mb-3 shadow-xs">
+            <CloudUpload className="h-10 w-10 animate-bounce" />
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-text-primary">Drop files to upload</h3>
+          <p className="text-xs sm:text-sm text-text-secondary mt-1 max-w-sm">
+            Release images or videos anywhere here to immediately upload to your media library
+          </p>
+        </div>
+      )}
+
+      {/* Floating Uploading State Indicator for background upload */}
+      {isBackgroundUploading && (
+        <div className="fixed top-20 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-surface dark:bg-surface-subtle border border-border-default shadow-lg text-text-primary text-xs font-semibold animate-in slide-in-from-top-4">
+          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+          <span>Uploading media in background...</span>
+        </div>
+      )}
+
       {/* Header with Title and Upload action */}
-      <MediaHeader onOpenUpload={() => setIsUploadOpen(true)} />
+      <MediaHeader
+        onOpenUpload={() => {
+          setDroppedFiles([]);
+          setIsUploadOpen(true);
+        }}
+      />
 
       {/* Filter, Search, and Selection toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -205,7 +306,10 @@ export default function VendorMediaPage() {
         isFetching={isFetching}
         searchQuery={searchQuery}
         onClearSearch={() => handleSearchChange('')}
-        onOpenUpload={() => setIsUploadOpen(true)}
+        onOpenUpload={() => {
+          setDroppedFiles([]);
+          setIsUploadOpen(true);
+        }}
         onDisable={handleDisable}
         onEnable={handleEnable}
         onDelete={(mediaId) => setDeletingId(mediaId)}
@@ -259,7 +363,7 @@ export default function VendorMediaPage() {
                 onClick={handleBulkEnable}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                <Check className="h-3.5 w-3.5 stroke-3" />
                 <span>Enable</span>
               </button>
             ) : null}
@@ -306,7 +410,15 @@ export default function VendorMediaPage() {
       ) : null}
 
       {/* Upload Dialog Modal */}
-      <MediaUploadDialog open={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
+      <MediaUploadDialog
+        open={isUploadOpen}
+        initialFiles={droppedFiles}
+        onUploadInBackground={handleBackgroundUpload}
+        onClose={() => {
+          setIsUploadOpen(false);
+          setDroppedFiles([]);
+        }}
+      />
 
       {/* Single / Bulk Delete Confirmation Modal */}
       <MediaDeleteDialog
