@@ -105,6 +105,28 @@ function MediaPickerContent({
   const selectedCount = selectedMap.size;
   const selectedIds = Array.from(selectedMap.keys());
 
+  const handleTabChange = React.useCallback((tab: MediaTab) => {
+    if (tab !== 'disabled') {
+      setActiveTab((prev) => {
+        if (prev !== tab) {
+          setPage(1);
+          return tab;
+        }
+        return prev;
+      });
+    }
+  }, []);
+
+  const handleSearchChange = React.useCallback((q: string) => {
+    setSearch((prev) => {
+      if (prev !== q) {
+        setPage(1);
+        return q;
+      }
+      return prev;
+    });
+  }, []);
+
   return (
     <div
       role="dialog"
@@ -147,12 +169,7 @@ function MediaPickerContent({
             <div className="w-full sm:w-auto">
               <MediaTabs
                 activeTab={activeTab}
-                onTabChange={(tab) => {
-                  if (tab !== 'disabled') {
-                    setActiveTab(tab);
-                    setPage(1);
-                  }
-                }}
+                onTabChange={handleTabChange}
                 counts={{
                   all: data?.counts?.all,
                   image: data?.counts?.image,
@@ -167,13 +184,7 @@ function MediaPickerContent({
           )}
 
           <div className="w-full sm:w-64">
-            <MediaSearchBar
-              value={search}
-              onChange={(q) => {
-                setSearch(q);
-                setPage(1);
-              }}
-            />
+            <MediaSearchBar value={search} onChange={handleSearchChange} />
           </div>
         </div>
 

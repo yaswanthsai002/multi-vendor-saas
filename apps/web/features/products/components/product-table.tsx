@@ -1,7 +1,5 @@
-'use client';
-
 import { Switch } from '@base-ui-components/react/switch';
-import { ChevronLeft, ChevronRight, Package, Star } from 'lucide-react';
+import { Package, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
@@ -9,6 +7,8 @@ import * as React from 'react';
 import { ProductTableActionsMenu } from './product-table-actions-menu';
 
 import type { ProductItem, ProductTab } from '../types/product.types';
+
+import { Pagination } from '@/shared/components/pagination/pagination';
 
 interface ProductTableProps {
   products: ProductItem[];
@@ -67,34 +67,6 @@ export function ProductTable({
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const from = total === 0 ? 0 : (page - 1) * limit + 1;
-  const to = Math.min(page * limit, total);
-
-  // Generate pagination page numbers
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (page <= 4) {
-        pages.push(1, 2, 3, 4, 5, '...', totalPages);
-      } else if (page >= totalPages - 3) {
-        pages.push(
-          1,
-          '...',
-          totalPages - 4,
-          totalPages - 3,
-          totalPages - 2,
-          totalPages - 1,
-          totalPages,
-        );
-      } else {
-        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
-      }
-    }
-    return pages;
-  };
-
   const isArchivedTab = activeTab === 'archived';
 
   return (
@@ -290,79 +262,15 @@ export function ProductTable({
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-border-default bg-surface-subtle/40 dark:bg-surface/60">
-        <span className="text-xs sm:text-sm text-text-secondary">
-          Showing{' '}
-          <span className="font-medium text-text-primary">
-            {from}–{to}
-          </span>{' '}
-          of <span className="font-medium text-text-primary">{total}</span> products
-        </span>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-tertiary">
-            Page {page} of {totalPages}
-          </span>
-
-          <div className="flex items-center gap-1">
-            {/* Prev Page Button */}
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-              aria-label="Previous page"
-              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            {/* Page Numbers (when multiple pages) */}
-            {totalPages > 1 ? (
-              <>
-                {getPageNumbers().map((p, idx) => {
-                  if (typeof p === 'string') {
-                    return (
-                      <span
-                        key={`ellipsis-${idx}`}
-                        className="px-2 py-1 text-xs text-text-tertiary select-none"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-                  const isActive = p === page;
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => onPageChange(p)}
-                      aria-label={`Page ${p}`}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={`min-w-8 h-8 px-2 flex items-center justify-center rounded-lg text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-surface-raised dark:bg-surface-raised text-text-primary border border-border-default shadow-xs'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </>
-            ) : null}
-
-            {/* Next Page Button */}
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
-              aria-label="Next page"
-              className="p-1.5 rounded-lg border border-border-default bg-surface dark:bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+      <div className="px-5 py-3 border-t border-border-default bg-surface-subtle/40 dark:bg-surface/60">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          limit={limit}
+          onPageChange={onPageChange}
+          className="pt-0 border-t-0"
+        />
       </div>
     </div>
   );

@@ -137,15 +137,25 @@ export default function VendorMediaPage() {
       ? { [activeTab]: data.pagination.total }
       : undefined;
 
-  const handleTabChange = (tab: MediaTab) => {
-    setActiveTab(tab);
-    setPage(1);
-  };
+  const handleTabChange = React.useCallback((tab: MediaTab) => {
+    setActiveTab((prev) => {
+      if (prev !== tab) {
+        setPage(1);
+        return tab;
+      }
+      return prev;
+    });
+  }, []);
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-  };
+  const handleSearchChange = React.useCallback((query: string) => {
+    setSearchQuery((prev) => {
+      if (prev !== query) {
+        setPage(1);
+        return query;
+      }
+      return prev;
+    });
+  }, []);
 
   const handleDisable = (mediaId: string) => {
     disableMutation.mutate(mediaId);

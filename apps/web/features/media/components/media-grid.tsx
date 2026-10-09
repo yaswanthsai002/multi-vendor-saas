@@ -1,11 +1,11 @@
-'use client';
-
-import { ChevronLeft, ChevronRight, Image as ImageIcon, Search, UploadCloud } from 'lucide-react';
+import { Image as ImageIcon, Search, UploadCloud } from 'lucide-react';
 import * as React from 'react';
 
 import { MediaCard } from './media-card';
 
 import type { MediaItem } from '../types/media.types';
+
+import { Pagination } from '@/shared/components/pagination/pagination';
 
 interface MediaGridProps {
   items: MediaItem[];
@@ -139,38 +139,15 @@ export function MediaGrid({
         ))}
       </div>
 
-      {/* Pagination Footer */}
-      {pagination && pagination.totalPages > 1 ? (
-        <div className="flex items-center justify-between pt-4 border-t border-border-default text-xs text-text-secondary">
-          <div>
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}{' '}
-            items
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={pagination.page <= 1}
-              onClick={() => onPageChange?.(pagination.page - 1)}
-              className="p-1.5 rounded-md border border-border-default hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="font-medium text-text-primary">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => onPageChange?.(pagination.page + 1)}
-              className="p-1.5 rounded-md border border-border-default hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              aria-label="Next page"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+      {/* Shared Pagination Component */}
+      {pagination && onPageChange ? (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          limit={pagination.limit}
+          onPageChange={onPageChange}
+        />
       ) : null}
     </div>
   );
