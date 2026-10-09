@@ -17,21 +17,29 @@ export function MediaSearchBar({
   isSearching = false,
 }: MediaSearchBarProps) {
   const [localValue, setLocalValue] = React.useState(value);
-  const [prevValue, setPrevValue] = React.useState(value);
 
-  // ponytail: React recommended pattern for adjusting state during render when prop changes
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setLocalValue(value);
-  }
-
+  // ponytail: sync local input state when parent value changes
   React.useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  // ponytail: debounce search ONLY when user edits localValue different from value
+  React.useEffect(() => {
+    if (localValue === value) return;
+
     const handler = setTimeout(() => {
       onChange(localValue);
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [localValue, onChange]);
+  }, [localValue, value, onChange]);
+
+  const handleClear = () => {
+    setLocalValue('');
+    if (value !== '') {
+      onChange('');
+    }
+  };
 
   return (
     <div className="relative w-full max-w-sm">
@@ -48,15 +56,12 @@ export function MediaSearchBar({
         onChange={(e) => setLocalValue(e.target.value)}
         placeholder={placeholder}
         aria-label="Search media by filename"
-        className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-lg text-text-primary placeholder:text-text-tertiary  transition-colors"
+        className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-lg text-text-primary placeholder:text-text-tertiary transition-colors"
       />
       {localValue ? (
         <button
           type="button"
-          onClick={() => {
-            setLocalValue('');
-            onChange('');
-          }}
+          onClick={handleClear}
           aria-label="Clear search"
           className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-text-tertiary hover:text-text-primary cursor-pointer"
         >
