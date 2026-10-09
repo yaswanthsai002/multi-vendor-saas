@@ -19,6 +19,7 @@ export const vendors = pgTable('vendors', {
   tagline: text('tagline'),
   description: text('description'),
   logoUrl: text('logoUrl'),
+  bannerUrl: text('bannerUrl'),
   status: vendorStatusEnum('status').notNull().default('pending'),
   createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),

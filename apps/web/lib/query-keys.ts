@@ -24,6 +24,9 @@ export const queryKeys = {
     list: (filters?: unknown) => ['vendor', 'orders', 'list', filters] as const,
     detail: (id: string) => ['vendor', 'orders', 'detail', id] as const,
   },
+  profile: {
+    all: () => ['vendor', 'profile'] as const,
+  },
   categories: {
     all: () => ['categories'] as const,
     list: (parentCategoryId?: string) =>

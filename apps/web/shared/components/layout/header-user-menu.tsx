@@ -146,7 +146,7 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               </div>
 
               <Link
-                href="/vendor/settings/profile"
+                href="/vendor/profile"
                 onClick={handleClose}
                 role="menuitem"
                 className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"

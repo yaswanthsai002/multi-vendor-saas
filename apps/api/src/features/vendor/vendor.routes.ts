@@ -16,8 +16,10 @@ import {
   getVendorDashboard,
   getVendorProductById,
   getVendorProducts,
+  getVendorProfile,
   restoreVendorProduct,
   updateVendorProductById,
+  updateVendorProfile,
 } from './vendor.controller.js';
 import { requireActiveVendor } from './vendor.middleware.js';
 
@@ -25,6 +27,10 @@ export const vendorRouter = Router();
 
 // Enforce authentication and active vendor profile ownership on all /vendor routes
 vendorRouter.use(verifyToken, requireActiveVendor);
+
+// Profile management routes
+vendorRouter.get('/profile', getVendorProfile);
+vendorRouter.patch('/profile', updateVendorProfile);
 
 vendorRouter.use('/products/bulk-imports', bulkImportRouter);
 vendorRouter.get('/dashboard', getVendorDashboard);
