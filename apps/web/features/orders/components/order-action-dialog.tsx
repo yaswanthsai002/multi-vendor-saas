@@ -23,13 +23,12 @@ export function OrderActionDialog({
 }: OrderActionDialogProps) {
   const [reason, setReason] = React.useState('');
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setReason('');
-    }
-  }, [isOpen]);
-
   if (!isOpen || !action) return null;
+
+  const handleClose = () => {
+    setReason('');
+    onClose();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +39,7 @@ export function OrderActionDialog({
     } else if (action === 'cancel') {
       onConfirm({ status: 'cancelled', cancellationReason: reason.trim() || undefined });
     }
+    setReason('');
   };
 
   const config = {
@@ -121,7 +121,7 @@ export function OrderActionDialog({
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
               className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium border border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >

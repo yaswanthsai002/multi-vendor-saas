@@ -18,17 +18,12 @@ export function MediaSearchBar({
 }: MediaSearchBarProps) {
   const [localValue, setLocalValue] = React.useState(value);
 
-  // ponytail: sync local input state when parent value changes
+  // ponytail: debounce search when user types in localValue
   React.useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  // ponytail: debounce search ONLY when user edits localValue different from value
-  React.useEffect(() => {
-    if (localValue === value) return;
-
     const handler = setTimeout(() => {
-      onChange(localValue);
+      if (localValue !== value) {
+        onChange(localValue);
+      }
     }, 300);
 
     return () => clearTimeout(handler);

@@ -29,6 +29,28 @@ export function VendorOrdersView() {
 
   const [search, setSearch] = React.useState(searchParam);
 
+  const updateQuery = React.useCallback(
+    (newParams: Partial<VendorOrdersFilters>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (
+          val === undefined ||
+          val === null ||
+          val === '' ||
+          (key === 'status' && val === 'all')
+        ) {
+          params.delete(key);
+        } else {
+          params.set(key, String(val));
+        }
+      });
+
+      router.push(`/vendor/orders?${params.toString()}`);
+    },
+    [router, searchParams],
+  );
+
   // Debounce search update to URL
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -37,21 +59,7 @@ export function VendorOrdersView() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
-
-  const updateQuery = (newParams: Partial<VendorOrdersFilters>) => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    Object.entries(newParams).forEach(([key, val]) => {
-      if (val === undefined || val === null || val === '' || (key === 'status' && val === 'all')) {
-        params.delete(key);
-      } else {
-        params.set(key, String(val));
-      }
-    });
-
-    router.push(`/vendor/orders?${params.toString()}`);
-  };
+  }, [search, searchParam, updateQuery]);
 
   const queryFilters: VendorOrdersFilters = {
     page: pageParam,
