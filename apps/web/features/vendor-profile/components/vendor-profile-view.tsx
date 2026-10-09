@@ -11,36 +11,23 @@ import { VendorProfileHero } from './vendor-profile-hero';
 import { VendorStoreForm } from './vendor-store-form';
 import { VendorStoreLinkCard } from './vendor-store-link-card';
 
-export function VendorProfileView() {
-  const { data: profile, isLoading, error, refetch } = useVendorProfile();
+import type { VendorProfile } from '../types/vendor-profile.types';
+
+function VendorProfileForm({ profile }: { profile: VendorProfile }) {
   const updateMutation = useUpdateVendorProfile();
 
-  // Controlled form states
-  const [name, setName] = React.useState('');
-  const [tagline, setTagline] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [logoUrl, setLogoUrl] = React.useState('');
-  const [bannerUrl, setBannerUrl] = React.useState('');
-  const [fullName, setFullName] = React.useState('');
+  // Controlled form states initialized from profile
+  const [name, setName] = React.useState(profile.name || '');
+  const [tagline, setTagline] = React.useState(profile.tagline || '');
+  const [description, setDescription] = React.useState(profile.description || '');
+  const [logoUrl, setLogoUrl] = React.useState(profile.logoUrl || '');
+  const [bannerUrl, setBannerUrl] = React.useState(profile.bannerUrl || '');
+  const [fullName, setFullName] = React.useState(profile.user?.fullName || '');
 
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
 
-  // Sync state when profile is loaded or refetched
-  React.useEffect(() => {
-    if (profile) {
-      setName(profile.name || '');
-      setTagline(profile.tagline || '');
-      setDescription(profile.description || '');
-      setLogoUrl(profile.logoUrl || '');
-      setBannerUrl(profile.bannerUrl || '');
-      setFullName(profile.user?.fullName || '');
-      setFormErrors({});
-    }
-  }, [profile]);
-
   // Track if form has unsaved modifications
   const isDirty = React.useMemo(() => {
-    if (!profile) return false;
     return (
       name !== (profile.name || '') ||
       tagline !== (profile.tagline || '') ||
@@ -52,20 +39,17 @@ export function VendorProfileView() {
   }, [profile, name, tagline, description, logoUrl, bannerUrl, fullName]);
 
   const handleReset = () => {
-    if (profile) {
-      setName(profile.name || '');
-      setTagline(profile.tagline || '');
-      setDescription(profile.description || '');
-      setLogoUrl(profile.logoUrl || '');
-      setBannerUrl(profile.bannerUrl || '');
-      setFullName(profile.user?.fullName || '');
-      setFormErrors({});
-    }
+    setName(profile.name || '');
+    setTagline(profile.tagline || '');
+    setDescription(profile.description || '');
+    setLogoUrl(profile.logoUrl || '');
+    setBannerUrl(profile.bannerUrl || '');
+    setFullName(profile.user?.fullName || '');
+    setFormErrors({});
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
 
     // Validate with Zod
     const validation = vendorProfileFormSchema.safeParse({
@@ -100,38 +84,6 @@ export function VendorProfileView() {
       fullName: fullName.trim(),
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-secondary-accent" />
-        <p className="text-sm text-text-secondary">Loading vendor profile...</p>
-      </div>
-    );
-  }
-
-  if (error || !profile) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
-        <div className="p-3 rounded-full bg-danger-subtle text-danger">
-          <Loader2 className="h-6 w-6" />
-        </div>
-        <div>
-          <h2 className="text-base font-semibold text-text-primary">Unable to load profile</h2>
-          <p className="text-sm text-text-secondary mt-1">
-            {error instanceof Error ? error.message : 'An unexpected error occurred.'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="px-4 py-2 rounded-lg bg-secondary-accent text-white text-sm font-medium hover:bg-secondary-accent/90 transition-colors cursor-pointer"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
@@ -210,4 +162,42 @@ export function VendorProfileView() {
       </div>
     </form>
   );
+}
+
+export function VendorProfileView() {
+  const { data: profile, isLoading, error, refetch } = useVendorProfile();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-secondary-accent" />
+        <p className="text-sm text-text-secondary">Loading vendor profile...</p>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
+        <div className="p-3 rounded-full bg-danger-subtle text-danger">
+          <Loader2 className="h-6 w-6" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-text-primary">Unable to load profile</h2>
+          <p className="text-sm text-text-secondary mt-1">
+            {error instanceof Error ? error.message : 'An unexpected error occurred.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-lg bg-secondary-accent text-white text-sm font-medium hover:bg-secondary-accent/90 transition-colors cursor-pointer"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return <VendorProfileForm key={profile.updatedAt} profile={profile} />;
 }

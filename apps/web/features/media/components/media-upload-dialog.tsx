@@ -26,8 +26,22 @@ export function MediaUploadDialog({
   initialFiles,
   onUploadInBackground,
 }: MediaUploadDialogProps) {
-  const [files, setFiles] = React.useState<File[]>([]);
-  const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [files, setFiles] = React.useState<File[]>(() => {
+    if (initialFiles && initialFiles.length > 0) {
+      const { valid } = validateMediaFiles(initialFiles);
+      return valid;
+    }
+    return [];
+  });
+
+  const [validationError, setValidationError] = React.useState<string | null>(() => {
+    if (initialFiles && initialFiles.length > 0) {
+      const { errors } = validateMediaFiles(initialFiles);
+      return errors.length > 0 ? errors.join('. ') : null;
+    }
+    return null;
+  });
+
   const [isDragging, setIsDragging] = React.useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -38,19 +52,6 @@ export function MediaUploadDialog({
     setValidationError(null);
     onClose();
   }, [onClose]);
-
-  // Validate and load initialFiles when dialog opens
-  React.useEffect(() => {
-    if (open && initialFiles && initialFiles.length > 0) {
-      const { valid, errors } = validateMediaFiles(initialFiles);
-      if (errors.length > 0) {
-        setValidationError(errors.join('. '));
-      }
-      if (valid.length > 0) {
-        setFiles(valid);
-      }
-    }
-  }, [open, initialFiles]);
 
   // Reactive object URL generation for image previews without memory leaks
   const previews = React.useMemo(() => {
