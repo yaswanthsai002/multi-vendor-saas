@@ -11,17 +11,19 @@ if (existsSync(rootEnv) && typeof process.loadEnvFile === 'function') {
 
 const nextConfig: NextConfig = {
   images: {
-    dangerouslyAllowLocalIP: true, // TODO: Remove when media library is deployed to real Object Storage
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
       },
-      {
-        // TODO: Remove when media library is deployed to real Object Storage
-        protocol: 'http',
-        hostname: 'localhost',
-      },
+      ...(process.env.R2_PUBLIC_URL
+        ? [
+            {
+              protocol: 'https' as const,
+              hostname: new URL(process.env.R2_PUBLIC_URL).hostname,
+            },
+          ]
+        : []),
     ],
   },
 };
