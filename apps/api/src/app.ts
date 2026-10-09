@@ -10,12 +10,18 @@ import { notFoundHandler } from './shared/middleware/notFound.js';
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  ...(process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : []),
+];
+
 app.set('trust proxy', 1);
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(
   cors({
-    origin: process.env.WEB_ORIGIN,
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
