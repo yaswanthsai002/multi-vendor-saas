@@ -43,3 +43,37 @@ export interface ListMediaFilters {
   page?: number;
   limit?: number;
 }
+
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+export function validateMediaFiles(incoming: FileList | File[]): {
+  valid: File[];
+  errors: string[];
+} {
+  const valid: File[] = [];
+  const errors: string[] = [];
+
+  Array.from(incoming).forEach((f) => {
+    const isImage = ALLOWED_IMAGE_TYPES.includes(f.type);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(f.type);
+
+    if (!isImage && !isVideo) {
+      errors.push(`${f.name}: Unsupported type (${f.type || 'unknown'})`);
+      return;
+    }
+
+    const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+    if (f.size > maxSize) {
+      const limitMb = Math.round(maxSize / (1024 * 1024));
+      errors.push(`${f.name}: Exceeds ${limitMb}MB limit`);
+      return;
+    }
+
+    valid.push(f);
+  });
+
+  return { valid, errors };
+}
