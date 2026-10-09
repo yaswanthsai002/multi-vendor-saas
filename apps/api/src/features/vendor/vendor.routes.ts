@@ -4,6 +4,11 @@ import { verifyToken } from '../../shared/middleware/verifyToken.js';
 import { bulkImportRouter } from '../bulk-import/bulk-import.routes.js';
 
 import {
+  getVendorOrderById,
+  getVendorOrders,
+  updateVendorOrderStatusById,
+} from './order.controller.js';
+import {
   archiveVendorProduct,
   bulkProductAction,
   createVendorProducts,
@@ -23,6 +28,13 @@ vendorRouter.use(verifyToken, requireActiveVendor);
 
 vendorRouter.use('/products/bulk-imports', bulkImportRouter);
 vendorRouter.get('/dashboard', getVendorDashboard);
+
+// Order management routes
+vendorRouter.get('/orders', getVendorOrders);
+vendorRouter.get('/orders/:vendorOrderId', getVendorOrderById);
+vendorRouter.post('/orders/:vendorOrderId/status', updateVendorOrderStatusById);
+
+// Product routes
 vendorRouter.post('/products', createVendorProducts);
 vendorRouter.get('/products', getVendorProducts);
 vendorRouter.post('/products/bulk', bulkProductAction);

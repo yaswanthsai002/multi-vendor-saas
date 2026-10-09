@@ -25,6 +25,9 @@ export const API_ENDPOINTS = {
     productArchive: (id: string) => `/api/vendor/products/${id}/archive` as const,
     productRestore: (id: string) => `/api/vendor/products/${id}/restore` as const,
     productsBulk: '/api/vendor/products/bulk',
+    orders: '/api/vendor/orders',
+    orderDetail: (id: string) => `/api/vendor/orders/${id}` as const,
+    orderStatus: (id: string) => `/api/vendor/orders/${id}/status` as const,
     media: '/api/vendor/media',
     bulkImports: {
       template: '/api/vendor/products/bulk-imports/template',
