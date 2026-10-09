@@ -24,6 +24,7 @@ export const openapiSpec = {
       description: 'Vendor CSV bulk product import workflow endpoints',
     },
     { name: 'Vendor Media', description: 'Vendor media library management endpoints' },
+    { name: 'Vendor Profile', description: 'Vendor store profile and owner management endpoints' },
     { name: 'Categories', description: 'Global category taxonomy and management' },
   ],
   components: {
@@ -2557,6 +2558,51 @@ export const openapiSpec = {
         ],
         responses: {
           '200': { description: 'Presigned download URL returned.' },
+        },
+      },
+    },
+    '/api/vendor/profile': {
+      get: {
+        tags: ['Vendor Profile'],
+        summary: 'Get vendor store and owner profile',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Vendor profile details retrieved successfully.',
+          },
+          '401': { description: 'Unauthorized — missing or invalid session cookie.' },
+          '403': { description: 'Forbidden — not an active vendor.' },
+        },
+      },
+      patch: {
+        tags: ['Vendor Profile'],
+        summary: 'Update vendor store and owner profile',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 100 },
+                  tagline: { type: 'string', maxLength: 150, nullable: true },
+                  description: { type: 'string', maxLength: 1000, nullable: true },
+                  logoUrl: { type: 'string', format: 'uri', nullable: true },
+                  bannerUrl: { type: 'string', format: 'uri', nullable: true },
+                  fullName: { type: 'string', minLength: 2, maxLength: 100 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Vendor profile updated successfully.',
+          },
+          '400': { description: 'Validation error in submitted fields.' },
+          '401': { description: 'Unauthorized — missing or invalid session cookie.' },
+          '403': { description: 'Forbidden — not an active vendor.' },
         },
       },
     },

@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Package,
   ShoppingCart,
+  Store,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -153,6 +154,19 @@ export function VendorSidebar() {
         >
           <ImageIcon className="h-4 w-4 shrink-0 text-text-tertiary" />
           <span>Media Library</span>
+        </Link>
+
+        {/* Store Profile */}
+        <Link
+          href="/vendor/profile"
+          className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+            pathname === '/vendor/profile'
+              ? 'bg-secondary-accent/15 text-secondary-accent font-semibold'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+          }`}
+        >
+          <Store className="h-4 w-4 shrink-0 text-text-tertiary" />
+          <span>Store Profile</span>
         </Link>
       </nav>
     </aside>

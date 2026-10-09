@@ -1,3 +1,4 @@
+import { updateVendorProfileSchema } from './profile.schema.js';
 import {
   bulkProductActionSchema,
   createProductSchema,
@@ -135,6 +136,32 @@ export async function getVendorDashboard(req: VendorRequest, res: Response, next
     const result = await vendorService.getVendorDashboardData(vendorId, query);
 
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getVendorProfile(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const profile = await vendorService.getVendorProfile(vendorId);
+
+    return res.status(200).json({ profile });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function updateVendorProfile(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const validatedData = updateVendorProfileSchema.parse(req.body);
+    const profile = await vendorService.updateVendorProfile(vendorId, validatedData);
+
+    return res.status(200).json({
+      message: 'Profile updated successfully.',
+      profile,
+    });
   } catch (error) {
     return next(error);
   }

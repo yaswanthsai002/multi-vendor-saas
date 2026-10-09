@@ -8,6 +8,7 @@ import {
   productCategories,
   productMedia,
   products,
+  users,
   vendorOrders,
   vendors,
 } from '@repo/db/schema';
@@ -16,6 +17,7 @@ import { and, asc, count, desc, eq, gt, gte, ilike, inArray, ne, sql } from 'dri
 import { AppError } from '../../shared/errors/AppError.js';
 import { formatMediaResponse } from '../media/media.service.js';
 
+import type { UpdateVendorProfileInput } from './profile.schema.js';
 import type {
   BulkProductActionInput,
   CreateProductInput,
@@ -1087,4 +1089,92 @@ export async function getVendorDashboardData(vendorId: string, query: GetVendorD
     recentOrders,
     topProducts,
   };
+}
+
+/**
+ * Retrieves the full vendor profile along with associated user/owner details.
+ * Strictly avoids leaking sensitive credentials like passwordHash.
+ */
+export async function getVendorProfile(vendorId: string) {
+  const db = getDb();
+
+  const [record] = await db
+    .select({
+      vendorId: vendors.vendorId,
+      name: vendors.name,
+      slug: vendors.slug,
+      tagline: vendors.tagline,
+      description: vendors.description,
+      logoUrl: vendors.logoUrl,
+      bannerUrl: vendors.bannerUrl,
+      status: vendors.status,
+      createdAt: vendors.createdAt,
+      updatedAt: vendors.updatedAt,
+      user: {
+        userId: users.userId,
+        fullName: users.fullName,
+        email: users.email,
+        roles: users.roles,
+        emailVerifiedAt: users.emailVerifiedAt,
+      },
+    })
+    .from(vendors)
+    .innerJoin(users, eq(vendors.userId, users.userId))
+    .where(eq(vendors.vendorId, vendorId))
+    .limit(1);
+
+  if (!record) {
+    throw new AppError(404, 'VENDOR_NOT_FOUND', 'Vendor profile not found.');
+  }
+
+  return record;
+}
+
+/**
+ * Updates vendor store profile and owner full name atomically.
+ * Security: vendorId is enforced from the verified session, not request payload.
+ */
+export async function updateVendorProfile(vendorId: string, input: UpdateVendorProfileInput) {
+  const db = getDb();
+
+  await db.transaction(async (tx) => {
+    const [existingVendor] = await tx
+      .select({
+        vendorId: vendors.vendorId,
+        userId: vendors.userId,
+      })
+      .from(vendors)
+      .where(eq(vendors.vendorId, vendorId))
+      .limit(1);
+
+    if (!existingVendor) {
+      throw new AppError(404, 'VENDOR_NOT_FOUND', 'Vendor profile not found.');
+    }
+
+    // 1. Update vendors table if store attributes are present
+    const vendorUpdates: Record<string, unknown> = {};
+    if (input.name !== undefined) vendorUpdates.name = input.name;
+    if (input.tagline !== undefined) vendorUpdates.tagline = input.tagline;
+    if (input.description !== undefined) vendorUpdates.description = input.description;
+    if (input.logoUrl !== undefined) vendorUpdates.logoUrl = input.logoUrl;
+    if (input.bannerUrl !== undefined) vendorUpdates.bannerUrl = input.bannerUrl;
+
+    if (Object.keys(vendorUpdates).length > 0) {
+      vendorUpdates.updatedAt = new Date();
+      await tx.update(vendors).set(vendorUpdates).where(eq(vendors.vendorId, vendorId));
+    }
+
+    // 2. Update users table if owner attributes are present
+    if (input.fullName !== undefined) {
+      await tx
+        .update(users)
+        .set({
+          fullName: input.fullName,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.userId, existingVendor.userId));
+    }
+  });
+
+  return getVendorProfile(vendorId);
 }
