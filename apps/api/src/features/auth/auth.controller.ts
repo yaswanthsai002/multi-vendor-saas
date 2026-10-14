@@ -1,7 +1,14 @@
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
-import { resetPasswordSchema, signInSchema, signupSchema } from './auth.schema.js';
+import {
+  changePasswordSchema,
+  initiateAvatarUploadSchema,
+  resetPasswordSchema,
+  signInSchema,
+  signupSchema,
+  updateMeSchema,
+} from './auth.schema.js';
 import * as authService from './auth.service.js';
 import * as googleService from './google.service.js';
 
@@ -99,6 +106,34 @@ export async function me(req: AuthenticatedRequest, res: Response, next: NextFun
   }
 }
 
+export async function updateMe(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid session payload');
+    }
+    const validatedData = updateMeSchema.parse(req.body);
+    const result = await authService.updateMe(userId, validatedData);
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid session payload');
+    }
+    const validatedData = changePasswordSchema.parse(req.body);
+    const result = await authService.changePassword(userId, validatedData);
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function signout(_req: Request, res: Response, next: NextFunction) {
   try {
     res.clearCookie('auth_token', {
@@ -170,5 +205,23 @@ export async function googleAuthCallback(req: Request, res: Response, _next: Nex
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Google authentication failed';
     return res.redirect(`${webOrigin}${fromUrl}?error=${encodeURIComponent(errorMessage)}`);
+  }
+}
+
+export async function initiateAvatarUpload(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid session payload');
+    }
+    const validated = initiateAvatarUploadSchema.parse(req.body);
+    const result = await authService.initiateAvatarUpload(userId, validated);
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
   }
 }
