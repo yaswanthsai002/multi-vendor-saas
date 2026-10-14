@@ -1,4 +1,5 @@
 import {
+  createVendorByAdminSchema,
   getDashboardPerformanceQuerySchema,
   listAdminOrdersQuerySchema,
   listAdminProductsQuerySchema,
@@ -124,6 +125,17 @@ export async function toggleVendorFeatured(
     const { isFeatured } = toggleFeatureSchema.parse(req.body);
     const data = await adminService.toggleVendorFeatured(actorId, vendorId, isFeatured);
     return res.status(200).json(data);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function onboardVendor(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const actorId = req.user?.sub as string;
+    const body = createVendorByAdminSchema.parse(req.body);
+    const data = await adminService.onboardVendor(actorId, body);
+    return res.status(201).json(data);
   } catch (error) {
     return next(error);
   }

@@ -118,6 +118,35 @@ export interface AdminVendorsResponse {
   };
 }
 
+export interface OnboardVendorInput {
+  name: string;
+  description?: string;
+  ownerEmail: string;
+  ownerFullName?: string;
+  password?: string;
+  isFeatured?: boolean;
+}
+
+export interface OnboardVendorResponse {
+  vendor: {
+    vendorId: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    status: string;
+    isFeatured: boolean;
+    createdAt: string;
+  };
+  owner: {
+    userId: string;
+    email: string;
+    fullName: string;
+  };
+  temporaryPassword?: string;
+  isNewUser: boolean;
+  message: string;
+}
+
 export interface AdminProductItem {
   productId: string;
   name: string;
@@ -276,6 +305,13 @@ export const adminService = {
     makeApiRequest<{ message: string }>({
       url: API_ENDPOINTS.admin.vendors.status(vendorId),
       method: 'PATCH',
+      data,
+    }),
+
+  onboardVendor: (data: OnboardVendorInput) =>
+    makeApiRequest<OnboardVendorResponse>({
+      url: API_ENDPOINTS.admin.vendors.onboard,
+      method: 'POST',
       data,
     }),
 

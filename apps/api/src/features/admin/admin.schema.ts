@@ -110,6 +110,24 @@ export const listAdminOrdersQuerySchema = z.object({
   status: z.enum(['all', 'pending', 'confirmed', 'completed', 'cancelled']).default('all'),
 });
 
+export const createVendorByAdminSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Store name must be at least 2 characters.')
+    .max(100, 'Store name must not exceed 100 characters.'),
+  description: z.string().trim().max(1000).optional(),
+  ownerEmail: z.string().trim().email('Invalid email address.').toLowerCase(),
+  ownerFullName: z
+    .string()
+    .trim()
+    .min(2, 'Owner full name must be at least 2 characters.')
+    .max(100)
+    .optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(128).optional(),
+  isFeatured: z.boolean().default(false),
+});
+
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
 export type UpdateVendorStatusInput = z.infer<typeof updateVendorStatusSchema>;
@@ -118,3 +136,4 @@ export type ListAdminVendorsQuery = z.infer<typeof listAdminVendorsQuerySchema>;
 export type ListAdminProductsQuery = z.infer<typeof listAdminProductsQuerySchema>;
 export type UpdateProductModerationInput = z.infer<typeof updateProductModerationSchema>;
 export type ListAdminOrdersQuery = z.infer<typeof listAdminOrdersQuerySchema>;
+export type CreateVendorByAdminInput = z.infer<typeof createVendorByAdminSchema>;

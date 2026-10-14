@@ -13,6 +13,7 @@ import {
   listAdminProducts,
   listAdminVendors,
   listUsers,
+  onboardVendor,
   toggleProductFeatured,
   toggleVendorFeatured,
   updateProductModeration,
@@ -32,6 +33,7 @@ adminRouter.get('/dashboard/recent-orders', getDashboardRecentOrders);
 adminRouter.get('/users', listUsers);
 adminRouter.patch('/users/:userId/status', updateUserStatus);
 adminRouter.get('/vendors', listAdminVendors);
+adminRouter.post('/vendors', onboardVendor);
 adminRouter.get('/vendors/:vendorId', getVendorDetail);
 adminRouter.patch('/vendors/:vendorId/status', updateVendorStatus);
 adminRouter.patch('/vendors/:vendorId/feature', toggleVendorFeatured);

@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { getDb } from '@repo/db';
 import {
   mediaLibrary,
@@ -9,6 +11,7 @@ import {
   vendorOrders,
   vendors,
 } from '@repo/db/schema';
+import * as argon2 from 'argon2';
 import {
   and,
   arrayContains,
@@ -28,6 +31,7 @@ import { AppError } from '../../shared/errors/AppError.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import type {
+  CreateVendorByAdminInput,
   ListAdminOrdersQuery,
   ListAdminProductsQuery,
   ListAdminVendorsQuery,
@@ -678,6 +682,137 @@ export class AdminService {
     });
 
     return { vendorId, isFeatured };
+  }
+
+  /**
+   * 9b. Onboard Vendor from Admin Portal
+   * ponytail: slug and active status are automatically generated and enforced by the application
+   */
+  async onboardVendor(actorId: string, input: CreateVendorByAdminInput) {
+    const db = getDb();
+
+    // ponytail: auto-generate url-friendly slug from store name
+    const baseSlug = input.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    let slug = baseSlug || `vendor-${randomBytes(3).toString('hex')}`;
+
+    // Handle slug collision automatically
+    const existingSlug = await db.query.vendors.findFirst({
+      where: eq(vendors.slug, slug),
+    });
+    if (existingSlug) {
+      slug = `${slug}-${randomBytes(2).toString('hex')}`;
+    }
+
+    const email = input.ownerEmail.toLowerCase();
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    let ownerId: string;
+    let ownerFullName: string;
+    let temporaryPassword: string | undefined;
+    let isNewUser = false;
+
+    if (existingUser) {
+      if (existingUser.status === 'suspended') {
+        throw new AppError(
+          400,
+          'CANNOT_ONBOARD_SUSPENDED_USER',
+          'The specified owner account is currently suspended.',
+        );
+      }
+
+      // Check if user already owns a vendor store
+      const existingVendor = await db.query.vendors.findFirst({
+        where: eq(vendors.userId, existingUser.userId),
+      });
+      if (existingVendor) {
+        throw new AppError(
+          409,
+          'USER_ALREADY_OWNS_VENDOR',
+          `This user already owns the merchant storefront '${existingVendor.name}'.`,
+        );
+      }
+
+      ownerId = existingUser.userId;
+      ownerFullName = existingUser.fullName;
+
+      // Ensure 'vendor' role is present
+      if (!existingUser.roles.includes('vendor')) {
+        const updatedRoles = Array.from(new Set([...existingUser.roles, 'vendor' as const]));
+        await db
+          .update(users)
+          .set({ roles: updatedRoles, updatedAt: new Date() })
+          .where(eq(users.userId, existingUser.userId));
+      }
+    } else {
+      isNewUser = true;
+      const rawPassword = input.password || randomBytes(6).toString('hex');
+      const passwordHash = await argon2.hash(rawPassword);
+      ownerFullName = input.ownerFullName?.trim() || `${input.name.trim()} Owner`;
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          fullName: ownerFullName,
+          email,
+          passwordHash,
+          roles: ['vendor'],
+          status: 'active',
+          emailVerifiedAt: new Date(),
+        })
+        .returning();
+
+      ownerId = newUser.userId;
+      temporaryPassword = input.password ? undefined : rawPassword;
+    }
+
+    // ponytail: admin-onboarded vendors are automatically activated
+    const [newVendor] = await db
+      .insert(vendors)
+      .values({
+        userId: ownerId,
+        name: input.name.trim(),
+        slug,
+        description: input.description?.trim() || null,
+        status: 'active',
+        isFeatured: input.isFeatured ?? false,
+      })
+      .returning();
+
+    this.logAuditEvent({
+      event: 'vendor_onboarded',
+      actorId,
+      targetType: 'vendor',
+      targetId: newVendor.vendorId,
+      newStatus: 'active',
+      result: 'success',
+    });
+
+    return {
+      vendor: {
+        vendorId: newVendor.vendorId,
+        name: newVendor.name,
+        slug: newVendor.slug,
+        description: newVendor.description,
+        status: newVendor.status,
+        isFeatured: newVendor.isFeatured,
+        createdAt: newVendor.createdAt.toISOString(),
+      },
+      owner: {
+        userId: ownerId,
+        email,
+        fullName: ownerFullName,
+      },
+      temporaryPassword,
+      isNewUser,
+      message: `Vendor '${newVendor.name}' onboarded successfully.`,
+    };
   }
 
   /**

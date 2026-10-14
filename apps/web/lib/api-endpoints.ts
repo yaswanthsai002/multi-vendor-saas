@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
     },
     vendors: {
       list: '/api/admin/vendors',
+      onboard: '/api/admin/vendors',
       detail: (id: string) => `/api/admin/vendors/${id}` as const,
       status: (id: string) => `/api/admin/vendors/${id}/status` as const,
       feature: (id: string) => `/api/admin/vendors/${id}/feature` as const,
