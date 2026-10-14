@@ -12,6 +12,9 @@ export const API_ENDPOINTS = {
     verifyOtp: '/api/auth/verify-otp',
     verificationStatus: '/api/auth/verification-status',
     resetPassword: '/api/auth/reset-password',
+    updateMe: '/api/auth/me',
+    avatarUploadUrl: '/api/auth/avatar/upload-url',
+    changePassword: '/api/auth/change-password',
   },
   categories: {
     list: '/api/categories',
@@ -39,6 +42,38 @@ export const API_ENDPOINTS = {
       start: (id: string) => `/api/vendor/products/bulk-imports/${id}/start` as const,
       cancel: (id: string) => `/api/vendor/products/bulk-imports/${id}` as const,
       events: (id: string) => `/api/vendor/products/bulk-imports/${id}/events` as const,
+    },
+  },
+  admin: {
+    dashboard: {
+      metrics: '/api/admin/dashboard/metrics',
+      performance: '/api/admin/dashboard/performance',
+      topProducts: '/api/admin/dashboard/top-products',
+      recentOrders: '/api/admin/dashboard/recent-orders',
+    },
+    users: {
+      list: '/api/admin/users',
+      detail: (id: string) => `/api/admin/users/${id}` as const,
+      status: (id: string) => `/api/admin/users/${id}/status` as const,
+    },
+    vendors: {
+      list: '/api/admin/vendors',
+      detail: (id: string) => `/api/admin/vendors/${id}` as const,
+      status: (id: string) => `/api/admin/vendors/${id}/status` as const,
+      feature: (id: string) => `/api/admin/vendors/${id}/feature` as const,
+    },
+    products: {
+      list: '/api/admin/products',
+      detail: (id: string) => `/api/admin/products/${id}` as const,
+      moderation: (id: string) => `/api/admin/products/${id}/moderation` as const,
+      feature: (id: string) => `/api/admin/products/${id}/feature` as const,
+    },
+    orders: {
+      list: '/api/admin/orders',
+      detail: (id: string) => `/api/admin/orders/${id}` as const,
+    },
+    merchandising: {
+      overview: '/api/admin/merchandising/overview',
     },
   },
 } as const;

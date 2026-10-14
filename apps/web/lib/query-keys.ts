@@ -29,12 +29,43 @@ export const queryKeys = {
   },
   categories: {
     all: () => ['categories'] as const,
-    list: (parentCategoryId?: string) =>
-      ['categories', 'list', parentCategoryId ?? 'root'] as const,
+    list: (parentCategoryId?: string, all?: boolean) =>
+      ['categories', 'list', parentCategoryId ?? 'root', all ? 'all' : 'filtered'] as const,
     detail: (id: string) => ['categories', 'detail', id] as const,
   },
   bulkImports: {
     all: () => ['vendor', 'bulk-imports'] as const,
     active: () => ['vendor', 'bulk-imports', 'active'] as const,
+  },
+  admin: {
+    dashboard: {
+      metrics: () => ['admin', 'dashboard', 'metrics'] as const,
+      performance: (days?: number) => ['admin', 'dashboard', 'performance', days ?? 7] as const,
+      topProducts: () => ['admin', 'dashboard', 'top-products'] as const,
+      recentOrders: () => ['admin', 'dashboard', 'recent-orders'] as const,
+    },
+    users: {
+      all: () => ['admin', 'users'] as const,
+      list: (filters?: unknown) => ['admin', 'users', 'list', filters] as const,
+      detail: (id: string) => ['admin', 'users', 'detail', id] as const,
+    },
+    vendors: {
+      all: () => ['admin', 'vendors'] as const,
+      list: (filters?: unknown) => ['admin', 'vendors', 'list', filters] as const,
+      detail: (id: string) => ['admin', 'vendors', 'detail', id] as const,
+    },
+    products: {
+      all: () => ['admin', 'products'] as const,
+      list: (filters?: unknown) => ['admin', 'products', 'list', filters] as const,
+      detail: (id: string) => ['admin', 'products', 'detail', id] as const,
+    },
+    orders: {
+      all: () => ['admin', 'orders'] as const,
+      list: (filters?: unknown) => ['admin', 'orders', 'list', filters] as const,
+      detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
+    },
+    merchandising: {
+      overview: () => ['admin', 'merchandising', 'overview'] as const,
+    },
   },
 } as const;
