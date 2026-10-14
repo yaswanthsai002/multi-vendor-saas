@@ -19,12 +19,11 @@ export interface VendorRequest extends AuthenticatedRequest {
 
 /**
  * Middleware enforcing:
- * 1. Authenticated user exists
+ * 1. Authenticated user exists and is not suspended
  * 2. User has 'vendor' role
- * 3. User owns a vendor profile
- * 4. Vendor profile status is 'active'
+ * 3. User owns a vendor profile (any status)
  */
-export async function requireActiveVendor(req: VendorRequest, _res: Response, next: NextFunction) {
+export async function requireVendorProfile(req: VendorRequest, _res: Response, next: NextFunction) {
   try {
     const userId = req.user?.sub;
     if (!userId || typeof userId !== 'string') {
@@ -33,13 +32,17 @@ export async function requireActiveVendor(req: VendorRequest, _res: Response, ne
 
     const db = getDb();
 
-    // 1. Verify user exists and has 'vendor' role
+    // 1. Verify user exists, is active, and has 'vendor' role
     const user = await db.query.users.findFirst({
       where: eq(users.userId, userId),
     });
 
     if (!user) {
       return next(new AppError(401, 'UNAUTHORIZED', 'User not found.'));
+    }
+
+    if (user.status === 'suspended') {
+      return next(new AppError(403, 'ACCOUNT_SUSPENDED', 'Your account has been suspended.'));
     }
 
     if (!user.roles.includes('vendor')) {
@@ -63,17 +66,6 @@ export async function requireActiveVendor(req: VendorRequest, _res: Response, ne
       );
     }
 
-    // 3. Verify vendor status is active
-    if (vendor.status !== 'active') {
-      return next(
-        new AppError(
-          403,
-          'VENDOR_NOT_ACTIVE',
-          `Vendor account is not active. Current status: ${vendor.status}.`,
-        ),
-      );
-    }
-
     req.vendor = {
       vendorId: vendor.vendorId,
       userId: vendor.userId,
@@ -86,4 +78,37 @@ export async function requireActiveVendor(req: VendorRequest, _res: Response, ne
   } catch (error) {
     next(error);
   }
+}
+
+/**
+ * Middleware enforcing that the vendor profile status is specifically 'active'.
+ */
+export async function requireActiveVendor(req: VendorRequest, res: Response, next: NextFunction) {
+  if (!req.vendor) {
+    return requireVendorProfile(req, res, (err) => {
+      if (err) return next(err);
+      if (req.vendor?.status !== 'active') {
+        return next(
+          new AppError(
+            403,
+            'VENDOR_NOT_ACTIVE',
+            `Vendor account is not active. Current status: ${req.vendor?.status}.`,
+          ),
+        );
+      }
+      next();
+    });
+  }
+
+  if (req.vendor.status !== 'active') {
+    return next(
+      new AppError(
+        403,
+        'VENDOR_NOT_ACTIVE',
+        `Vendor account is not active. Current status: ${req.vendor.status}.`,
+      ),
+    );
+  }
+
+  next();
 }

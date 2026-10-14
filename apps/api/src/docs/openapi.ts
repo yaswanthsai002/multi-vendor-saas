@@ -2118,6 +2118,20 @@ export const openapiSpec = {
             schema: { type: 'string', format: 'uuid' },
             description: 'UUID of parent category to fetch direct children for.',
           },
+          {
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
+            description: 'Filter categories by name substring match.',
+          },
+          {
+            name: 'all',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['true', 'false'] },
+            description: 'When "true", returns all categories across the entire taxonomy.',
+          },
         ],
         responses: {
           '200': {
