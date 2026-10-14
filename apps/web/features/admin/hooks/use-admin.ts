@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { adminService } from '../services/admin.service';
+import { adminService, type OnboardVendorInput } from '../services/admin.service';
 
 import { queryKeys } from '@/lib/query-keys';
 
@@ -120,6 +120,22 @@ export function useToggleVendorFeature() {
     },
     onError: (err: unknown) => {
       toast.error(err instanceof Error ? err.message : 'Failed to update vendor featured status');
+    },
+  });
+}
+
+export function useOnboardVendor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: OnboardVendorInput) => adminService.onboardVendor(data),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.vendors.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.users.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard.metrics() });
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to onboard vendor');
     },
   });
 }

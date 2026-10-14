@@ -14,7 +14,7 @@ node_modules
 Thumbs.db
 
 # Local uploads
-vendors/
+/vendors/
 
 # Build artifacts
 .next/

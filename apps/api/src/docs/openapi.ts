@@ -2620,5 +2620,40 @@ export const openapiSpec = {
         },
       },
     },
+    '/api/admin/vendors': {
+      post: {
+        tags: ['Admin Vendors'],
+        summary: 'Onboard and provision a new merchant storefront (admin only)',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', minLength: 2, maxLength: 100 },
+                  description: { type: 'string', maxLength: 1000 },
+                  ownerEmail: { type: 'string', format: 'email' },
+                  ownerFullName: { type: 'string', minLength: 2, maxLength: 100 },
+                  password: { type: 'string', minLength: 8, maxLength: 128 },
+                  isFeatured: { type: 'boolean', default: false },
+                },
+                required: ['name', 'ownerEmail'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Vendor storefront and owner account provisioned successfully.',
+          },
+          '400': { description: 'Validation failure or suspended owner account.' },
+          '401': { description: 'Unauthorized — missing or invalid session cookie.' },
+          '403': { description: 'Forbidden — admin role required.' },
+          '409': { description: 'Conflict — user already owns a storefront.' },
+        },
+      },
+    },
   },
 };

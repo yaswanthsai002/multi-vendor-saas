@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { getDb } from '@repo/db';
 import { products, users, vendors } from '@repo/db/schema';
+import { eq } from 'drizzle-orm';
 import { SignJWT } from 'jose';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -172,6 +173,95 @@ describe('Admin Feature Integration Tests', () => {
   });
 
   describe('Vendor Management & Onboarding', () => {
+    it('onboards a new vendor with a new user (auto-generates slug and sets status active)', async () => {
+      const uniqueSuffix = Date.now();
+      const res = await request(app)
+        .post('/api/admin/vendors')
+        .set('Cookie', [`auth_token=${adminToken}`])
+        .send({
+          name: `Apex Hardware ${uniqueSuffix}`,
+          description: 'Premium tools and hardware supplier.',
+          ownerEmail: `apex-${uniqueSuffix}@example.com`,
+          ownerFullName: 'Apex Merchant',
+          isFeatured: true,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.vendor).toBeDefined();
+      expect(res.body.vendor.name).toBe(`Apex Hardware ${uniqueSuffix}`);
+      expect(res.body.vendor.slug).toContain(`apex-hardware-${uniqueSuffix}`);
+      expect(res.body.vendor.status).toBe('active');
+      expect(res.body.vendor.isFeatured).toBe(true);
+      expect(res.body.owner.email).toBe(`apex-${uniqueSuffix}@example.com`);
+      expect(res.body.isNewUser).toBe(true);
+      expect(res.body.temporaryPassword).toBeDefined();
+    });
+
+    it('onboards a vendor for an existing user account and upgrades roles', async () => {
+      const uniqueSuffix = Date.now() + 1;
+      // First create a customer user
+      const [existingCustomer] = await db
+        .insert(users)
+        .values({
+          fullName: 'Existing Customer',
+          email: `customer-${uniqueSuffix}@example.com`,
+          roles: ['customer'],
+          status: 'active',
+        })
+        .returning();
+
+      const res = await request(app)
+        .post('/api/admin/vendors')
+        .set('Cookie', [`auth_token=${adminToken}`])
+        .send({
+          name: `Customer Store ${uniqueSuffix}`,
+          ownerEmail: existingCustomer.email,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.vendor.name).toBe(`Customer Store ${uniqueSuffix}`);
+      expect(res.body.vendor.status).toBe('active');
+      expect(res.body.owner.userId).toBe(existingCustomer.userId);
+      expect(res.body.isNewUser).toBe(false);
+      expect(res.body.temporaryPassword).toBeUndefined();
+
+      // Verify user's roles now contain 'vendor'
+      const updatedUser = await db.query.users.findFirst({
+        where: eq(users.userId, existingCustomer.userId),
+      });
+      expect(updatedUser?.roles).toContain('vendor');
+    });
+
+    it('rejects onboarding if the user already owns a vendor store', async () => {
+      // targetVendor's owner is already a vendor owner
+      const vendorOwner = await db.query.users.findFirst({
+        where: eq(users.userId, targetUserId),
+      });
+
+      const res = await request(app)
+        .post('/api/admin/vendors')
+        .set('Cookie', [`auth_token=${adminToken}`])
+        .send({
+          name: 'Duplicate Store',
+          ownerEmail: vendorOwner!.email,
+        });
+
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('USER_ALREADY_OWNS_VENDOR');
+    });
+
+    it('rejects onboarding with invalid payload', async () => {
+      const res = await request(app)
+        .post('/api/admin/vendors')
+        .set('Cookie', [`auth_token=${adminToken}`])
+        .send({
+          name: 'A', // too short
+          ownerEmail: 'not-an-email',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
     it('approves a pending vendor', async () => {
       const res = await request(app)
         .patch(`/api/admin/vendors/${targetVendorId}/status`)
