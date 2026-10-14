@@ -1,57 +1,76 @@
 'use client';
 
-import { Collapsible } from '@base-ui-components/react/collapsible';
 import {
-  ChevronDown,
-  ChevronRight,
   Home,
   Image as ImageIcon,
+  LogOut,
   Package,
   ShoppingCart,
   Store,
+  UploadCloud,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 
-interface NavGroupProps {
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
+interface NavItemProps {
+  href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
+  active?: boolean;
 }
 
-function NavGroup({ label, icon: Icon, defaultOpen = true, children }: NavGroupProps) {
-  const [open, setOpen] = React.useState(defaultOpen);
-
+function NavItem({ href, label, icon: Icon, active }: NavItemProps) {
   return (
-    <Collapsible.Root open={open} onOpenChange={setOpen} className="flex flex-col">
-      <Collapsible.Trigger className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-border-focus">
-        <div className="flex items-center gap-2.5">
-          <Icon className="h-4 w-4 shrink-0 text-text-tertiary" />
-          <span>{label}</span>
-        </div>
-        {open ? (
-          <ChevronDown className="h-3.5 w-3.5 text-text-tertiary" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-text-tertiary" />
-        )}
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="flex flex-col pl-4 mt-0.5 space-y-0.5">
-        {children}
-      </Collapsible.Panel>
-    </Collapsible.Root>
+    <Link
+      href={href}
+      className={`relative flex items-center gap-3 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-120 ease-in-out ${
+        active
+          ? 'text-text-primary font-semibold bg-surface-subtle/80 dark:bg-surface-hover before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-accent before:rounded-r'
+          : 'text-text-tertiary hover:text-text-primary hover:bg-surface-hover'
+      }`}
+    >
+      <Icon
+        className={`h-4 w-4 shrink-0 transition-colors ${
+          active ? 'text-accent' : 'text-text-tertiary'
+        }`}
+      />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
 
+// ponytail: vendor sidebar styled to match admin sidebar; removed premature standalone reviews view
 export function VendorSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
-  const isOverview = pathname === '/vendor' || pathname === '/vendor/';
+  const handleSignOut = async () => {
+    try {
+      await makeApiRequest({
+        url: API_ENDPOINTS.auth.signout,
+        method: 'POST',
+      });
+      router.push('/signin');
+      router.refresh();
+    } catch {
+      router.push('/signin');
+    }
+  };
+
+  const isDashboard = pathname === '/vendor' || pathname === '/vendor/';
+  const isBulkUpload = pathname.startsWith('/vendor/products/bulk-upload');
+  const isProducts = pathname.startsWith('/vendor/products') && !isBulkUpload;
+  const isMedia = pathname.startsWith('/vendor/media');
+  const isOrders = pathname.startsWith('/vendor/orders');
+  const isProfile = pathname.startsWith('/vendor/profile');
 
   return (
-    <aside className="w-60 shrink-0 border-r border-border-default bg-surface dark:bg-surface-subtle min-h-screen flex flex-col transition-colors duration-200">
+    <aside className="w-60 shrink-0 border-r border-border-default bg-surface dark:bg-surface-subtle min-h-screen flex flex-col transition-colors duration-200 select-none">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-5 border-b border-border-default shrink-0">
         <Link
@@ -78,97 +97,58 @@ export function VendorSidebar() {
         </Link>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {/* Overview link */}
-        <Link
-          href="/vendor"
-          className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-            isOverview
-              ? 'bg-secondary-accent/15 text-secondary-accent font-semibold dark:bg-secondary-accent/25 dark:text-atmospheric-blue-200'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-          }`}
-        >
-          <Home
-            className={`h-4 w-4 shrink-0 ${isOverview ? 'text-secondary-accent' : 'text-text-tertiary'}`}
-          />
-          <span>Overview</span>
-        </Link>
+      {/* Navigation Groups */}
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+        {/* OVERVIEW */}
+        <div>
+          <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+            Overview
+          </div>
+          <div className="space-y-1">
+            <NavItem href="/vendor" label="Dashboard" icon={Home} active={isDashboard} />
+          </div>
+        </div>
 
-        {/* Products Group */}
-        <NavGroup label="Products" icon={Package} defaultOpen>
-          <Link
-            href="/vendor/products"
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              pathname === '/vendor/products'
-                ? 'text-secondary-accent font-semibold'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-            }`}
-          >
-            All Products
-          </Link>
-          <Link
-            href="/vendor/products/bulk-upload"
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              pathname === '/vendor/products/bulk-upload'
-                ? 'text-secondary-accent font-semibold'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-            }`}
-          >
-            Bulk Upload
-          </Link>
-        </NavGroup>
+        {/* CATALOG */}
+        <div>
+          <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+            Catalog
+          </div>
+          <div className="space-y-1">
+            <NavItem href="/vendor/products" label="Products" icon={Package} active={isProducts} />
+            <NavItem
+              href="/vendor/products/bulk-upload"
+              label="Bulk Upload"
+              icon={UploadCloud}
+              active={isBulkUpload}
+            />
+            <NavItem href="/vendor/media" label="Media Library" icon={ImageIcon} active={isMedia} />
+          </div>
+        </div>
 
-        {/* Orders Group */}
-        <NavGroup label="Orders" icon={ShoppingCart} defaultOpen>
-          <Link
-            href="/vendor/orders"
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              pathname === '/vendor/orders'
-                ? 'text-secondary-accent font-semibold'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-            }`}
-          >
-            All Orders
-          </Link>
-          <Link
-            href="/vendor/orders/reviews"
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              pathname === '/vendor/orders/reviews'
-                ? 'text-secondary-accent font-semibold'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-            }`}
-          >
-            Order Reviews
-          </Link>
-        </NavGroup>
-
-        {/* Media Library */}
-        <Link
-          href="/vendor/media"
-          className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-            pathname === '/vendor/media'
-              ? 'bg-secondary-accent/15 text-secondary-accent font-semibold'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-          }`}
-        >
-          <ImageIcon className="h-4 w-4 shrink-0 text-text-tertiary" />
-          <span>Media Library</span>
-        </Link>
-
-        {/* Store Profile */}
-        <Link
-          href="/vendor/profile"
-          className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-            pathname === '/vendor/profile'
-              ? 'bg-secondary-accent/15 text-secondary-accent font-semibold'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-          }`}
-        >
-          <Store className="h-4 w-4 shrink-0 text-text-tertiary" />
-          <span>Store Profile</span>
-        </Link>
+        {/* FULFILLMENT */}
+        <div>
+          <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
+            Fulfillment
+          </div>
+          <div className="space-y-1">
+            <NavItem href="/vendor/orders" label="Orders" icon={ShoppingCart} active={isOrders} />
+          </div>
+        </div>
       </nav>
+
+      {/* Fixed Bottom Section */}
+      <div className="p-3 border-t border-border-default shrink-0 space-y-1 bg-surface dark:bg-surface-subtle">
+        <NavItem href="/vendor/profile" label="Store Profile" icon={Store} active={isProfile} />
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-text-secondary hover:text-danger hover:bg-danger-subtle/50 rounded-lg transition-colors cursor-pointer text-left"
+        >
+          <LogOut className="h-4 w-4 shrink-0 text-text-tertiary hover:text-danger" />
+          <span>Sign out</span>
+        </button>
+      </div>
     </aside>
   );
 }
