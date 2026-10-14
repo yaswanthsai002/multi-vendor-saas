@@ -23,11 +23,16 @@ export async function requireAdmin(req: AuthenticatedRequest, _res: Response, ne
       columns: {
         userId: true,
         roles: true,
+        status: true,
       },
     });
 
     if (!user) {
       return next(new AppError(401, 'UNAUTHORIZED', 'User not found.'));
+    }
+
+    if (user.status === 'suspended') {
+      return next(new AppError(403, 'ACCOUNT_SUSPENDED', 'Admin account is suspended.'));
     }
 
     if (!user.roles.includes('admin')) {

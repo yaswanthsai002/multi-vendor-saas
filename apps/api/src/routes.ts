@@ -1,12 +1,15 @@
 import { Router } from 'express';
 
 import { swaggerRouter } from './docs/swagger.routes.js';
+import { adminRouter } from './features/admin/admin.routes.js';
 import { authRouter } from './features/auth/auth.routes.js';
 import { otpRouter } from './features/auth/otp.routes.js';
 import { categoryRouter } from './features/category/category.routes.js';
 import healthRouter from './features/health/health.routes.js';
 import { mediaRouter } from './features/media/media.routes.js';
 import { vendorRouter } from './features/vendor/vendor.routes.js';
+import { requireAdmin } from './shared/middleware/requireAdmin.js';
+import { verifyToken } from './shared/middleware/verifyToken.js';
 
 export const apiRouter = Router();
 
@@ -17,3 +20,4 @@ apiRouter.use('/auth', otpRouter);
 apiRouter.use('/categories', categoryRouter);
 apiRouter.use('/vendor', vendorRouter);
 apiRouter.use('/vendor/media', mediaRouter);
+apiRouter.use('/admin', verifyToken, requireAdmin, adminRouter);
