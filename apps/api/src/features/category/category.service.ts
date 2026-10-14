@@ -83,14 +83,16 @@ async function detectCycle(categoryId: string, targetParentId: string): Promise<
  * Lists categories. Supports searching by name across all categories,
  * filtering by parentCategoryId, or defaulting to root categories.
  */
-export async function listCategories(parentCategoryId?: string, search?: string) {
+export async function listCategories(parentCategoryId?: string, search?: string, all?: boolean) {
   const db = getDb();
 
   const filter = search
     ? ilike(categories.name, `%${search}%`)
-    : parentCategoryId
-      ? eq(categories.parentCategoryId, parentCategoryId)
-      : isNull(categories.parentCategoryId);
+    : all
+      ? undefined
+      : parentCategoryId
+        ? eq(categories.parentCategoryId, parentCategoryId)
+        : isNull(categories.parentCategoryId);
 
   const rows = await db
     .select({
@@ -105,7 +107,7 @@ export async function listCategories(parentCategoryId?: string, search?: string)
       )`,
     })
     .from(categories)
-    .where(filter)
+    .where(filter ?? sql`TRUE`)
     .orderBy(asc(categories.name));
 
   return rows;

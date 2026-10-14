@@ -144,6 +144,7 @@ describe('Auth API (/api/auth)', () => {
             fullName: 'Jane Doe',
             email: 'jane@example.com',
             roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
+            status: 'active' as const,
             emailVerifiedAt: new Date(),
           },
         };
@@ -207,7 +208,9 @@ describe('Auth API (/api/auth)', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         roles: ['customer'] as ('customer' | 'vendor' | 'admin')[],
+        status: 'active' as const,
         emailVerifiedAt: null,
+        avatarUrl: null,
       },
     };
 

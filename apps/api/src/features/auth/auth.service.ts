@@ -8,10 +8,18 @@ import { SignJWT } from 'jose';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
+import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import { sendOtp } from './otp.service.js';
 
-import type { ResetPasswordInput, SignInInput, SignupInput } from './auth.schema.js';
+import type {
+  ChangePasswordInput,
+  InitiateAvatarUploadInput,
+  ResetPasswordInput,
+  SignInInput,
+  SignupInput,
+  UpdateMeInput,
+} from './auth.schema.js';
 
 export interface SignupResult {
   user: {
@@ -106,6 +114,16 @@ export async function signin(input: SignInInput) {
     );
   }
 
+  if (user.status === 'suspended') {
+    throw new AppError(
+      403,
+      'ACCOUNT_SUSPENDED',
+      user.suspensionReason
+        ? `Your account has been suspended: ${user.suspensionReason}`
+        : 'Your account has been suspended. Please contact support.',
+    );
+  }
+
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new AppError(500, 'SECRET_MISSING', 'JWT secret is not configured');
@@ -127,6 +145,7 @@ export async function signin(input: SignInInput) {
       fullName: user.fullName,
       email: user.email,
       roles: user.roles,
+      status: user.status,
       emailVerifiedAt: user.emailVerifiedAt,
     },
   };
@@ -170,13 +189,121 @@ export async function getMe(userId: string) {
     throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
   }
 
+  if (user.status === 'suspended') {
+    throw new AppError(
+      403,
+      'ACCOUNT_SUSPENDED',
+      user.suspensionReason
+        ? `Your account has been suspended: ${user.suspensionReason}`
+        : 'Your account has been suspended. Please contact support.',
+    );
+  }
+
   return {
     user: {
       userId: user.userId,
       fullName: user.fullName,
       email: user.email,
       roles: user.roles,
+      status: user.status,
       emailVerifiedAt: user.emailVerifiedAt,
+      avatarUrl: user.avatarUrl,
     },
+  };
+}
+
+export async function updateMe(userId: string, input: UpdateMeInput) {
+  const db = getDb();
+  const existing = await db.query.users.findFirst({
+    where: eq(users.userId, userId),
+  });
+
+  if (!existing) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'User not found');
+  }
+
+  const updateData: Partial<typeof users.$inferInsert> = {
+    updatedAt: new Date(),
+  };
+  if (input.fullName !== undefined) {
+    updateData.fullName = input.fullName;
+  }
+  if (input.avatarUrl !== undefined) {
+    updateData.avatarUrl = input.avatarUrl;
+  }
+
+  const [updated] = await db
+    .update(users)
+    .set(updateData)
+    .where(eq(users.userId, userId))
+    .returning();
+
+  return {
+    user: {
+      userId: updated.userId,
+      fullName: updated.fullName,
+      email: updated.email,
+      roles: updated.roles,
+      status: updated.status,
+      emailVerifiedAt: updated.emailVerifiedAt,
+      avatarUrl: updated.avatarUrl,
+    },
+    message: 'Profile updated successfully.',
+  };
+}
+
+export async function changePassword(userId: string, input: ChangePasswordInput) {
+  const db = getDb();
+  const user = await db.query.users.findFirst({
+    where: eq(users.userId, userId),
+  });
+
+  if (!user || !user.passwordHash) {
+    throw new AppError(
+      400,
+      'CANNOT_CHANGE_PASSWORD',
+      'Account does not have a local password configured.',
+    );
+  }
+
+  const validPassword = await argon2.verify(user.passwordHash, input.currentPassword);
+  if (!validPassword) {
+    throw new AppError(
+      400,
+      'INVALID_CURRENT_PASSWORD',
+      'The current password provided is incorrect.',
+    );
+  }
+
+  const newHash = await argon2.hash(input.newPassword);
+  await db
+    .update(users)
+    .set({
+      passwordHash: newHash,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.userId, userId));
+
+  return { message: 'Password has been changed successfully.' };
+}
+
+export async function initiateAvatarUpload(userId: string, input: InitiateAvatarUploadInput) {
+  const ext = input.fileName.split('.').pop() || 'png';
+  const objectKey = `avatars/${userId}-${Date.now()}.${ext}`;
+  const bucket = STORAGE_BUCKETS.productMedia;
+
+  const uploadUrl = await storageService.generatePresignedPutUrl(
+    objectKey,
+    input.mimeType,
+    900,
+    bucket,
+  );
+
+  const publicUrl = storageService.resolveUrl(objectKey, bucket);
+
+  return {
+    uploadUrl,
+    publicUrl,
+    objectKey,
   };
 }

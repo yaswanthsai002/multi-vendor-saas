@@ -58,8 +58,50 @@ export const resetPasswordSchema = z
     message: 'Passwords do not match.',
   });
 
+export const updateMeSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(2, 'Full name must be at least 2 characters.')
+      .max(100, 'Full name must not exceed 100 characters.')
+      .optional(),
+    avatarUrl: z.string().url('Must be a valid URL.').nullable().optional(),
+  })
+  .refine((data) => data.fullName !== undefined || data.avatarUrl !== undefined, {
+    message: 'At least one field (fullName or avatarUrl) must be provided.',
+  });
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required.'),
+    newPassword: z
+      .string()
+      .min(8, 'New password must be at least 8 characters.')
+      .max(128, 'New password must not exceed 128 characters.'),
+    confirmNewPassword: z.string(),
+  })
+  .refine(({ newPassword, confirmNewPassword }) => newPassword === confirmNewPassword, {
+    path: ['confirmNewPassword'],
+    message: 'Passwords do not match.',
+  });
+
+export const initiateAvatarUploadSchema = z.object({
+  fileName: z.string().min(1, 'File name is required.'),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'], {
+    message: 'Only JPEG, PNG, and WebP images are allowed.',
+  }),
+  fileSizeBytes: z
+    .number()
+    .positive('File size must be positive.')
+    .max(5 * 1024 * 1024, 'Image size must not exceed 5MB.'),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type UpdateMeInput = z.infer<typeof updateMeSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type InitiateAvatarUploadInput = z.infer<typeof initiateAvatarUploadSchema>;

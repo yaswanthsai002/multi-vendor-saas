@@ -69,6 +69,9 @@ describe('Category Feature', () => {
     passwordHash: 'hash',
     emailVerifiedAt: new Date(),
     roles: ['admin'],
+    avatarUrl: null,
+    status: 'active',
+    suspensionReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -80,6 +83,9 @@ describe('Category Feature', () => {
     passwordHash: 'hash',
     emailVerifiedAt: new Date(),
     roles: ['vendor'],
+    avatarUrl: null,
+    status: 'active',
+    suspensionReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -91,6 +97,9 @@ describe('Category Feature', () => {
     passwordHash: 'hash',
     emailVerifiedAt: new Date(),
     roles: ['customer'],
+    avatarUrl: null,
+    status: 'active',
+    suspensionReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -186,6 +195,40 @@ describe('Category Feature', () => {
       expect(res.status).toBe(200);
       expect(res.body[0].parentCategoryId).toBe(rootCategoryId);
       expect(res.body[0].hasChildren).toBe(false);
+    });
+
+    it('GET /api/categories?all=true - returns all categories (root and children)', async () => {
+      const mockResult = [
+        {
+          categoryId: mockCategory.categoryId,
+          name: mockCategory.name,
+          slug: mockCategory.slug,
+          parentCategoryId: null,
+          imageUrl: null,
+          hasChildren: true,
+        },
+        {
+          categoryId: mockChildCategory.categoryId,
+          name: mockChildCategory.name,
+          slug: mockChildCategory.slug,
+          parentCategoryId: rootCategoryId,
+          imageUrl: null,
+          hasChildren: false,
+        },
+      ];
+
+      (db.select as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            orderBy: vi.fn().mockResolvedValue(mockResult),
+          }),
+        }),
+      });
+
+      const res = await request(app).get('/api/categories?all=true');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
     });
 
     it('GET /api/categories?parentCategoryId=invalid - returns 400 validation error', async () => {
