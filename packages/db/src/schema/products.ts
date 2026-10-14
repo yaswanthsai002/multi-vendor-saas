@@ -5,6 +5,7 @@ import {
   index,
   integer,
   numeric,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -13,6 +14,12 @@ import {
 
 import { mediaLibrary } from './mediaLibrary.js';
 import { vendors } from './vendors.js';
+
+export const productModerationStatusEnum = pgEnum('product_moderation_status', [
+  'approved',
+  'hidden',
+  'rejected',
+]);
 
 export const products = pgTable(
   'products',
@@ -29,9 +36,13 @@ export const products = pgTable(
       onDelete: 'set null',
     }),
     price: numeric('price', { precision: 12, scale: 2 }).notNull(),
+    compareAtPrice: numeric('compareAtPrice', { precision: 12, scale: 2 }),
     stock: integer('stock').notNull().default(0),
     published: boolean('published').notNull().default(false),
     isSoftDeleted: boolean('isSoftDeleted').default(false),
+    moderationStatus: productModerationStatusEnum('moderationStatus').notNull().default('approved'),
+    moderationReason: text('moderationReason'),
+    isFeatured: boolean('isFeatured').notNull().default(false),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
     softDeletedAt: timestamp('softDeletedAt', { withTimezone: true }),

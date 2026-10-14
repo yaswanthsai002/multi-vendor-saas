@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { users } from './users.js';
 
@@ -21,6 +21,8 @@ export const vendors = pgTable('vendors', {
   logoUrl: text('logoUrl'),
   bannerUrl: text('bannerUrl'),
   status: vendorStatusEnum('status').notNull().default('pending'),
+  suspensionReason: text('suspensionReason'),
+  isFeatured: boolean('isFeatured').notNull().default(false),
   createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
 });
