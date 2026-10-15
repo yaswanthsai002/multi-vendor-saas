@@ -14,6 +14,10 @@ import {
   createVendorProducts,
   deleteVendorProductById,
   getVendorDashboard,
+  getVendorDashboardMetrics,
+  getVendorDashboardPerformance,
+  getVendorDashboardRecentOrders,
+  getVendorDashboardTopProducts,
   getVendorProductById,
   getVendorProducts,
   getVendorProfile,
@@ -33,6 +37,10 @@ vendorRouter.get('/profile', requireActiveVendor, getVendorProfile);
 vendorRouter.patch('/profile', requireActiveVendor, updateVendorProfile);
 
 vendorRouter.use('/products/bulk-imports', requireActiveVendor, bulkImportRouter);
+vendorRouter.get('/dashboard/metrics', requireActiveVendor, getVendorDashboardMetrics);
+vendorRouter.get('/dashboard/performance', requireActiveVendor, getVendorDashboardPerformance);
+vendorRouter.get('/dashboard/recent-orders', requireActiveVendor, getVendorDashboardRecentOrders);
+vendorRouter.get('/dashboard/top-products', requireActiveVendor, getVendorDashboardTopProducts);
 vendorRouter.get('/dashboard', requireActiveVendor, getVendorDashboard);
 
 // Order management routes (permitted even if vendor is suspended so existing commitments can be fulfilled)

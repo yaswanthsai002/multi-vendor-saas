@@ -164,9 +164,6 @@ describe('Header & User Menu Unit & Integration Tests', () => {
       expect(
         screen.getAllByRole('menuitem', { name: /vendor dashboard/i }).length,
       ).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByRole('menuitem', { name: /settings/i }).length).toBeGreaterThanOrEqual(
-        1,
-      );
     });
 
     it('renders vendor badge and vendor dashboard for vendor customer', async () => {

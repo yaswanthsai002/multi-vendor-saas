@@ -452,8 +452,8 @@ describe('Vendor Products API (/api/vendor/products)', () => {
           avgOrderValue: { value: 669 },
         },
         chart: [
-          { label: 'Mon', date: '2026-09-15', sales: 1200 },
-          { label: 'Tue', date: '2026-09-16', sales: 1500 },
+          { label: 'Mon', date: '2026-09-15', sales: 1200, orders: 4 },
+          { label: 'Tue', date: '2026-09-16', sales: 1500, orders: 5 },
         ],
         recentOrders: [
           {

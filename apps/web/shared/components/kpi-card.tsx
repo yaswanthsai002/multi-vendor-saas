@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export interface KpiCardProps {
   title: string;
-  value: string | number;
+  value?: string | number | null;
   change?: string;
   icon?: React.ComponentType<{ className?: string }>;
   iconBg?: string;
@@ -91,7 +91,7 @@ export function KpiCard({
             valueClassName,
           )}
         >
-          {typeof value === 'number' ? value.toLocaleString('en-IN') : value}
+          {typeof value === 'number' ? value.toLocaleString('en-IN') : (value ?? '—')}
         </p>
       )}
     </div>

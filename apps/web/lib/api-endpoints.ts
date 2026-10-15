@@ -23,6 +23,10 @@ export const API_ENDPOINTS = {
   },
   vendor: {
     dashboard: '/api/vendor/dashboard',
+    dashboardMetrics: '/api/vendor/dashboard/metrics',
+    dashboardPerformance: '/api/vendor/dashboard/performance',
+    dashboardRecentOrders: '/api/vendor/dashboard/recent-orders',
+    dashboardTopProducts: '/api/vendor/dashboard/top-products',
     products: '/api/vendor/products',
     productDetail: (id: string) => `/api/vendor/products/${id}` as const,
     productArchive: (id: string) => `/api/vendor/products/${id}/archive` as const,

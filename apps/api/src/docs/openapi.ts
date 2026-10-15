@@ -1031,6 +1031,7 @@ export const openapiSpec = {
                           label: { type: 'string' },
                           date: { type: 'string' },
                           sales: { type: 'number' },
+                          orders: { type: 'number' },
                         },
                         required: ['label', 'date', 'sales'],
                       },
@@ -1107,6 +1108,197 @@ export const openapiSpec = {
             description: 'Vendor profile not found.',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/dashboard/metrics': {
+      get: {
+        tags: ['Vendor Dashboard'],
+        summary: 'Get vendor dashboard performance KPIs',
+        description:
+          'Returns aggregated store KPI metrics (sales, orders, units sold, avg order value) for the specified timeframe.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'period',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['7d', '30d', '90d'], default: '7d' },
+            description: 'Timeframe filter for metrics calculation',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Aggregated vendor metrics.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    metrics: {
+                      type: 'object',
+                      properties: {
+                        sales: {
+                          type: 'object',
+                          properties: { value: { type: 'number' } },
+                          required: ['value'],
+                        },
+                        orders: {
+                          type: 'object',
+                          properties: { value: { type: 'number' } },
+                          required: ['value'],
+                        },
+                        unitsSold: {
+                          type: 'object',
+                          properties: { value: { type: 'number' } },
+                          required: ['value'],
+                        },
+                        avgOrderValue: {
+                          type: 'object',
+                          properties: { value: { type: 'number' } },
+                          required: ['value'],
+                        },
+                      },
+                      required: ['sales', 'orders', 'unitsSold', 'avgOrderValue'],
+                    },
+                  },
+                  required: ['metrics'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/dashboard/performance': {
+      get: {
+        tags: ['Vendor Dashboard'],
+        summary: 'Get vendor dashboard performance chart data',
+        description: 'Returns time series bucketed sales and orders for charting.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'period',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['7d', '30d', '90d'], default: '7d' },
+            description: 'Timeframe filter for chart grouping',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Time series chart buckets.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    chart: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          label: { type: 'string' },
+                          date: { type: 'string' },
+                          sales: { type: 'number' },
+                          orders: { type: 'number' },
+                        },
+                        required: ['label', 'date', 'sales'],
+                      },
+                    },
+                  },
+                  required: ['chart'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/dashboard/recent-orders': {
+      get: {
+        tags: ['Vendor Dashboard'],
+        summary: 'Get vendor dashboard recent orders',
+        description: 'Returns the latest 5 orders for the vendor store.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Recent orders array.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    recentOrders: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          vendorOrderId: { type: 'string', format: 'uuid' },
+                          orderId: { type: 'string', format: 'uuid' },
+                          orderNumber: { type: 'string' },
+                          itemsCount: { type: 'number' },
+                          amount: { type: 'number' },
+                          status: { type: 'string' },
+                          thumbnailUrl: { type: ['string', 'null'] },
+                          createdAt: { type: 'string' },
+                        },
+                        required: [
+                          'vendorOrderId',
+                          'orderId',
+                          'orderNumber',
+                          'itemsCount',
+                          'amount',
+                          'status',
+                          'createdAt',
+                        ],
+                      },
+                    },
+                  },
+                  required: ['recentOrders'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/dashboard/top-products': {
+      get: {
+        tags: ['Vendor Dashboard'],
+        summary: 'Get vendor dashboard top products',
+        description: 'Returns top performing products for the vendor store.',
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Top products array.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    topProducts: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'string', format: 'uuid' },
+                          name: { type: 'string' },
+                          category: { type: 'string' },
+                          thumbnailUrl: { type: ['string', 'null'] },
+                          unitsSold: { type: 'number' },
+                          sales: { type: 'number' },
+                          stock: { type: 'number' },
+                        },
+                        required: ['productId', 'name', 'category', 'unitsSold', 'sales', 'stock'],
+                      },
+                    },
+                  },
+                  required: ['topProducts'],
+                },
+              },
             },
           },
         },

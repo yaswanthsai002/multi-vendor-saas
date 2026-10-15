@@ -20,6 +20,7 @@ export interface ChartDataPoint {
   label: string;
   date: string;
   sales: number;
+  orders?: number;
 }
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
