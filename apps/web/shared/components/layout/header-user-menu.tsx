@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Settings, ShieldCheck, Store, User } from 'lucide-react';
+import { LogOut, ShieldCheck, Store } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -85,16 +85,18 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               <ThemeToggle />
             </div>
 
-            {/* Settings link */}
-            <Link
-              href="/settings"
-              onClick={handleClose}
-              role="menuitem"
-              className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
-            >
-              <Settings className="h-4 w-4 text-text-tertiary shrink-0" aria-hidden="true" />
-              <span>Settings</span>
-            </Link>
+            {/* Switch to Store link (when in vendor dashboard) */}
+            {isVendorRoute && (
+              <Link
+                href="/"
+                onClick={handleClose}
+                role="menuitem"
+                className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                <Store className="h-4 w-4 text-secondary-accent shrink-0" aria-hidden="true" />
+                <span>Marketplace</span>
+              </Link>
+            )}
 
             {/* Admin Dashboard link (conditional) */}
             {isAdmin && (
@@ -109,21 +111,8 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               </Link>
             )}
 
-            {/* Switch to Store link (when in vendor dashboard) */}
-            {isVendorRoute && (
-              <Link
-                href="/"
-                onClick={handleClose}
-                role="menuitem"
-                className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
-              >
-                <Store className="h-4 w-4 text-secondary-accent shrink-0" aria-hidden="true" />
-                <span>Marketplace</span>
-              </Link>
-            )}
-
             {/* Vendor Dashboard link (when in store pages) */}
-            {isVendor && !isVendorRoute && (
+            {isVendor && (
               <Link
                 href="/vendor"
                 onClick={handleClose}
@@ -135,27 +124,6 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               </Link>
             )}
           </div>
-
-          {/* Vendor Specific Group (when in vendor dashboard or vendor user) */}
-          {isVendor && isVendorRoute && (
-            <div className="border-t border-border-subtle py-1.5">
-              <div className="px-4 py-1">
-                <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
-                  Vendor
-                </p>
-              </div>
-
-              <Link
-                href="/vendor/profile"
-                onClick={handleClose}
-                role="menuitem"
-                className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
-              >
-                <User className="h-4 w-4 text-text-tertiary shrink-0" aria-hidden="true" />
-                <span>Profile</span>
-              </Link>
-            </div>
-          )}
 
           {/* Signout action */}
           <div className="border-t border-border-subtle pt-1.5">

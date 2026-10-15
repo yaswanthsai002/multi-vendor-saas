@@ -141,6 +141,68 @@ export async function getVendorDashboard(req: VendorRequest, res: Response, next
   }
 }
 
+export async function getVendorDashboardMetrics(
+  req: VendorRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const query = getVendorDashboardQuerySchema.parse(req.query);
+    const metrics = await vendorService.getVendorDashboardMetrics(vendorId, query);
+
+    return res.status(200).json({ metrics });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getVendorDashboardPerformance(
+  req: VendorRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const query = getVendorDashboardQuerySchema.parse(req.query);
+    const chart = await vendorService.getVendorDashboardPerformance(vendorId, query);
+
+    return res.status(200).json({ chart });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getVendorDashboardRecentOrders(
+  req: VendorRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const recentOrders = await vendorService.getVendorDashboardRecentOrders(vendorId);
+
+    return res.status(200).json({ recentOrders });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getVendorDashboardTopProducts(
+  req: VendorRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const topProducts = await vendorService.getVendorDashboardTopProducts(vendorId);
+
+    return res.status(200).json({ topProducts });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function getVendorProfile(req: VendorRequest, res: Response, next: NextFunction) {
   try {
     const vendorId = req.vendor!.vendorId;

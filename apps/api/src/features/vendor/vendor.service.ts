@@ -908,6 +908,7 @@ async function getDashboardChart(
   const rows = await db
     .select({
       bucket: bucketIndex,
+      ordersCount: sql<number>`COUNT(DISTINCT ${vendorOrders.vendorOrderId})`,
       sales: sql<string>`
         SUM(
           ${orderItems.productPriceSnapshot}
@@ -928,9 +929,11 @@ async function getDashboardChart(
     .orderBy(bucketIndex);
 
   const salesByBucket = new Map<number, number>();
+  const ordersByBucket = new Map<number, number>();
 
   for (const row of rows) {
     salesByBucket.set(Number(row.bucket), Math.round(Number(row.sales)));
+    ordersByBucket.set(Number(row.bucket), Number(row.ordersCount));
   }
 
   return Array.from({ length: timeframe.numBuckets }, (_, index) => {
@@ -950,6 +953,7 @@ async function getDashboardChart(
       label,
       date: bucketStart.toISOString().split('T')[0] ?? '',
       sales: salesByBucket.get(index) ?? 0,
+      orders: ordersByBucket.get(index) ?? 0,
     };
   });
 }
@@ -1058,33 +1062,49 @@ async function getTopProducts(vendorId: string) {
   }));
 }
 
+export async function getVendorDashboardMetrics(vendorId: string, query: GetVendorDashboardQuery) {
+  await verifyVendorExists(vendorId);
+  const timeframe = resolveDashboardTimeframe(query.period);
+  const metrics = await getDashboardMetrics(vendorId, timeframe.currentStart);
+  return {
+    sales: { value: metrics.sales },
+    orders: { value: metrics.orders },
+    unitsSold: { value: metrics.unitsSold },
+    avgOrderValue: { value: metrics.avgOrderValue },
+  };
+}
+
+export async function getVendorDashboardPerformance(
+  vendorId: string,
+  query: GetVendorDashboardQuery,
+) {
+  await verifyVendorExists(vendorId);
+  const timeframe = resolveDashboardTimeframe(query.period);
+  return getDashboardChart(vendorId, query.period, timeframe);
+}
+
+export async function getVendorDashboardRecentOrders(vendorId: string) {
+  await verifyVendorExists(vendorId);
+  return getRecentOrders(vendorId);
+}
+
+export async function getVendorDashboardTopProducts(vendorId: string) {
+  await verifyVendorExists(vendorId);
+  return getTopProducts(vendorId);
+}
+
 export async function getVendorDashboardData(vendorId: string, query: GetVendorDashboardQuery) {
   await verifyVendorExists(vendorId);
 
-  const timeframe = resolveDashboardTimeframe(query.period);
-
   const [metrics, chart, recentOrders, topProducts] = await Promise.all([
-    getDashboardMetrics(vendorId, timeframe.currentStart),
-    getDashboardChart(vendorId, query.period, timeframe),
-    getRecentOrders(vendorId),
-    getTopProducts(vendorId),
+    getVendorDashboardMetrics(vendorId, query),
+    getVendorDashboardPerformance(vendorId, query),
+    getVendorDashboardRecentOrders(vendorId),
+    getVendorDashboardTopProducts(vendorId),
   ]);
 
   return {
-    metrics: {
-      sales: {
-        value: metrics.sales,
-      },
-      orders: {
-        value: metrics.orders,
-      },
-      unitsSold: {
-        value: metrics.unitsSold,
-      },
-      avgOrderValue: {
-        value: metrics.avgOrderValue,
-      },
-    },
+    metrics,
     chart,
     recentOrders,
     topProducts,

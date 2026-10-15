@@ -44,25 +44,29 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Total Customers"
-          value={isMetricsLoading ? '...' : (kpi?.totalCustomers ?? 0)}
+          value={kpi?.totalCustomers}
+          isLoading={isMetricsLoading}
           icon={UsersRound}
           iconBg="bg-sky-100 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400"
         />
         <KpiCard
           title="Active Vendors"
-          value={isMetricsLoading ? '...' : (kpi?.activeVendors ?? 0)}
+          value={kpi?.activeVendors}
+          isLoading={isMetricsLoading}
           icon={Store}
           iconBg="bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400"
         />
         <KpiCard
           title="Marketplace Products"
-          value={isMetricsLoading ? '...' : (kpi?.marketplaceProducts ?? 0)}
+          value={kpi?.marketplaceProducts}
+          isLoading={isMetricsLoading}
           icon={Boxes}
           iconBg="bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400"
         />
         <KpiCard
           title="Total Orders"
-          value={isMetricsLoading ? '...' : (kpi?.totalOrders ?? 0)}
+          value={kpi?.totalOrders}
+          isLoading={isMetricsLoading}
           icon={ShoppingBag}
           iconBg="bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400"
         />
