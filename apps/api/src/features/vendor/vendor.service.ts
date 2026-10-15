@@ -892,27 +892,18 @@ async function getDashboardChart(
 ) {
   const db = getDb();
 
-  const bucketSeconds = timeframe.bucketMs / 1000;
-
-  const bucketIndex = sql<number>`
-    FLOOR(
-      EXTRACT(
-        EPOCH FROM (
-          ${vendorOrders.createdAt}
-          - ${timeframe.currentStart}
-        )
-      ) / ${bucketSeconds}
-    )
-  `;
-
+  // Aggregate by day string to avoid Postgres parameter-mismatch in expressions
   const rows = await db
     .select({
-      bucket: bucketIndex,
+      date: sql<string>`TO_CHAR(${vendorOrders.createdAt}, 'YYYY-MM-DD')`,
       ordersCount: sql<number>`COUNT(DISTINCT ${vendorOrders.vendorOrderId})`,
       sales: sql<string>`
-        SUM(
-          ${orderItems.productPriceSnapshot}
-          * ${orderItems.productQuantity}
+        COALESCE(
+          SUM(
+            ${orderItems.productPriceSnapshot}
+            * ${orderItems.productQuantity}
+          ),
+          0
         )
       `,
     })
@@ -925,15 +916,20 @@ async function getDashboardChart(
         ne(vendorOrders.status, 'cancelled'),
       ),
     )
-    .groupBy(bucketIndex)
-    .orderBy(bucketIndex);
+    .groupBy(sql`TO_CHAR(${vendorOrders.createdAt}, 'YYYY-MM-DD')`)
+    .orderBy(sql`TO_CHAR(${vendorOrders.createdAt}, 'YYYY-MM-DD')`);
 
-  const salesByBucket = new Map<number, number>();
-  const ordersByBucket = new Map<number, number>();
+  const salesByBucket = new Array<number>(timeframe.numBuckets).fill(0);
+  const ordersByBucket = new Array<number>(timeframe.numBuckets).fill(0);
 
   for (const row of rows) {
-    salesByBucket.set(Number(row.bucket), Math.round(Number(row.sales)));
-    ordersByBucket.set(Number(row.bucket), Number(row.ordersCount));
+    const rowTime = new Date(`${row.date}T00:00:00Z`).getTime();
+    const diff = rowTime - timeframe.currentStart.getTime();
+    const rawBucket = Math.floor(diff / timeframe.bucketMs);
+    const bucket = Math.max(0, Math.min(rawBucket, timeframe.numBuckets - 1));
+
+    salesByBucket[bucket] = (salesByBucket[bucket] || 0) + Math.round(Number(row.sales));
+    ordersByBucket[bucket] = (ordersByBucket[bucket] || 0) + Number(row.ordersCount);
   }
 
   return Array.from({ length: timeframe.numBuckets }, (_, index) => {
@@ -952,8 +948,8 @@ async function getDashboardChart(
     return {
       label,
       date: bucketStart.toISOString().split('T')[0] ?? '',
-      sales: salesByBucket.get(index) ?? 0,
-      orders: ordersByBucket.get(index) ?? 0,
+      sales: salesByBucket[index] ?? 0,
+      orders: ordersByBucket[index] ?? 0,
     };
   });
 }
