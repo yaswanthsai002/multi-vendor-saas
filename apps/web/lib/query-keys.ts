@@ -33,6 +33,12 @@ export const queryKeys = {
       ['categories', 'list', parentCategoryId ?? 'root', all ? 'all' : 'filtered'] as const,
     detail: (id: string) => ['categories', 'detail', id] as const,
   },
+  catalog: {
+    all: () => ['catalog'] as const,
+    list: (filters?: unknown) => ['catalog', 'list', filters] as const,
+    facets: () => ['catalog', 'facets'] as const,
+    detail: (slug: string) => ['catalog', 'detail', slug] as const,
+  },
   bulkImports: {
     all: () => ['vendor', 'bulk-imports'] as const,
     active: () => ['vendor', 'bulk-imports', 'active'] as const,

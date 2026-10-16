@@ -26,6 +26,7 @@ export const openapiSpec = {
     { name: 'Vendor Media', description: 'Vendor media library management endpoints' },
     { name: 'Vendor Profile', description: 'Vendor store profile and owner management endpoints' },
     { name: 'Categories', description: 'Global category taxonomy and management' },
+    { name: 'Catalog', description: 'Public customer product browsing and discovery endpoints' },
   ],
   components: {
     securitySchemes: {
@@ -2844,6 +2845,77 @@ export const openapiSpec = {
           '401': { description: 'Unauthorized — missing or invalid session cookie.' },
           '403': { description: 'Forbidden — admin role required.' },
           '409': { description: 'Conflict — user already owns a storefront.' },
+        },
+      },
+    },
+    '/api/products': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List public approved products',
+        description:
+          'Returns paginated list of approved and published products with optional search, category, vendor, price, and stock filters.',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'vendor', in: 'query', schema: { type: 'string' } },
+          { name: 'minPrice', in: 'query', schema: { type: 'number' } },
+          { name: 'maxPrice', in: 'query', schema: { type: 'number' } },
+          { name: 'inStock', in: 'query', schema: { type: 'boolean' } },
+          { name: 'isFeatured', in: 'query', schema: { type: 'boolean' } },
+          {
+            name: 'sortBy',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: ['featured', 'price_asc', 'price_desc', 'newest'],
+              default: 'featured',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated public product list.',
+          },
+        },
+      },
+    },
+    '/api/products/facets': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'Get catalog facets and aggregations',
+        description:
+          'Returns available category product counts and price range for catalog filtering.',
+        responses: {
+          '200': {
+            description: 'Filter facets with price range and categories.',
+          },
+        },
+      },
+    },
+    '/api/products/{slug}': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'Get public product details by slug',
+        description:
+          'Returns complete public details, specifications, vendor info, and gallery images for a published product.',
+        parameters: [
+          {
+            name: 'slug',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'Product unique slug.',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Product details found.',
+          },
+          '404': {
+            description: 'Product not found or not active.',
+          },
         },
       },
     },

@@ -3,7 +3,7 @@
 import { Heart, ShoppingCart, User as UserIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { HeaderDeliveryAddress } from './header-delivery-address';
@@ -44,10 +44,18 @@ function PerigeeBrandLogo() {
 }
 
 export function Header({ initialCartCount }: HeaderProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, searchQuery, setSearchQuery, cartCount } = useHeader({
     initialCartCount,
   });
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   if (pathname?.startsWith('/vendor') || pathname?.startsWith('/admin')) {
     return null;
@@ -72,6 +80,7 @@ export function Header({ initialCartCount }: HeaderProps) {
             <HeaderSearch
               value={searchQuery}
               onChange={setSearchQuery}
+              onSubmit={handleSearchSubmit}
               placeholder="Search products, brands & categories..."
             />
           </div>
@@ -178,6 +187,7 @@ export function Header({ initialCartCount }: HeaderProps) {
           <HeaderSearch
             value={searchQuery}
             onChange={setSearchQuery}
+            onSubmit={handleSearchSubmit}
             placeholder="Search products, brands & categories..."
           />
         </div>
