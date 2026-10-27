@@ -1839,6 +1839,92 @@ export const openapiSpec = {
         },
       },
     },
+    '/api/vendor/media/initiate': {
+      post: {
+        tags: ['Vendor Media'],
+        summary: 'Initiate direct-to-storage media upload with metadata only',
+        description:
+          'Validates media metadata (filename, size, MIME) and generates presigned storage PUT URLs for client direct-to-storage upload.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  files: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        fileName: { type: 'string' },
+                        fileSizeBytes: { type: 'integer' },
+                        mimeType: { type: 'string' },
+                      },
+                      required: ['fileName', 'fileSizeBytes', 'mimeType'],
+                    },
+                  },
+                },
+                required: ['files'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Presigned upload URLs generated.',
+          },
+        },
+      },
+    },
+    '/api/vendor/media/complete': {
+      post: {
+        tags: ['Vendor Media'],
+        summary: 'Complete direct-to-storage media upload with metadata only',
+        description:
+          'Confirms upload completion, verifies object in storage, processes WebP/poster variants, and inserts MediaLibrary records.',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        mediaId: { type: 'string', format: 'uuid' },
+                        originalStorageKey: { type: 'string' },
+                        fileName: { type: 'string' },
+                        fileSizeBytes: { type: 'integer' },
+                        mimeType: { type: 'string' },
+                      },
+                      required: [
+                        'mediaId',
+                        'originalStorageKey',
+                        'fileName',
+                        'fileSizeBytes',
+                        'mimeType',
+                      ],
+                    },
+                  },
+                },
+                required: ['items'],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Media verified, processed, and persisted.',
+          },
+        },
+      },
+    },
     '/api/vendor/media': {
       post: {
         tags: ['Vendor Media'],

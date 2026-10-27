@@ -17,6 +17,8 @@ import {
   MAX_IMAGE_SIZE_BYTES,
   MAX_VIDEO_SIZE_BYTES,
   type BulkMediaActionInput,
+  type CompleteMediaUploadInput,
+  type InitiateMediaUploadInput,
   type ListMediaQuery,
 } from './media.schema.js';
 
@@ -421,4 +423,152 @@ export async function bulkAction(vendorId: string, input: BulkMediaActionInput) 
     failed,
     message: `Bulk ${action} completed: ${processed} succeeded, ${failed.length} failed.`,
   };
+}
+
+export interface PresignedUploadItem {
+  mediaId: string;
+  uploadUrl: string;
+  originalStorageKey: string;
+  fileName: string;
+  fileSizeBytes: number;
+  mimeType: string;
+}
+
+/**
+ * Initiates direct-to-storage media uploads by generating presigned PUT URLs based on file metadata.
+ */
+export async function initiateMediaUpload(
+  vendorId: string,
+  input: InitiateMediaUploadInput,
+): Promise<PresignedUploadItem[]> {
+  const bucket = STORAGE_BUCKETS.productMedia;
+  const results: PresignedUploadItem[] = [];
+
+  for (const file of input.files) {
+    const isImage = (ALLOWED_IMAGE_MIMES as readonly string[]).includes(file.mimeType);
+    const isVideo = (ALLOWED_VIDEO_MIMES as readonly string[]).includes(file.mimeType);
+
+    if (!isImage && !isVideo) {
+      throw new AppError(400, 'UNSUPPORTED_MEDIA_TYPE', `Unsupported MIME type: ${file.mimeType}`);
+    }
+
+    const maxSize = isImage ? MAX_IMAGE_SIZE_BYTES : MAX_VIDEO_SIZE_BYTES;
+    if (file.fileSizeBytes > maxSize) {
+      const limitMb = Math.round(maxSize / (1024 * 1024));
+      throw new AppError(400, 'FILE_TOO_LARGE', `File size exceeds the ${limitMb}MB limit.`);
+    }
+
+    const mediaId = randomUUID();
+    const rawExt = extname(file.fileName) || (isImage ? '.jpg' : '.mp4');
+    const safeExt = rawExt.startsWith('.') ? rawExt.toLowerCase() : `.${rawExt.toLowerCase()}`;
+    const dirPrefix = `vendors/${vendorId}/media/${mediaId}`;
+    const originalStorageKey = `${dirPrefix}/original${safeExt}`;
+
+    const uploadUrl = await storageService.generatePresignedPutUrl(
+      originalStorageKey,
+      file.mimeType,
+      900,
+      bucket,
+    );
+
+    results.push({
+      mediaId,
+      uploadUrl,
+      originalStorageKey,
+      fileName: file.fileName,
+      fileSizeBytes: file.fileSizeBytes,
+      mimeType: file.mimeType,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Completes direct-to-storage media upload: verifies files in storage, processes WebP/poster variants, and records in database.
+ */
+export async function completeMediaUpload(
+  vendorId: string,
+  userId: string,
+  input: CompleteMediaUploadInput,
+): Promise<FormattedMediaItem[]> {
+  const bucket = STORAGE_BUCKETS.productMedia;
+  const completedItems: FormattedMediaItem[] = [];
+
+  for (const item of input.items) {
+    const expectedPrefix = `vendors/${vendorId}/media/${item.mediaId}/`;
+    if (!item.originalStorageKey.startsWith(expectedPrefix)) {
+      throw new AppError(403, 'FORBIDDEN', 'Invalid storage key ownership.');
+    }
+
+    const head = await storageService.headObject(item.originalStorageKey, bucket);
+    if (!head) {
+      throw new AppError(
+        404,
+        'STORAGE_OBJECT_NOT_FOUND',
+        `File ${item.fileName} was not found in storage.`,
+      );
+    }
+
+    const isImage = (ALLOWED_IMAGE_MIMES as readonly string[]).includes(item.mimeType);
+    const isVideo = (ALLOWED_VIDEO_MIMES as readonly string[]).includes(item.mimeType);
+
+    if (!isImage && !isVideo) {
+      throw new AppError(400, 'UNSUPPORTED_MEDIA_TYPE', `Unsupported MIME type: ${item.mimeType}`);
+    }
+
+    const mediaType: 'image' | 'video' = isImage ? 'image' : 'video';
+    const dirPrefix = `vendors/${vendorId}/media/${item.mediaId}`;
+    const buffer = await storageService.getObjectBuffer(item.originalStorageKey, bucket);
+
+    let width: number | null;
+    let height: number | null;
+    let durationSeconds: number | null = null;
+
+    try {
+      if (mediaType === 'image') {
+        const imgRes = await processImage(buffer, dirPrefix);
+        width = imgRes.width;
+        height = imgRes.height;
+      } else {
+        const rawExt = extname(item.fileName) || '.mp4';
+        const tempVideoPath = join(tmpdir(), `upload-${randomUUID()}${rawExt}`);
+        try {
+          await writeFile(tempVideoPath, buffer);
+          const vidRes = await processVideo(tempVideoPath, dirPrefix);
+          width = vidRes.width;
+          height = vidRes.height;
+          durationSeconds = vidRes.durationSeconds;
+        } finally {
+          await unlink(tempVideoPath).catch(() => {});
+        }
+      }
+
+      const db = getDb();
+      const [inserted] = await db
+        .insert(mediaLibrary)
+        .values({
+          mediaId: item.mediaId,
+          vendorId,
+          createdBy: userId,
+          mediaType,
+          originalFileName: item.fileName,
+          mimeType: item.mimeType,
+          fileSizeBytes: item.fileSizeBytes,
+          width,
+          height,
+          durationSeconds,
+          originalStorageKey: item.originalStorageKey,
+          status: 'active',
+        })
+        .returning();
+
+      completedItems.push(formatMediaResponse(inserted));
+    } catch (err) {
+      await storageService.deletePrefix(dirPrefix, bucket);
+      throw err;
+    }
+  }
+
+  return completedItems;
 }

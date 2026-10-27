@@ -67,6 +67,8 @@ vi.mock('./media.service.js', async (importOriginal) => {
     deleteMedia: vi.fn(),
     enableMedia: vi.fn(),
     bulkAction: vi.fn(),
+    initiateMediaUpload: vi.fn(),
+    completeMediaUpload: vi.fn(),
   };
 });
 
@@ -213,6 +215,93 @@ describe('Media API (/api/vendor/media)', () => {
       expect(res.status).toBe(201);
       expect(res.body.message).toContain('2 media files uploaded successfully.');
       expect(res.body.items).toHaveLength(2);
+      expect(res.body.media.mediaId).toBe(validMediaId);
+    });
+  });
+
+  describe('POST /api/vendor/media/initiate', () => {
+    it('returns 201 with presigned upload URLs when file metadata is provided', async () => {
+      const mockItems = [
+        {
+          mediaId: validMediaId,
+          uploadUrl: 'https://r2.storage.example/presigned-put-url',
+          originalStorageKey: `vendors/${validVendorId}/media/${validMediaId}/original.jpg`,
+          fileName: 'product.jpg',
+          fileSizeBytes: 102400,
+          mimeType: 'image/jpeg',
+        },
+      ];
+
+      vi.mocked(mediaService.initiateMediaUpload).mockResolvedValueOnce(mockItems);
+
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/media/initiate')
+        .set('Cookie', cookie)
+        .send({
+          files: [
+            {
+              fileName: 'product.jpg',
+              fileSizeBytes: 102400,
+              mimeType: 'image/jpeg',
+            },
+          ],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0].uploadUrl).toBe('https://r2.storage.example/presigned-put-url');
+    });
+
+    it('returns 400 when files array is empty or missing', async () => {
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/media/initiate')
+        .set('Cookie', cookie)
+        .send({ files: [] });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/vendor/media/complete', () => {
+    it('returns 201 with processed media record when metadata is completed', async () => {
+      const mockResult = {
+        mediaId: validMediaId,
+        type: 'image' as const,
+        originalFileName: 'product.jpg',
+        mimeType: 'image/jpeg',
+        fileSizeBytes: 102400,
+        width: 1200,
+        height: 800,
+        status: 'active' as const,
+        original: 'http://localhost:4000/media/vendors/v/media/m/original.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        disabledAt: null,
+      };
+
+      vi.mocked(mediaService.completeMediaUpload).mockResolvedValueOnce([mockResult]);
+
+      const cookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/media/complete')
+        .set('Cookie', cookie)
+        .send({
+          items: [
+            {
+              mediaId: validMediaId,
+              originalStorageKey: `vendors/${validVendorId}/media/${validMediaId}/original.jpg`,
+              fileName: 'product.jpg',
+              fileSizeBytes: 102400,
+              mimeType: 'image/jpeg',
+            },
+          ],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.message).toBe('Media uploaded successfully.');
       expect(res.body.media.mediaId).toBe(validMediaId);
     });
   });

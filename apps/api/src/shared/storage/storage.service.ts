@@ -128,6 +128,18 @@ export class StorageService {
   }
 
   /**
+   * Returns a Buffer containing the complete data of the specified storage object.
+   */
+  async getObjectBuffer(key: string, bucket = this.defaultBucket): Promise<Buffer> {
+    const stream = await this.getObjectStream(key, bucket);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  }
+
+  /**
    * Uploads an object directly to storage.
    */
   async putObject(
