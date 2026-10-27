@@ -41,6 +41,8 @@ export const API_ENDPOINTS = {
     orderDetail: (id: string) => `/api/vendor/orders/${id}` as const,
     orderStatus: (id: string) => `/api/vendor/orders/${id}/status` as const,
     media: '/api/vendor/media',
+    mediaInitiate: '/api/vendor/media/initiate',
+    mediaComplete: '/api/vendor/media/complete',
     profile: '/api/vendor/profile',
     bulkImports: {
       template: '/api/vendor/products/bulk-imports/template',

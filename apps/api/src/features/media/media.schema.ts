@@ -26,6 +26,30 @@ export const bulkMediaActionSchema = z.object({
     .max(100, 'Cannot perform bulk action on more than 100 media assets at once.'),
 });
 
+export const initiateMediaUploadItemSchema = z.object({
+  fileName: z.string().min(1, 'File name is required.'),
+  fileSizeBytes: z.number().int().positive('File size must be positive.'),
+  mimeType: z.string().min(1, 'MIME type is required.'),
+});
+
+export const initiateMediaUploadSchema = z.object({
+  files: z.array(initiateMediaUploadItemSchema).min(1, 'At least one file must be specified.'),
+});
+
+export const completeMediaUploadItemSchema = z.object({
+  mediaId: z.string().uuid('Invalid mediaId format.'),
+  originalStorageKey: z.string().min(1, 'Original storage key is required.'),
+  fileName: z.string().min(1, 'File name is required.'),
+  fileSizeBytes: z.number().int().positive('File size must be positive.'),
+  mimeType: z.string().min(1, 'MIME type is required.'),
+});
+
+export const completeMediaUploadSchema = z.object({
+  items: z.array(completeMediaUploadItemSchema).min(1, 'At least one item must be specified.'),
+});
+
 export type ListMediaQuery = z.infer<typeof listMediaQuerySchema>;
 export type MediaIdParams = z.infer<typeof mediaIdParamSchema>;
 export type BulkMediaActionInput = z.infer<typeof bulkMediaActionSchema>;
+export type InitiateMediaUploadInput = z.infer<typeof initiateMediaUploadSchema>;
+export type CompleteMediaUploadInput = z.infer<typeof completeMediaUploadSchema>;

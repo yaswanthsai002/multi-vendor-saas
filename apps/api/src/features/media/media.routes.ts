@@ -6,10 +6,12 @@ import { requireActiveVendor } from '../vendor/vendor.middleware.js';
 
 import {
   bulkAction,
+  completeUpload,
   deleteMedia,
   disableMedia,
   enableMedia,
   getMediaById,
+  initiateUpload,
   listMedia,
   uploadMedia,
 } from './media.controller.js';
@@ -28,6 +30,8 @@ const upload = multer({
 // Enforce authentication and active vendor profile ownership on all /vendor/media routes
 mediaRouter.use(verifyToken, requireActiveVendor);
 
+mediaRouter.post('/initiate', initiateUpload);
+mediaRouter.post('/complete', completeUpload);
 mediaRouter.post('/', upload.any(), uploadMedia);
 mediaRouter.post('/bulk', bulkAction);
 mediaRouter.get('/', listMedia);

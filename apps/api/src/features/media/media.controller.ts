@@ -1,6 +1,12 @@
 import { AppError } from '../../shared/errors/AppError.js';
 
-import { bulkMediaActionSchema, listMediaQuerySchema, mediaIdParamSchema } from './media.schema.js';
+import {
+  bulkMediaActionSchema,
+  completeMediaUploadSchema,
+  initiateMediaUploadSchema,
+  listMediaQuerySchema,
+  mediaIdParamSchema,
+} from './media.schema.js';
 import * as mediaService from './media.service.js';
 
 import type { VendorRequest } from '../vendor/vendor.middleware.js';
@@ -113,6 +119,46 @@ export async function bulkAction(req: VendorRequest, res: Response, next: NextFu
     const result = await mediaService.bulkAction(vendorId, body);
 
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function initiateUpload(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const body = initiateMediaUploadSchema.parse(req.body);
+    const items = await mediaService.initiateMediaUpload(vendorId, body);
+
+    return res.status(201).json({
+      success: true,
+      items,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function completeUpload(req: VendorRequest, res: Response, next: NextFunction) {
+  try {
+    const vendorId = req.vendor!.vendorId;
+    const userId = req.user?.sub;
+
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid or missing authentication session.');
+    }
+
+    const body = completeMediaUploadSchema.parse(req.body);
+    const uploadedItems = await mediaService.completeMediaUpload(vendorId, userId, body);
+
+    return res.status(201).json({
+      message:
+        uploadedItems.length > 1
+          ? `${uploadedItems.length} media files uploaded successfully.`
+          : 'Media uploaded successfully.',
+      media: uploadedItems[0],
+      items: uploadedItems,
+    });
   } catch (error) {
     return next(error);
   }
