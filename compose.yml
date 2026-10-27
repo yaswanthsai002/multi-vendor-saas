@@ -21,11 +21,11 @@ services:
     develop:
       watch:
         # Sync api source files when changed
-        - action: sync
+        - action: sync+restart
           path: ./apps/api/src
           target: /app/apps/api/src
         # Sync shared database package source files when changed
-        - action: sync
+        - action: sync+restart
           path: ./packages/db/src
           target: /app/packages/db/src
         # Rebuild image if dependencies change
@@ -79,10 +79,10 @@ services:
     restart: unless-stopped
     develop:
       watch:
-        - action: sync
+        - action: sync+restart
           path: ./apps/api/src
           target: /app/apps/api/src
-        - action: sync
+        - action: sync+restart
           path: ./packages/db/src
           target: /app/packages/db/src
         - action: rebuild
