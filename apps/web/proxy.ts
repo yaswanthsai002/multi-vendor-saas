@@ -28,7 +28,7 @@ function safeRedirectTarget(raw: string | null, request: NextRequest): string {
 
 function toSignIn(request: NextRequest, clearCookie = false, error?: string) {
   const redirectUrl = new URL(DEFAULT_UNAUTHENTICATED_REDIRECT, request.url);
-  redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+  redirectUrl.searchParams.set('redirect', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   if (error) redirectUrl.searchParams.set('error', error);
   const response = NextResponse.redirect(redirectUrl);
   if (clearCookie) response.cookies.delete('auth_token');
@@ -59,7 +59,9 @@ export async function proxy(request: NextRequest) {
     request.headers.get('next-router-prefetch') === '1' ||
     request.headers.get('purpose') === 'prefetch';
 
-  const isProtectedRoute = PROTECTED_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isProtectedRoute = PROTECTED_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 
   if (!isAuthenticated && isProtectedRoute) {
     if (isPrefetch) {
@@ -88,17 +90,18 @@ export async function proxy(request: NextRequest) {
       if (apiStatus === 401) {
         return toSignIn(request, true, 'unauthenticated');
       }
-      return new NextResponse(
-        'We cannot check your session right now. Please refresh this page in a few seconds.',
-        {
-          status: 503,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-store',
-            'Retry-After': '5',
-          },
-        },
+      const unavailableUrl = new URL('/service-unavailable', request.url);
+      unavailableUrl.searchParams.set(
+        'retry',
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
       );
+      return NextResponse.rewrite(unavailableUrl, {
+        status: 503,
+        headers: {
+          'Cache-Control': 'no-store',
+          'Retry-After': '5',
+        },
+      });
     }
 
     const isAdmin = roles.includes('admin');
@@ -110,7 +113,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (pathname.startsWith('/admin') && !isAdmin) {
+    if ((pathname === '/admin' || pathname.startsWith('/admin/')) && !isAdmin) {
       const redirectUrl = new URL(DEFAULT_AUTHENTICATED_REDIRECT, request.url);
       redirectUrl.searchParams.set('error', 'unauthorized');
       return NextResponse.redirect(redirectUrl);
