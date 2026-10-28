@@ -9,7 +9,6 @@ import { serverEnv } from '@/lib/env.server';
 export async function verifyAuthToken(token: string): Promise<JWTPayload | null> {
   const secret = serverEnv.JWT_SECRET;
   if (!secret) {
-    console.error('JWT_SECRET is not configured in apps/web');
     return null;
   }
 

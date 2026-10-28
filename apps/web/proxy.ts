@@ -3,12 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getCurrentUserServer } from './lib/auth/current-user';
 import { verifyAuthToken } from './lib/auth/verify-token';
 
+import { ApiError } from '@/lib/api-client';
 import {
   AUTH_ROUTES,
   DEFAULT_AUTHENTICATED_REDIRECT,
   DEFAULT_UNAUTHENTICATED_REDIRECT,
   PROTECTED_ROUTE_PREFIXES,
-  ROLE_PROTECTED_ROUTE_PREFIXES,
 } from '@/lib/routes.config';
 
 // Resolves a `?redirect=` param to a same-origin path only.
@@ -69,21 +69,9 @@ export async function proxy(request: NextRequest) {
     return toSignIn(request, Boolean(rawToken), 'unauthenticated');
   }
 
-  const isAuthorisedRoute = ROLE_PROTECTED_ROUTE_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  if (isAuthorisedRoute) {
-    if (!isAuthenticated) {
-      if (isPrefetch) {
-        return NextResponse.next();
-      }
-      return toSignIn(request, Boolean(rawToken), 'unauthenticated');
-    }
-
+  if (isProtectedRoute) {
     // Roles aren't in the JWT, so this tier genuinely needs the backend.
-    // Failure here (network blip, API restart) must degrade to signin,
-    // not crash the whole navigation.
+    // Service failures must not redirect a locally valid session back through signin.
     let roles: string[];
     try {
       const cookieHeader = request.headers.get('cookie') ?? '';
@@ -95,8 +83,22 @@ export async function proxy(request: NextRequest) {
         return toSignIn(request, true, 'unauthenticated');
       }
       roles = user.roles ?? [];
-    } catch {
-      return toSignIn(request, false, 'unauthenticated');
+    } catch (error) {
+      const apiStatus = error instanceof ApiError ? error.status : 0;
+      if (apiStatus === 401) {
+        return toSignIn(request, true, 'unauthenticated');
+      }
+      return new NextResponse(
+        'We cannot check your session right now. Please refresh this page in a few seconds.',
+        {
+          status: 503,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'Retry-After': '5',
+          },
+        },
+      );
     }
 
     const isAdmin = roles.includes('admin');
