@@ -50,6 +50,7 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
     eq(products.moderationStatus, 'approved'),
     eq(products.isSoftDeleted, false),
     eq(vendors.status, 'active'),
+    sql`EXISTS (SELECT 1 FROM ${users} WHERE ${users.userId} = ${vendors.userId} AND ${users.status} = 'active')`,
   ];
 
   if (search) {
@@ -282,6 +283,7 @@ export async function getCatalogProductBySlug(slug: string) {
         eq(products.moderationStatus, 'approved'),
         eq(products.isSoftDeleted, false),
         eq(vendors.status, 'active'),
+        sql`EXISTS (SELECT 1 FROM ${users} WHERE ${users.userId} = ${vendors.userId} AND ${users.status} = 'active')`,
       ),
     )
     .limit(1);
@@ -363,6 +365,7 @@ export async function getCatalogFacets() {
     eq(products.moderationStatus, 'approved'),
     eq(products.isSoftDeleted, false),
     eq(vendors.status, 'active'),
+    sql`EXISTS (SELECT 1 FROM ${users} WHERE ${users.userId} = ${vendors.userId} AND ${users.status} = 'active')`,
   );
 
   const [priceStats] = await db
@@ -391,9 +394,9 @@ export async function getCatalogFacets() {
         eq(products.published, true),
         eq(products.moderationStatus, 'approved'),
         eq(products.isSoftDeleted, false),
+        sql`EXISTS (SELECT 1 FROM ${vendors} JOIN ${users} ON ${users.userId} = ${vendors.userId} WHERE ${vendors.vendorId} = ${products.vendorId} AND ${vendors.status} = 'active' AND ${users.status} = 'active')`,
       ),
     )
-    .leftJoin(vendors, and(eq(vendors.vendorId, products.vendorId), eq(vendors.status, 'active')))
     .groupBy(categories.categoryId, categories.name, categories.slug, categories.parentCategoryId)
     .orderBy(desc(sql`COUNT(DISTINCT ${products.productId})`), categories.name);
 
