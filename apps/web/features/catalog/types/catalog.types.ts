@@ -28,6 +28,8 @@ export interface CatalogProduct {
   isFeatured: boolean;
   createdAt: string;
   imageUrl: string | null;
+  rating?: number | null;
+  ratingCount?: number;
   vendor: CatalogVendor;
   categories: CatalogCategory[];
 }

@@ -86,11 +86,19 @@ describe('Catalog Feature', () => {
           }),
         }),
       };
+      const mockRatingsQuery = {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockResolvedValue([{ productId, rating: '4.5', ratingCount: 2 }]),
+          }),
+        }),
+      };
 
       (db.select as unknown as ReturnType<typeof vi.fn>)
         .mockReturnValueOnce(mockCountQuery)
         .mockReturnValueOnce(mockProductsQuery)
-        .mockReturnValueOnce(mockCategoriesQuery);
+        .mockReturnValueOnce(mockCategoriesQuery)
+        .mockReturnValueOnce(mockRatingsQuery);
 
       const res = await request(app).get('/api/products?page=1&limit=20');
 
@@ -104,6 +112,8 @@ describe('Catalog Feature', () => {
       expect(res.body.items[0].name).toBe('Studio Wireless Headphones');
       expect(res.body.items[0].vendor.name).toBe('TechPulse');
       expect(res.body.items[0].categories[0].slug).toBe('audio');
+      expect(res.body.items[0].rating).toBe(4.5);
+      expect(res.body.items[0].ratingCount).toBe(2);
     });
 
     it('rejects invalid limit exceeding 50 with 400', async () => {
@@ -208,6 +218,142 @@ describe('Catalog Feature', () => {
 
       expect(res.status).toBe(404);
       expect(res.body.code).toBe('PRODUCT_NOT_FOUND');
+    });
+  });
+
+  describe('GET /api/products/:slug/reviews', () => {
+    it('returns paginated reviews and aggregate ratings for an available product', async () => {
+      const productQuery = {
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([{ productId }]),
+            }),
+          }),
+        }),
+      };
+      const distributionQuery = {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockResolvedValue([
+              { rating: 3, count: 1 },
+              { rating: 4, count: 1 },
+              { rating: 5, count: 2 },
+            ]),
+          }),
+        }),
+      };
+      const review = {
+        reviewId: randomUUID(),
+        authorName: 'Maya',
+        rating: 5,
+        reviewText: null,
+        createdAt: new Date().toISOString(),
+      };
+      const itemsQuery = {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            orderBy: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                offset: vi.fn().mockResolvedValue([review]),
+              }),
+            }),
+          }),
+        }),
+      };
+      db.select
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(distributionQuery)
+        .mockReturnValueOnce(itemsQuery);
+
+      const res = await request(app).get('/api/products/studio-headphones/reviews?page=2&limit=3');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        items: [review],
+        pagination: { page: 2, limit: 3, total: 4, totalPages: 2, hasMore: false },
+        averageRating: 4.25,
+        ratingCount: 4,
+        distribution: [
+          { rating: 1, count: 0 },
+          { rating: 2, count: 0 },
+          { rating: 3, count: 1 },
+          { rating: 4, count: 1 },
+          { rating: 5, count: 2 },
+        ],
+      });
+    });
+
+    it('returns 404 when product is unavailable', async () => {
+      const productQuery = {
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+      };
+      db.select.mockReturnValueOnce(productQuery);
+
+      const res = await request(app).get('/api/products/unavailable/reviews');
+
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe('PRODUCT_NOT_FOUND');
+    });
+
+    it('returns null average and zero counts when product has no reviews', async () => {
+      const productQuery = {
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([{ productId }]),
+            }),
+          }),
+        }),
+      };
+      const distributionQuery = {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            groupBy: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      };
+      const itemsQuery = {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            orderBy: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                offset: vi.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      };
+      db.select
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(distributionQuery)
+        .mockReturnValueOnce(itemsQuery);
+
+      const res = await request(app).get('/api/products/new-product/reviews');
+
+      expect(res.status).toBe(200);
+      expect(res.body.averageRating).toBeNull();
+      expect(res.body.ratingCount).toBe(0);
+      expect(res.body.distribution).toEqual([
+        { rating: 1, count: 0 },
+        { rating: 2, count: 0 },
+        { rating: 3, count: 0 },
+        { rating: 4, count: 0 },
+        { rating: 5, count: 0 },
+      ]);
+    });
+
+    it('returns 400 for invalid pagination without querying the database', async () => {
+      const res = await request(app).get('/api/products/studio-headphones/reviews?page=0');
+
+      expect(res.status).toBe(400);
+      expect(db.select).not.toHaveBeenCalled();
     });
   });
 

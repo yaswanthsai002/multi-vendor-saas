@@ -1,4 +1,8 @@
-import { catalogProductParamsSchema, listCatalogProductsQuerySchema } from './catalog.schema.js';
+import {
+  catalogProductParamsSchema,
+  listCatalogProductsQuerySchema,
+  productReviewsQuerySchema,
+} from './catalog.schema.js';
 import * as catalogService from './catalog.service.js';
 
 import type { NextFunction, Request, Response } from 'express';
@@ -27,6 +31,16 @@ export async function getCatalogFacets(_req: Request, res: Response, next: NextF
   try {
     const facets = await catalogService.getCatalogFacets();
     return res.status(200).json(facets);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getProductReviews(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { slug } = catalogProductParamsSchema.parse(req.params);
+    const query = productReviewsQuerySchema.parse(req.query);
+    return res.status(200).json(await catalogService.getProductReviews(slug, query));
   } catch (error) {
     return next(error);
   }

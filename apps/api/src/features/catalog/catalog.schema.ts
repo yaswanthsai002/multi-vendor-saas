@@ -33,3 +33,8 @@ export const catalogProductParamsSchema = z.object({
 });
 
 export type CatalogProductParams = z.infer<typeof catalogProductParamsSchema>;
+
+export const productReviewsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(20).default(3),
+});

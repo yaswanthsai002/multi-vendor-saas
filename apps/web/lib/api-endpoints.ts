@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
     products: '/api/products',
     facets: '/api/products/facets',
     productDetail: (slug: string) => `/api/products/${slug}` as const,
+    productReviews: (slug: string) => `/api/products/${slug}/reviews` as const,
   },
   vendor: {
     dashboard: '/api/vendor/dashboard',

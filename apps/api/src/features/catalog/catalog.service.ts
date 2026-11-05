@@ -5,6 +5,8 @@ import {
   productCategories,
   productMedia,
   products,
+  productReviews,
+  users,
   vendors,
 } from '@repo/db/schema';
 import { and, count, desc, eq, exists, gt, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
@@ -32,7 +34,7 @@ function resolveFullImageUrl(media: {
   originalStorageKey: string;
 }): string {
   const dirPrefix = `vendors/${media.vendorId}/media/${media.mediaId}`;
-  return storageService.resolveUrl(`${dirPrefix}/original.webp`, STORAGE_BUCKETS.productMedia);
+  return storageService.resolveUrl(`${dirPrefix}/large.webp`, STORAGE_BUCKETS.productMedia);
 }
 
 export async function listCatalogProducts(query: ListCatalogProductsQuery) {
@@ -162,6 +164,7 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
   // Fetch categories for all fetched products in one batch
   const productIds = rows.map((r) => r.productId);
   const categoryMap = new Map<string, { categoryId: string; name: string; slug: string }[]>();
+  const ratingMap = new Map<string, { rating: number; ratingCount: number }>();
 
   if (productIds.length > 0) {
     const categoryRows = await db
@@ -180,9 +183,27 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
       list.push({ categoryId: c.categoryId, name: c.name, slug: c.slug });
       categoryMap.set(c.productId, list);
     }
+
+    const ratingRows = await db
+      .select({
+        productId: productReviews.productId,
+        rating: sql<string>`AVG(${productReviews.rating})`,
+        ratingCount: count(),
+      })
+      .from(productReviews)
+      .where(inArray(productReviews.productId, productIds))
+      .groupBy(productReviews.productId);
+
+    for (const row of ratingRows) {
+      ratingMap.set(row.productId, {
+        rating: Number(row.rating),
+        ratingCount: Number(row.ratingCount),
+      });
+    }
   }
 
   const items = rows.map((r) => {
+    const rating = ratingMap.get(r.productId);
     let imageUrl: string | null = null;
     if (r.mediaStorageKey && r.mediaId && r.mediaVendorId) {
       imageUrl = resolveImageUrl({
@@ -203,6 +224,8 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
       isFeatured: r.isFeatured,
       createdAt: r.createdAt,
       imageUrl,
+      rating: rating?.rating ?? null,
+      ratingCount: rating?.ratingCount ?? 0,
       vendor: {
         vendorId: r.vendorId,
         name: r.vendorName,
@@ -385,6 +408,71 @@ export async function getCatalogFacets() {
       slug: c.slug,
       parentCategoryId: c.parentCategoryId,
       productCount: Number(c.productCount),
+    })),
+  };
+}
+
+export async function getProductReviews(
+  slug: string,
+  { page, limit }: { page: number; limit: number },
+) {
+  const db = getDb();
+  const [product] = await db
+    .select({ productId: products.productId })
+    .from(products)
+    .innerJoin(vendors, eq(vendors.vendorId, products.vendorId))
+    .where(
+      and(
+        eq(products.slug, slug),
+        eq(products.published, true),
+        eq(products.moderationStatus, 'approved'),
+        eq(products.isSoftDeleted, false),
+        eq(vendors.status, 'active'),
+        sql`EXISTS (SELECT 1 FROM ${users} WHERE ${users.userId} = ${vendors.userId} AND ${users.status} = 'active')`,
+      ),
+    )
+    .limit(1);
+  if (!product)
+    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found or currently unavailable.');
+  const where = eq(productReviews.productId, product.productId);
+  const distribution = await db
+    .select({ rating: productReviews.rating, count: count() })
+    .from(productReviews)
+    .where(where)
+    .groupBy(productReviews.rating);
+  const ratingCounts = new Map(distribution.map((row) => [row.rating, Number(row.count)]));
+  const ratingCount = distribution.reduce((total, row) => total + Number(row.count), 0);
+  const ratingTotal = distribution.reduce(
+    (total, row) => total + row.rating * Number(row.count),
+    0,
+  );
+  const items = await db
+    .select({
+      reviewId: productReviews.reviewId,
+      authorName: productReviews.authorName,
+      rating: productReviews.rating,
+      reviewText: productReviews.reviewText,
+      createdAt: productReviews.createdAt,
+    })
+    .from(productReviews)
+    .where(where)
+    .orderBy(desc(productReviews.createdAt), desc(productReviews.reviewId))
+    .limit(limit)
+    .offset((page - 1) * limit);
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      total: ratingCount,
+      totalPages: Math.ceil(ratingCount / limit),
+      hasMore: page * limit < ratingCount,
+    },
+    averageRating: ratingCount === 0 ? null : ratingTotal / ratingCount,
+    ratingCount,
+    distribution: [1, 2, 3, 4, 5].map((rating) => ({
+      rating,
+      count: ratingCounts.get(rating) ?? 0,
     })),
   };
 }
