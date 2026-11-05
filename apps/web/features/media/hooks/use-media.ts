@@ -1,6 +1,7 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as React from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -26,17 +27,21 @@ export function useMediaList(filters: ListMediaFilters = {}) {
 
 export function useUploadMedia() {
   const queryClient = useQueryClient();
+  const [progress, setProgress] = React.useState(0);
 
-  return useMutation({
-    mutationFn: (files: File | File[]) => uploadMediaAsset(files),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.media.all() });
+  const mutation = useMutation({
+    mutationFn: (files: File | File[]) => uploadMediaAsset(files, setProgress),
+    onMutate: () => setProgress(0),
+    onSuccess: async (data) => {
+      setProgress(100);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.media.all() });
       toast.success(data.message || 'Media uploaded successfully.');
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Failed to upload media.');
     },
   });
+  return { ...mutation, progress };
 }
 
 export function useDisableMedia() {

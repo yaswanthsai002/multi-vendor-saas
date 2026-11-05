@@ -191,7 +191,7 @@ export function BulkUploadProgress({
       {isFailed ? (
         <div className="flex items-center justify-between pt-2 border-t border-border-default/60">
           <p className="text-xs text-text-tertiary">
-            Please check your file formatting and storage configuration, then try again.
+            Please try again. Contact support if the problem continues.
           </p>
           {onReset && (
             <button

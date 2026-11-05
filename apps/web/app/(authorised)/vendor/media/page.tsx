@@ -83,7 +83,6 @@ export default function VendorMediaPage() {
     }
   };
 
-  // ponytail: handle drag-and-drop file upload across entire listing by opening modal with files
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -258,23 +257,33 @@ export default function VendorMediaPage() {
           </div>
           <h3 className="text-base sm:text-lg font-bold text-text-primary">Drop files to upload</h3>
           <p className="text-xs sm:text-sm text-text-secondary mt-1 max-w-sm">
-            Release images or videos anywhere here to immediately upload to your media library
+            Release images or videos here to review them before uploading
           </p>
         </div>
       )}
 
-      {/* Floating Uploading State Indicator for background upload */}
+      {/* Floating upload progress for direct and background uploads */}
       {isBackgroundUploading && (
-        <div className="fixed top-20 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-surface dark:bg-surface-subtle border border-border-default shadow-lg text-text-primary text-xs font-semibold animate-in slide-in-from-top-4">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
-          <span>Uploading media in background...</span>
+        <div className="fixed top-20 right-6 z-50 w-64 rounded-xl border border-border-default bg-surface px-4 py-3 text-xs font-semibold text-text-primary shadow-lg animate-in slide-in-from-top-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-accent" />
+              Uploading media
+            </span>
+            <span>{uploadMutation.progress}%</span>
+          </div>
+          <progress
+            className="h-2 w-full accent-accent"
+            max={100}
+            value={uploadMutation.progress}
+            aria-label="Upload progress"
+          />
         </div>
       )}
 
       {/* Header with Title and Upload action */}
       <MediaHeader
         onOpenUpload={() => {
-          setDroppedFiles([]);
           setIsUploadOpen(true);
         }}
       />
@@ -317,7 +326,6 @@ export default function VendorMediaPage() {
         searchQuery={searchQuery}
         onClearSearch={() => handleSearchChange('')}
         onOpenUpload={() => {
-          setDroppedFiles([]);
           setIsUploadOpen(true);
         }}
         onDisable={handleDisable}

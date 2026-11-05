@@ -11,25 +11,32 @@ export async function fetchMediaList(filters: ListMediaFilters = {}): Promise<Me
   });
 }
 
-async function uploadBinaryDirectly(uploadUrl: string, file: File): Promise<void> {
+async function uploadBinaryDirectly(
+  uploadUrl: string,
+  file: File,
+  onProgress: (loaded: number) => void,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', uploadUrl, true);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(file.size);
         resolve();
       } else {
         reject(new Error(`Storage direct upload failed with status ${xhr.status}`));
       }
     };
     xhr.onerror = () => reject(new Error('Network error during storage upload.'));
+    xhr.upload.onprogress = (event) => onProgress(Math.min(event.loaded, file.size));
     xhr.send(file);
   });
 }
 
 export async function uploadMediaAsset(
   files: File[] | File,
+  onProgress?: (percent: number) => void,
 ): Promise<{ message: string; media: MediaItem; items?: MediaItem[] }> {
   const fileList = Array.isArray(files) ? files : [files];
 
@@ -57,10 +64,26 @@ export async function uploadMediaAsset(
   });
 
   // 2. Upload raw file binary directly to storage (zero binary bytes routed through API server)
+  const uploadedBytes = fileList.map(() => 0);
+  const totalBytes = fileList.reduce((total, file) => total + file.size, 0);
+  let lastPercent = -1;
+  const reportProgress = () => {
+    if (totalBytes > 0) {
+      const loadedBytes = uploadedBytes.reduce((total, bytes) => total + bytes, 0);
+      const percent = Math.round((loadedBytes / totalBytes) * 100);
+      if (percent !== lastPercent) {
+        lastPercent = percent;
+        onProgress?.(percent);
+      }
+    }
+  };
   await Promise.all(
     fileList.map((file, idx) => {
       const item = initiateRes.items[idx];
-      return uploadBinaryDirectly(item.uploadUrl, file);
+      return uploadBinaryDirectly(item.uploadUrl, file, (loaded) => {
+        uploadedBytes[idx] = loaded;
+        reportProgress();
+      });
     }),
   );
 

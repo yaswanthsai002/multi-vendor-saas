@@ -9,8 +9,8 @@ import { validateMediaFiles } from '../types/media.types';
 
 interface MediaUploadDialogProps {
   open: boolean;
-  onClose: () => void;
   initialFiles?: File[];
+  onClose: () => void;
   onUploadInBackground?: (files: File[]) => void;
 }
 
@@ -22,30 +22,21 @@ function formatFileSize(bytes: number): string {
 
 export function MediaUploadDialog({
   open,
+  initialFiles = [],
   onClose,
-  initialFiles,
   onUploadInBackground,
 }: MediaUploadDialogProps) {
-  const [files, setFiles] = React.useState<File[]>(() => {
-    if (initialFiles && initialFiles.length > 0) {
-      const { valid } = validateMediaFiles(initialFiles);
-      return valid;
-    }
-    return [];
-  });
-
-  const [validationError, setValidationError] = React.useState<string | null>(() => {
-    if (initialFiles && initialFiles.length > 0) {
-      const { errors } = validateMediaFiles(initialFiles);
-      return errors.length > 0 ? errors.join('. ') : null;
-    }
-    return null;
-  });
+  const [files, setFiles] = React.useState<File[]>([]);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
 
   const [isDragging, setIsDragging] = React.useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadMedia();
+
+  React.useEffect(() => {
+    if (open && initialFiles.length > 0) setFiles(initialFiles);
+  }, [open, initialFiles]);
 
   const handleClose = React.useCallback(() => {
     setFiles([]);
@@ -96,6 +87,7 @@ export function MediaUploadDialog({
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndAddFiles(e.dataTransfer.files);
@@ -119,16 +111,12 @@ export function MediaUploadDialog({
   };
 
   const handleBackgroundUpload = () => {
-    if (files.length === 0) return;
+    if (files.length === 0 || !onUploadInBackground) return;
 
     const filesToUpload = [...files];
     handleClose();
 
-    if (onUploadInBackground) {
-      onUploadInBackground(filesToUpload);
-    } else {
-      uploadMutation.mutate(filesToUpload);
-    }
+    onUploadInBackground(filesToUpload);
   };
 
   const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
@@ -280,45 +268,61 @@ export function MediaUploadDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border-default bg-surface dark:bg-surface-subtle">
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={uploadMutation.isPending}
-            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
-          >
-            Cancel
-          </button>
-
-          <div className="flex items-center gap-2">
-            {files.length > 0 ? (
-              <button
-                type="button"
-                onClick={handleBackgroundUpload}
-                disabled={uploadMutation.isPending}
-                className="px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-border-default text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Upload in background
-              </button>
-            ) : null}
-
+        <div className="space-y-3 border-t border-border-default bg-surface px-6 py-4 dark:bg-surface-subtle">
+          {uploadMutation.isPending && (
+            <div aria-live="polite">
+              <div className="mb-1 flex justify-between text-xs text-text-secondary">
+                <span>Uploading files</span>
+                <span>{uploadMutation.progress}%</span>
+              </div>
+              <progress
+                className="h-2 w-full accent-accent"
+                max={100}
+                value={uploadMutation.progress}
+                aria-label="Upload progress"
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              onClick={handleForegroundUpload}
-              disabled={files.length === 0 || uploadMutation.isPending}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleClose}
+              disabled={uploadMutation.isPending}
+              className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
             >
-              {uploadMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>
-                    Uploading {files.length} {files.length === 1 ? 'file' : 'files'}...
-                  </span>
-                </>
-              ) : (
-                <span>Upload {files.length > 1 ? `${files.length} files` : 'file'}</span>
-              )}
+              Cancel
             </button>
+
+            <div className="flex items-center gap-2">
+              {files.length > 0 && onUploadInBackground ? (
+                <button
+                  type="button"
+                  onClick={handleBackgroundUpload}
+                  disabled={uploadMutation.isPending}
+                  className="px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-border-default text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Upload in background
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleForegroundUpload}
+                disabled={files.length === 0 || uploadMutation.isPending}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploadMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>
+                      Uploading {files.length} {files.length === 1 ? 'file' : 'files'}...
+                    </span>
+                  </>
+                ) : (
+                  <span>Upload {files.length > 1 ? `${files.length} files` : 'file'}</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

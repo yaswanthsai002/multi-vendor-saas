@@ -42,12 +42,13 @@ function MediaPickerContent({
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        onClose();
+        if (uploadOpen) setUploadOpen(false);
+        else onClose();
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, uploadOpen]);
 
   // Query parameters - status is strictly 'active' per Plan §25
   const queryParams = React.useMemo(() => {
@@ -127,6 +128,10 @@ function MediaPickerContent({
     });
   }, []);
 
+  if (uploadOpen) {
+    return <MediaUploadDialog open onClose={() => setUploadOpen(false)} />;
+  }
+
   return (
     <div
       role="dialog"
@@ -189,7 +194,7 @@ function MediaPickerContent({
         </div>
 
         {/* Media Grid Content */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-[360px]">
+        <div className="flex-1 overflow-y-auto p-6 min-h-90">
           <MediaGrid
             items={data?.items ?? []}
             isLoading={isLoading}
@@ -244,9 +249,6 @@ function MediaPickerContent({
           </div>
         </div>
       </div>
-
-      {/* Upload Dialog within Picker */}
-      <MediaUploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} />
     </div>
   );
 }
