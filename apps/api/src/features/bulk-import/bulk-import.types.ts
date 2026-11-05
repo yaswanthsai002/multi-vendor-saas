@@ -30,6 +30,9 @@ export interface BulkImportEvent {
   importedRows: number;
   percent: number;
   errorsUrl?: string;
+  attempt?: number;
+  maxAttempts?: number;
+  isRetry?: boolean;
 }
 
 export interface CsvProductRow {

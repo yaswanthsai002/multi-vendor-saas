@@ -168,7 +168,54 @@ export async function processImportProducts(job: Job<ImportProductsJobData>): Pr
       percent: 100,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown import error';
+    const attempt = (job.attemptsMade ?? 0) + 1;
+    const maxAttempts = job.opts?.attempts ?? 1;
+    const errorMessage = `Import failed. Some products may already have been imported. Check your product list before starting another import. Contact support with import ID ${importId} if you need help.`;
+    const errorDetails =
+      error instanceof Error
+        ? { errorName: error.name, errorMessage: error.message, stack: error.stack }
+        : { errorName: 'UnknownError', errorMessage: String(error) };
+    console.error(
+      JSON.stringify(
+        {
+          event: 'bulk_import.processing_failed',
+          phase: 'import',
+          importId,
+          vendorId,
+          jobId: job.id ?? null,
+          attempt,
+          maxAttempts,
+          isRetry: attempt > 1,
+          timestamp: new Date().toISOString(),
+          ...errorDetails,
+        },
+        null,
+        2,
+      ),
+    );
+
+    if (attempt < maxAttempts) {
+      const rawState = await redis.get(`bulk-import:${importId}`);
+      const state = rawState ? (JSON.parse(rawState) as BulkImportState) : undefined;
+      await bulkImportService.publishEvent(importId, {
+        importId,
+        status: 'IMPORTING',
+        stage: 'retrying',
+        statusText: `Import attempt ${attempt} failed. Retrying (${attempt + 1}/${maxAttempts})...`,
+        attempt,
+        maxAttempts,
+        isRetry: attempt > 1,
+        totalRows: state?.readyRows ?? 0,
+        processedRows: state?.importedRows ?? 0,
+        readyRows: state?.readyRows ?? 0,
+        needsAttentionRows: state?.needsAttentionRows ?? 0,
+        importedRows: state?.importedRows ?? 0,
+        percent: state?.readyRows
+          ? Math.round(((state.importedRows ?? 0) / state.readyRows) * 100)
+          : 0,
+      });
+      throw error;
+    }
 
     const rawState = await redis.get(`bulk-import:${importId}`);
     if (rawState) {
@@ -183,7 +230,10 @@ export async function processImportProducts(job: Job<ImportProductsJobData>): Pr
       importId,
       status: 'FAILED',
       stage: 'error',
-      statusText: `Import failed: ${errorMessage}`,
+      statusText: errorMessage,
+      attempt,
+      maxAttempts,
+      isRetry: attempt > 1,
       totalRows: 0,
       processedRows: 0,
       readyRows: 0,

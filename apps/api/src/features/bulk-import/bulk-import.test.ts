@@ -12,6 +12,11 @@ import { processImportProducts } from '../../worker/import-products.processor.js
 import { processValidateImport } from '../../worker/validate-import.processor.js';
 import * as categoryCache from '../category/category.cache.js';
 
+import { bulkImportService } from './bulk-import.service.js';
+
+import type { ImportProductsJobData, ValidateImportJobData } from '../../shared/queue/queues.js';
+import type { Job } from 'bullmq';
+
 const { db } = vi.hoisted(() => ({
   db: {
     query: {
@@ -55,9 +60,9 @@ const { db } = vi.hoisted(() => ({
     })),
     select: vi.fn(() => ({
       from: vi.fn(() => {
-        const p = Promise.resolve([]);
-        (p as any).where = vi.fn(() => Promise.resolve([]));
-        return p;
+        return Object.assign(Promise.resolve([]), {
+          where: vi.fn(() => Promise.resolve([])),
+        });
       }),
     })),
   },
@@ -228,7 +233,9 @@ describe('Bulk Product Import API', () => {
 
   describe('POST /api/vendor/products/bulk-imports/:importId/uploaded', () => {
     it('transitions status to VALIDATING and enqueues job', async () => {
-      const queueAddSpy = vi.spyOn(bulkImportQueue, 'add').mockResolvedValue({} as any);
+      const queueAddSpy = vi
+        .spyOn(bulkImportQueue, 'add')
+        .mockResolvedValue({} as Awaited<ReturnType<typeof bulkImportQueue.add>>);
 
       const cookie = await createAuthCookie(userId);
       const initRes = await request(app)
@@ -297,7 +304,9 @@ describe('Bulk Product Import API', () => {
     });
 
     it('enqueues import job when valid', async () => {
-      const queueAddSpy = vi.spyOn(bulkImportQueue, 'add').mockResolvedValue({} as any);
+      const queueAddSpy = vi
+        .spyOn(bulkImportQueue, 'add')
+        .mockResolvedValue({} as Awaited<ReturnType<typeof bulkImportQueue.add>>);
 
       const cookie = await createAuthCookie(userId);
       const initRes = await request(app)
@@ -394,6 +403,67 @@ describe('Bulk Import Worker Processors', () => {
     });
   });
 
+  it('keeps validation retries active and logs technical context', async () => {
+    const internalError = new Error('S3 connection refused');
+    const mockJob = {
+      id: 'validate-job-1',
+      data: { importId, vendorId, objectKey },
+      attemptsMade: 1,
+      opts: { attempts: 3 },
+    } as unknown as Job<ValidateImportJobData>;
+    await redis.set(
+      `bulk-import:${importId}`,
+      JSON.stringify({
+        importId,
+        vendorId,
+        status: 'VALIDATING',
+        filename: 'source.csv',
+        objectKey,
+        totalRows: 0,
+        processedRows: 0,
+        readyRows: 0,
+        needsAttentionRows: 0,
+        importedRows: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    vi.spyOn(storageService, 'getObjectStream').mockRejectedValueOnce(internalError);
+    const eventSpy = vi.spyOn(bulkImportService, 'publishEvent');
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(processValidateImport(mockJob)).rejects.toBe(internalError);
+
+    const rawState = await redis.get(`bulk-import:${importId}`);
+    const state = JSON.parse(rawState!);
+    expect(state.status).toBe('VALIDATING');
+    expect(state.error).toBeUndefined();
+    expect(eventSpy).toHaveBeenLastCalledWith(
+      importId,
+      expect.objectContaining({
+        status: 'VALIDATING',
+        stage: 'retrying',
+        statusText: 'Validation attempt 2 failed. Retrying (3/3)...',
+      }),
+    );
+    const logEntry = JSON.parse(logSpy.mock.calls[0][0] as string);
+    expect(logEntry).toMatchObject({
+      event: 'bulk_import.processing_failed',
+      phase: 'validation',
+      attempt: 2,
+      maxAttempts: 3,
+      isRetry: true,
+      importId,
+      vendorId,
+      jobId: 'validate-job-1',
+      errorMessage: internalError.message,
+    });
+    expect(logSpy.mock.calls[0][0]).toContain('\n');
+
+    eventSpy.mockRestore();
+    logSpy.mockRestore();
+  });
+
   it('processValidateImport correctly parses valid rows and captures invalid rows in errors.csv', async () => {
     const csvContent = `name,description,price,mrp,stock,category
 Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,249.99,50,electronics
@@ -412,7 +482,7 @@ No Discount Product,Product with MRP equal to selling price,69.99,69.99,10,elect
         vendorId,
         objectKey,
       },
-    } as any;
+    } as unknown as Job<ValidateImportJobData>;
 
     await processValidateImport(mockJob);
 
@@ -470,7 +540,7 @@ Another Great Product,High quality wireless bluetooth earphones,89.99,99.99,100,
         vendorId,
         objectKey,
       },
-    } as any;
+    } as unknown as Job<ImportProductsJobData>;
 
     await processImportProducts(mockJob);
 
@@ -483,5 +553,63 @@ Another Great Product,High quality wireless bluetooth earphones,89.99,99.99,100,
     // Vendor active-import pointer is preserved so the completed screen remains visible
     const lock = await redis.get(`vendor:${vendorId}:active-import`);
     expect(lock).toBe(importId);
+  });
+
+  it('records import failures safely for users and logs technical context', async () => {
+    const internalError = new Error('database constraint detail');
+    const mockJob = {
+      id: 'import-job-1',
+      data: { importId, vendorId, objectKey },
+      attemptsMade: 2,
+      opts: { attempts: 3 },
+    } as unknown as Job<ImportProductsJobData>;
+    await redis.set(
+      `bulk-import:${importId}`,
+      JSON.stringify({
+        importId,
+        vendorId,
+        status: 'IMPORTING',
+        filename: 'source.csv',
+        objectKey,
+        totalRows: 1,
+        processedRows: 0,
+        readyRows: 1,
+        needsAttentionRows: 0,
+        importedRows: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+    vi.spyOn(storageService, 'getObjectStream').mockRejectedValueOnce(internalError);
+    const eventSpy = vi.spyOn(bulkImportService, 'publishEvent');
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(processImportProducts(mockJob)).rejects.toBe(internalError);
+
+    const rawState = await redis.get(`bulk-import:${importId}`);
+    const state = JSON.parse(rawState!);
+    expect(state.status).toBe('FAILED');
+    expect(state.error).toContain('Import failed.');
+    expect(state.error).not.toContain(internalError.message);
+    expect(eventSpy).toHaveBeenLastCalledWith(
+      importId,
+      expect.objectContaining({ statusText: state.error }),
+    );
+    const logEntry = JSON.parse(logSpy.mock.calls[0][0] as string);
+    expect(logEntry).toMatchObject({
+      event: 'bulk_import.processing_failed',
+      phase: 'import',
+      attempt: 3,
+      maxAttempts: 3,
+      isRetry: true,
+      importId,
+      vendorId,
+      jobId: 'import-job-1',
+      errorMessage: internalError.message,
+    });
+    expect(logSpy.mock.calls[0][0]).toContain('\n');
+
+    eventSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });

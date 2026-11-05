@@ -43,10 +43,6 @@ bulkImportWorker.on('completed', (job) => {
   console.log(`[Worker] Job ${job.id} completed successfully.`);
 });
 
-bulkImportWorker.on('failed', (job, err) => {
-  console.error(`[Worker] Job ${job?.id} failed:`, err.message);
-});
-
 process.on('SIGTERM', async () => {
   console.log('[Worker] SIGTERM received. Closing worker...');
   await bulkImportWorker.close();

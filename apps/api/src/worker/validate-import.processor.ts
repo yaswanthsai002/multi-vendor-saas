@@ -130,7 +130,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
 
     // If there are invalid rows, generate errors.csv and upload to R2
     if (invalidRows.length > 0) {
-      const csvHeader = 'row,name,description,price,stock,category,errors\n';
+      const csvHeader = 'row,name,description,price,mrp,stock,category,errors\n';
       const csvLines = invalidRows.map((inv) =>
         [
           inv.rowNumber,
@@ -218,7 +218,52 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
       errorsUrl,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+    const attempt = (job.attemptsMade ?? 0) + 1;
+    const maxAttempts = job.opts?.attempts ?? 1;
+    const errorMessage = `We couldn't validate this file. Check that it matches the template, then try again. Contact support with import ID ${importId} if the problem continues.`;
+    const errorDetails =
+      error instanceof Error
+        ? { errorName: error.name, errorMessage: error.message, stack: error.stack }
+        : { errorName: 'UnknownError', errorMessage: String(error) };
+    console.error(
+      JSON.stringify(
+        {
+          event: 'bulk_import.processing_failed',
+          phase: 'validation',
+          importId,
+          vendorId,
+          jobId: job.id ?? null,
+          attempt,
+          maxAttempts,
+          isRetry: attempt > 1,
+          timestamp: new Date().toISOString(),
+          ...errorDetails,
+        },
+        null,
+        2,
+      ),
+    );
+
+    if (attempt < maxAttempts) {
+      const rawState = await redis.get(`bulk-import:${importId}`);
+      const state = rawState ? (JSON.parse(rawState) as BulkImportState) : undefined;
+      await bulkImportService.publishEvent(importId, {
+        importId,
+        status: 'VALIDATING',
+        stage: 'retrying',
+        statusText: `Validation attempt ${attempt} failed. Retrying (${attempt + 1}/${maxAttempts})...`,
+        attempt,
+        maxAttempts,
+        isRetry: attempt > 1,
+        totalRows: state?.totalRows ?? 0,
+        processedRows: state?.processedRows ?? 0,
+        readyRows: state?.readyRows ?? 0,
+        needsAttentionRows: state?.needsAttentionRows ?? 0,
+        importedRows: state?.importedRows ?? 0,
+        percent: state?.totalRows ? Math.round((state.processedRows / state.totalRows) * 100) : 0,
+      });
+      throw error;
+    }
 
     const rawState = await redis.get(`bulk-import:${importId}`);
     if (rawState) {
@@ -233,7 +278,10 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
       importId,
       status: 'FAILED',
       stage: 'error',
-      statusText: `Validation failed: ${errorMessage}`,
+      statusText: errorMessage,
+      attempt,
+      maxAttempts,
+      isRetry: attempt > 1,
       totalRows: 0,
       processedRows: 0,
       readyRows: 0,

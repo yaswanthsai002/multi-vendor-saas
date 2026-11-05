@@ -3,6 +3,7 @@ import { redis } from '../../shared/redis/redis.client.js';
 import { importIdParamSchema, initiateBulkImportSchema } from './bulk-import.schema.js';
 import { bulkImportService } from './bulk-import.service.js';
 
+import type { BulkImportEvent } from './bulk-import.types.js';
 import type { VendorRequest } from '../vendor/vendor.middleware.js';
 import type { Response, NextFunction } from 'express';
 import type { Redis } from 'ioredis';
@@ -164,6 +165,16 @@ export async function streamImportEvents(req: VendorRequest, res: Response, next
     });
 
     subscriber.on('message', (_ch, message) => {
+      const event = JSON.parse(message) as BulkImportEvent;
+      if (event.stage === 'retrying') {
+        console.warn(
+          `[bulk-import] retry scheduled attempt=${(event.attempt ?? 0) + 1}/${event.maxAttempts ?? 1} importId=${importId} vendorId=${vendorId}`,
+        );
+      } else if (event.status === 'FAILED' && event.stage === 'error') {
+        console.error(
+          `[bulk-import] ${event.isRetry ? 'retry' : 'initial attempt'} ${event.attempt ?? 1}/${event.maxAttempts ?? 1} failed importId=${importId} vendorId=${vendorId}: ${event.statusText}`,
+        );
+      }
       res.write(`data: ${message}\n\n`);
     });
 
