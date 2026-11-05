@@ -395,10 +395,12 @@ describe('Bulk Import Worker Processors', () => {
   });
 
   it('processValidateImport correctly parses valid rows and captures invalid rows in errors.csv', async () => {
-    const csvContent = `name,description,price,stock,category
-Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,50,electronics
-Invalid Price Product,Description of the product with bad price,abc,10,electronics
-Nonexistent Category,Valid description for this product,49.99,20,clothing
+    const csvContent = `name,description,price,mrp,stock,category
+Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,249.99,50,electronics
+Invalid Price Product,Description of the product with bad price,abc,120.00,10,electronics
+Invalid MRP Product,Description of the product with invalid MRP,99.99,89.99,10,electronics
+Nonexistent Category,Valid description for this product,49.99,59.99,20,clothing
+No Discount Product,Product with MRP equal to selling price,69.99,69.99,10,electronics
 `;
 
     vi.spyOn(storageService, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));
@@ -419,22 +421,27 @@ Nonexistent Category,Valid description for this product,49.99,20,clothing
     const state = JSON.parse(rawState!);
 
     expect(state.status).toBe('NEEDS_REVIEW');
-    expect(state.totalRows).toBe(3);
-    expect(state.readyRows).toBe(1);
-    expect(state.needsAttentionRows).toBe(2);
+    expect(state.totalRows).toBe(5);
+    expect(state.readyRows).toBe(2);
+    expect(state.needsAttentionRows).toBe(3);
     expect(state.errorsKey).toBe(`bulk-imports/${vendorId}/${importId}/errors.csv`);
 
     expect(putObjectSpy).toHaveBeenCalledWith(
       `bulk-imports/${vendorId}/${importId}/errors.csv`,
-      expect.stringContaining('Invalid Price Product'),
+      expect.stringContaining('row,name,description,price,mrp,stock,category,errors'),
+      'text/csv',
+    );
+    expect(putObjectSpy).toHaveBeenCalledWith(
+      `bulk-imports/${vendorId}/${importId}/errors.csv`,
+      expect.stringContaining('MRP cannot be lower than selling price.'),
       'text/csv',
     );
   });
 
   it('processImportProducts inserts valid products in chunks and marks import as COMPLETED', async () => {
-    const csvContent = `name,description,price,stock,category
-Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,50,electronics
-Another Great Product,High quality wireless bluetooth earphones,89.99,100,electronics
+    const csvContent = `name,description,price,mrp,stock,category
+Valid Wireless Headphones,High quality wireless bluetooth headphones,199.99,249.99,50,electronics
+Another Great Product,High quality wireless bluetooth earphones,89.99,99.99,100,electronics
 `;
 
     vi.spyOn(storageService, 'getObjectStream').mockResolvedValue(Readable.from([csvContent]));

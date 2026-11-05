@@ -197,6 +197,7 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       name: 'Mechanical Gaming Keyboard',
       description: 'Ultra responsive RGB mechanical gaming keyboard with brown switches.',
       price: '89.99',
+      mrp: '109.99',
       stock: 25,
       productImageId: '55555555-5555-4555-8555-555555555555',
       galleryMediaIds: ['66666666-6666-4666-8666-666666666666'],
@@ -231,8 +232,35 @@ describe('Vendor Products API (/api/vendor/products)', () => {
         expect.objectContaining({
           name: validProductPayload.name,
           price: validProductPayload.price,
+          mrp: validProductPayload.mrp,
         }),
       );
+    });
+
+    it('accepts MRP equal to selling price for undiscounted products', async () => {
+      vi.mocked(vendorService.createProduct).mockResolvedValueOnce({
+        productId: validProductId,
+        ...validProductPayload,
+        mrp: validProductPayload.price,
+      } as never);
+      const authCookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/products')
+        .set('Cookie', [authCookie])
+        .send({ ...validProductPayload, mrp: validProductPayload.price });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('rejects MRP lower than selling price', async () => {
+      const authCookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/products')
+        .set('Cookie', [authCookie])
+        .send({ ...validProductPayload, mrp: '79.99' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.details.properties.mrp).toBeDefined();
     });
 
     it('should reject request with 400 if validation fails (negative price or stock < 0)', async () => {
@@ -250,6 +278,17 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       expect(res.body.error).toBe('Validation Error');
       expect(res.body.details.properties.price).toBeDefined();
       expect(res.body.details.properties.stock).toBeDefined();
+    });
+
+    it('requires MRP on product creation', async () => {
+      const authCookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .post('/api/vendor/products')
+        .set('Cookie', [authCookie])
+        .send({ ...validProductPayload, mrp: undefined });
+
+      expect(res.status).toBe(400);
+      expect(res.body.details.properties.mrp).toBeDefined();
     });
 
     it('should reject request with 400 if productImageId is not a valid UUID', async () => {
@@ -363,6 +402,7 @@ describe('Vendor Products API (/api/vendor/products)', () => {
       const updatePayload = {
         name: 'Updated Mechanical Keyboard',
         price: '99.99',
+        mrp: '119.99',
         stock: 10,
       };
 
@@ -397,6 +437,21 @@ describe('Vendor Products API (/api/vendor/products)', () => {
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation Error');
+    });
+
+    it('allows partial updates without MRP', async () => {
+      vi.mocked(vendorService.updateVendorProductById).mockResolvedValueOnce({
+        productId: validProductId,
+        stock: 11,
+        mrp: '109.99',
+      } as never);
+      const authCookie = await createAuthCookie(validUserId);
+      const res = await request(app)
+        .patch(`/api/vendor/products/${validProductId}`)
+        .set('Cookie', [authCookie])
+        .send({ stock: 11 });
+
+      expect(res.status).toBe(200);
     });
   });
 

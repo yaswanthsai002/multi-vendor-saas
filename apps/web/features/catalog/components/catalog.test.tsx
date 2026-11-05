@@ -222,7 +222,7 @@ describe('Catalog Components', () => {
         slug: 'wireless-studio-headphones',
         shortDescription: 'High fidelity audio',
         price: '2499.00',
-        compareAtPrice: '3999.00',
+        mrp: '3999.00',
         stock: 12,
         isFeatured: true,
         createdAt: new Date().toISOString(),

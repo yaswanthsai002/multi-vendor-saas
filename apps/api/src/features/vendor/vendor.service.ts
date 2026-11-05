@@ -201,6 +201,7 @@ export async function createProduct(vendorId: string, input: CreateProductInput)
         description: input.description ?? '',
         productImageId: input.productImageId ?? null,
         price: input.price,
+        mrp: input.mrp,
         stock: input.stock,
         published: Boolean(input.published),
         isSoftDeleted: false,
@@ -473,6 +474,7 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
     shortDescription: p.shortDescription ?? null,
     description: p.description,
     price: p.price,
+    mrp: p.mrp,
     stock: p.stock,
     published: p.published,
     isSoftDeleted: p.isSoftDeleted,
@@ -577,6 +579,11 @@ export async function updateVendorProductById(
     if (!existingProduct || existingProduct.isSoftDeleted) {
       throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.');
     }
+    const nextPrice = input.price ?? existingProduct.price;
+    const nextMrp = input.mrp !== undefined ? input.mrp : existingProduct.mrp;
+    if (nextMrp !== null && Number(nextMrp) < Number(nextPrice)) {
+      throw new AppError(400, 'INVALID_MRP', 'MRP cannot be lower than selling price.');
+    }
 
     // 2. Validate slug uniqueness if updated
     if (input.slug && input.slug !== existingProduct.slug) {
@@ -656,6 +663,7 @@ export async function updateVendorProductById(
       updatePayload.shortDescription = input.shortDescription;
     if (input.description !== undefined) updatePayload.description = input.description;
     if (input.price !== undefined) updatePayload.price = input.price;
+    if (input.mrp !== undefined) updatePayload.mrp = input.mrp;
     if (input.stock !== undefined) updatePayload.stock = input.stock;
     if (input.productImageId !== undefined) updatePayload.productImageId = input.productImageId;
 

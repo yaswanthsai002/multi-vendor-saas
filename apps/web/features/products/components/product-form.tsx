@@ -33,6 +33,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   );
   const [description, setDescription] = React.useState(initialData?.description || '');
   const [price, setPrice] = React.useState(initialData?.price || '');
+  const [mrp, setMrp] = React.useState(initialData?.mrp || '');
   const [stock, setStock] = React.useState<number | string>(initialData?.stock ?? '');
 
   // Media states
@@ -74,6 +75,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       shortDescription: shortDescription.trim() || null,
       description,
       price,
+      mrp,
       stock,
       productImageId: primaryImage?.mediaId || null,
       galleryMediaIds: galleryImages.map((m) => m.mediaId),
@@ -109,6 +111,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         shortDescription: values.shortDescription,
         description: values.description,
         price: values.price,
+        mrp: values.mrp,
         stock: values.stock,
         productImageId: values.productImageId,
         galleryMediaIds: values.galleryMediaIds,
@@ -128,6 +131,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         shortDescription: values.shortDescription,
         description: values.description,
         price: values.price,
+        mrp: values.mrp,
         stock: values.stock,
         productImageId: values.productImageId,
         galleryMediaIds: values.galleryMediaIds,
@@ -157,6 +161,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         shortDescription: values.shortDescription,
         description: values.description,
         price: values.price,
+        mrp: values.mrp,
         stock: values.stock,
         productImageId: values.productImageId,
         galleryMediaIds: values.galleryMediaIds,
@@ -176,6 +181,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         shortDescription: values.shortDescription,
         description: values.description,
         price: values.price,
+        mrp: values.mrp,
         stock: values.stock,
         productImageId: values.productImageId,
         galleryMediaIds: values.galleryMediaIds,
@@ -311,6 +317,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
               price={price}
               onPriceChange={setPrice}
               priceError={errors.price}
+              mrp={mrp}
+              onMrpChange={setMrp}
+              mrpError={errors.mrp}
               stock={stock}
               onStockChange={setStock}
               stockError={errors.stock}

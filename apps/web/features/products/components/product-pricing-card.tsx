@@ -6,6 +6,9 @@ interface ProductPricingCardProps {
   price: string;
   onPriceChange: (val: string) => void;
   priceError?: string;
+  mrp: string;
+  onMrpChange: (val: string) => void;
+  mrpError?: string;
   stock: number | string;
   onStockChange: (val: string) => void;
   stockError?: string;
@@ -15,6 +18,9 @@ export function ProductPricingCard({
   price,
   onPriceChange,
   priceError,
+  mrp,
+  onMrpChange,
+  mrpError,
   stock,
   onStockChange,
   stockError,
@@ -60,6 +66,36 @@ export function ProductPricingCard({
           ) : (
             <p className="text-xs text-text-tertiary mt-1">
               Enter the selling price (e.g. 1299.00).
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="product-mrp"
+            className="block text-xs sm:text-sm font-semibold text-text-primary mb-1.5"
+          >
+            MRP (Maximum Retail Price)
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 font-medium text-text-secondary">
+              ₹
+            </span>
+            <input
+              id="product-mrp"
+              type="text"
+              inputMode="decimal"
+              value={mrp}
+              onChange={(e) => onMrpChange(e.target.value)}
+              placeholder="0.00"
+              className={`block w-full py-2.5 pl-8 pr-3.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary ${mrpError ? 'border-danger ring-1 ring-danger' : 'border-border-default'}`}
+            />
+          </div>
+          {mrpError ? (
+            <p className="mt-1 text-xs text-danger">{mrpError}</p>
+          ) : (
+            <p className="mt-1 text-xs text-text-tertiary">
+              Original MRP shown alongside your selling price.
             </p>
           )}
         </div>

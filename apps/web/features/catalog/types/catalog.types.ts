@@ -23,7 +23,7 @@ export interface CatalogProduct {
   slug: string;
   shortDescription: string | null;
   price: string;
-  compareAtPrice: string | null;
+  mrp: string;
   stock: number;
   isFeatured: boolean;
   createdAt: string;

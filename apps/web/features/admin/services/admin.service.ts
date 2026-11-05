@@ -152,7 +152,7 @@ export interface AdminProductItem {
   name: string;
   slug: string;
   price: string;
-  compareAtPrice: string | null;
+  mrp: string;
   stock: number;
   published: boolean;
   moderationStatus: 'approved' | 'hidden' | 'rejected';

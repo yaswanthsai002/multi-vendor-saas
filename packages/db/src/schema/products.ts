@@ -36,7 +36,7 @@ export const products = pgTable(
       onDelete: 'set null',
     }),
     price: numeric('price', { precision: 12, scale: 2 }).notNull(),
-    compareAtPrice: numeric('compareAtPrice', { precision: 12, scale: 2 }),
+    mrp: numeric('mrp', { precision: 12, scale: 2 }).notNull(),
     stock: integer('stock').notNull().default(0),
     published: boolean('published').notNull().default(false),
     isSoftDeleted: boolean('isSoftDeleted').default(false),
@@ -52,6 +52,7 @@ export const products = pgTable(
     index('products_productImageId_idx').on(table.productImageId),
     index('products_vendorId_published_idx').on(table.vendorId, table.published),
     check('products_price_nonnegative_check', sql`${table.price} >= 0`),
+    check('products_mrp_not_below_price_check', sql`${table.mrp} >= ${table.price}`),
     check('products_stock_nonnegative_check', sql`${table.stock} >= 0`),
   ],
 );

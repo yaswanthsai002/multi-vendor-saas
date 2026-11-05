@@ -256,9 +256,9 @@ export default function AdminProductsPage() {
               <span className="font-semibold text-text-primary">
                 ₹{Number(product.price).toLocaleString('en-IN')}
               </span>
-              {product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price) && (
+              {product.mrp && Number(product.mrp) > Number(product.price) && (
                 <div className="text-[11px] text-text-tertiary line-through">
-                  ₹{Number(product.compareAtPrice).toLocaleString('en-IN')}
+                  ₹{Number(product.mrp).toLocaleString('en-IN')}
                 </div>
               )}
             </div>

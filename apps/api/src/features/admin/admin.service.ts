@@ -22,7 +22,6 @@ import {
   gte,
   ilike,
   inArray,
-  isNotNull,
   or,
   sql,
 } from 'drizzle-orm';
@@ -92,7 +91,7 @@ export class AdminService {
         total: count(),
         marketplace: sql<number>`COUNT(*) FILTER (WHERE ${products.published} = true AND ${products.isSoftDeleted} = false AND ${products.moderationStatus} = 'approved')`,
         featured: sql<number>`COUNT(*) FILTER (WHERE ${products.isFeatured} = true)`,
-        deals: sql<number>`COUNT(*) FILTER (WHERE ${products.compareAtPrice} IS NOT NULL AND ${products.compareAtPrice} > ${products.price} AND ${products.published} = true AND ${products.isSoftDeleted} = false)`,
+        deals: sql<number>`COUNT(*) FILTER (WHERE ${products.mrp} > ${products.price} AND ${products.published} = true AND ${products.isSoftDeleted} = false)`,
       })
       .from(products);
 
@@ -906,7 +905,7 @@ export class AdminService {
         name: products.name,
         slug: products.slug,
         price: products.price,
-        compareAtPrice: products.compareAtPrice,
+        mrp: products.mrp,
         stock: products.stock,
         published: products.published,
         moderationStatus: products.moderationStatus,
@@ -944,7 +943,7 @@ export class AdminService {
         name: p.name,
         slug: p.slug,
         price: p.price,
-        compareAtPrice: p.compareAtPrice,
+        mrp: p.mrp,
         stock: p.stock,
         published: p.published,
         moderationStatus: p.moderationStatus,
@@ -1012,7 +1011,7 @@ export class AdminService {
       shortDescription: product.shortDescription,
       description: product.description,
       price: product.price,
-      compareAtPrice: product.compareAtPrice,
+      mrp: product.mrp,
       stock: product.stock,
       published: product.published,
       moderationStatus: product.moderationStatus,
@@ -1290,8 +1289,7 @@ export class AdminService {
       .from(products)
       .where(
         and(
-          isNotNull(products.compareAtPrice),
-          sql`${products.compareAtPrice} > ${products.price}`,
+          sql`${products.mrp} > ${products.price}`,
           eq(products.published, true),
           eq(products.isSoftDeleted, false),
         ),

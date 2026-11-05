@@ -62,6 +62,7 @@ const mockProductDetail: ProductDetail = {
   shortDescription: 'Tactile switches mechanical keyboard',
   description: '<p>A durable keyboard for coding.</p>',
   price: '4999.00',
+  mrp: '5999.00',
   stock: 25,
   published: true,
   isSoftDeleted: false,
@@ -141,7 +142,8 @@ describe('ProductForm Component', () => {
       expect(screen.getByRole('heading', { name: /^create product$/i })).toBeDefined();
       expect(screen.getByPlaceholderText(/enter product name/i)).toBeDefined();
       expect(screen.getByPlaceholderText(/enter a short description/i)).toBeDefined();
-      expect(screen.getByPlaceholderText(/0\.00/i)).toBeDefined();
+      expect(screen.getByLabelText(/^price/i)).toBeDefined();
+      expect(screen.getByLabelText(/^mrp/i)).toBeDefined();
       expect(screen.getByRole('button', { name: /save draft/i })).toBeDefined();
       expect(screen.getByRole('button', { name: /save & publish/i })).toBeDefined();
     });
@@ -155,6 +157,7 @@ describe('ProductForm Component', () => {
       expect(toast.error).toHaveBeenCalledWith('Please fix the form errors before submitting.');
       expect(screen.getByText(/product name must be at least 2 characters/i)).toBeDefined();
       expect(screen.getByText(/price is required/i)).toBeDefined();
+      expect(screen.getByText(/mrp is required/i)).toBeDefined();
       expect(screen.getByText(/stock is required/i)).toBeDefined();
     });
 
@@ -177,8 +180,11 @@ describe('ProductForm Component', () => {
       const nameInput = screen.getByPlaceholderText(/enter product name/i);
       await user.type(nameInput, 'Noise Canceling Headphones');
 
-      const priceInput = screen.getByPlaceholderText(/0\.00/i);
+      const priceInput = screen.getByLabelText(/^price/i);
       await user.type(priceInput, '8999');
+
+      const mrpInput = screen.getByLabelText(/^mrp/i);
+      await user.type(mrpInput, '8999');
 
       const stockInput = screen.getByPlaceholderText(/e\.g\. 10/i);
       await user.type(stockInput, '10');
@@ -191,6 +197,7 @@ describe('ProductForm Component', () => {
           expect.objectContaining({
             name: 'Noise Canceling Headphones',
             price: '8999',
+            mrp: '8999',
             stock: 10,
             published: false,
           }),
@@ -220,8 +227,11 @@ describe('ProductForm Component', () => {
       const nameInput = screen.getByPlaceholderText(/enter product name/i);
       await user.type(nameInput, 'Gaming Mouse');
 
-      const priceInput = screen.getByPlaceholderText(/0\.00/i);
+      const priceInput = screen.getByLabelText(/^price/i);
       await user.type(priceInput, '2499');
+
+      const mrpInput = screen.getByLabelText(/^mrp/i);
+      await user.type(mrpInput, '2499');
 
       const stockInput = screen.getByPlaceholderText(/e\.g\. 10/i);
       await user.type(stockInput, '5');
@@ -234,6 +244,7 @@ describe('ProductForm Component', () => {
           expect.objectContaining({
             name: 'Gaming Mouse',
             price: '2499',
+            mrp: '2499',
             stock: 5,
             published: true,
           }),

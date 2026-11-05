@@ -17,6 +17,7 @@ interface InvalidRowRecord {
   name: string;
   description: string;
   price: string;
+  mrp: string;
   stock: string;
   category: string;
   errors: string;
@@ -62,6 +63,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
         name: rawRow.name,
         description: rawRow.description,
         price: rawRow.price,
+        mrp: rawRow.mrp,
         stock: rawRow.stock,
         category: rawRow.category,
       });
@@ -88,6 +90,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
           name: rawRow.name || '',
           description: rawRow.description || '',
           price: rawRow.price || '',
+          mrp: rawRow.mrp || '',
           stock: rawRow.stock || '',
           category: rawRow.category || '',
           errors: errors.join(' | '),
@@ -134,6 +137,7 @@ export async function processValidateImport(job: Job<ValidateImportJobData>): Pr
           escapeCsvCell(inv.name),
           escapeCsvCell(inv.description),
           escapeCsvCell(inv.price),
+          escapeCsvCell(inv.mrp),
           escapeCsvCell(inv.stock),
           escapeCsvCell(inv.category),
           escapeCsvCell(inv.errors),

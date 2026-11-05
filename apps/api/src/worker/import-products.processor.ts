@@ -20,6 +20,7 @@ interface ValidProductItem {
   name: string;
   description: string;
   price: string;
+  mrp: string;
   stock: number;
   categoryId: string;
 }
@@ -69,6 +70,7 @@ export async function processImportProducts(job: Job<ImportProductsJobData>): Pr
         name: rawRow.name,
         description: rawRow.description,
         price: rawRow.price,
+        mrp: rawRow.mrp,
         stock: rawRow.stock,
         category: rawRow.category,
       });
@@ -80,6 +82,7 @@ export async function processImportProducts(job: Job<ImportProductsJobData>): Pr
             name: parsed.data.name,
             description: parsed.data.description,
             price: parsed.data.price,
+            mrp: parsed.data.mrp,
             stock: parsed.data.stock,
             categoryId: cat.categoryId,
           });
@@ -102,6 +105,7 @@ export async function processImportProducts(job: Job<ImportProductsJobData>): Pr
           slug: `${slugify(item.name)}-${crypto.randomBytes(3).toString('hex')}`,
           description: item.description,
           price: item.price,
+          mrp: item.mrp,
           stock: item.stock,
           published: false,
           isSoftDeleted: false,

@@ -51,11 +51,9 @@ export function CatalogProductGrid({
     <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
       {products.map((product) => {
         const discountPct =
-          product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+          product.mrp && Number(product.mrp) > Number(product.price)
             ? Math.round(
-                ((Number(product.compareAtPrice) - Number(product.price)) /
-                  Number(product.compareAtPrice)) *
-                  100,
+                ((Number(product.mrp) - Number(product.price)) / Number(product.mrp)) * 100,
               )
             : null;
 
@@ -65,9 +63,10 @@ export function CatalogProductGrid({
           name: product.name,
           brand: product.vendor.name,
           price: `₹${Number(product.price).toLocaleString('en-IN')}`,
-          oldPrice: product.compareAtPrice
-            ? `₹${Number(product.compareAtPrice).toLocaleString('en-IN')}`
-            : undefined,
+          oldPrice:
+            product.mrp && Number(product.mrp) > Number(product.price)
+              ? `₹${Number(product.mrp).toLocaleString('en-IN')}`
+              : undefined,
           discount: discountPct ? `-${discountPct}%` : undefined,
           image: product.imageUrl || '/assets/products/product.png',
           badge: product.isFeatured

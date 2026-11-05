@@ -14,6 +14,7 @@ export interface ProductItem {
   shortDescription: string | null;
   description: string;
   price: string;
+  mrp: string;
   stock: number;
   published: boolean;
   isSoftDeleted: boolean;
@@ -76,6 +77,7 @@ export interface CreateProductInput {
   shortDescription?: string | null;
   description?: string;
   price: string;
+  mrp: string;
   stock: number;
   productImageId?: string | null;
   galleryMediaIds?: string[];
@@ -88,6 +90,7 @@ export interface UpdateProductInput {
   shortDescription?: string | null;
   description?: string;
   price?: string;
+  mrp?: string;
   stock?: number;
   productImageId?: string | null;
   galleryMediaIds?: string[];

@@ -31,9 +31,7 @@ export default function AdminMerchandisingPage() {
 
   const featuredProducts = featuredProductsData?.products ?? [];
   const allProducts = allProductsData?.products ?? [];
-  const discountedProducts = allProducts.filter(
-    (p) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price),
-  );
+  const discountedProducts = allProducts.filter((p) => p.mrp && Number(p.mrp) > Number(p.price));
 
   const featuredVendors = (featuredVendorsData?.users ?? [])
     .filter((u) => u.vendor?.isFeatured)
@@ -250,9 +248,9 @@ export default function AdminMerchandisingPage() {
                         <div className="font-bold text-text-primary tabular-nums">
                           ₹{Number(p.price).toLocaleString('en-IN')}
                         </div>
-                        {p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price) && (
+                        {p.mrp && Number(p.mrp) > Number(p.price) && (
                           <div className="text-xs text-text-tertiary line-through tabular-nums">
-                            ₹{Number(p.compareAtPrice).toLocaleString('en-IN')}
+                            ₹{Number(p.mrp).toLocaleString('en-IN')}
                           </div>
                         )}
                       </td>
@@ -390,8 +388,7 @@ export default function AdminMerchandisingPage() {
                           No active discounted deals
                         </span>
                         <p className="text-xs text-text-tertiary mt-1">
-                          Items with compare-at price discounts will automatically be organized
-                          here.
+                          Products with valid MRP discounts will automatically be organized here.
                         </p>
                       </div>
                     </td>
@@ -399,7 +396,7 @@ export default function AdminMerchandisingPage() {
                 ) : (
                   discountedProducts.map((p) => {
                     const base = Number(p.price);
-                    const comp = Number(p.compareAtPrice);
+                    const comp = Number(p.mrp);
                     const discountPercent = Math.round(((comp - base) / comp) * 100);
 
                     return (

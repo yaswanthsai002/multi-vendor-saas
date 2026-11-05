@@ -136,6 +136,7 @@ describe('Vendor Service (vendor.service.ts)', () => {
           name: 'Mechanical Keyboard',
           description: 'A great mechanical keyboard.',
           price: '99.99',
+          mrp: '99.99',
           stock: 20,
           categoryIds: [categoryId],
         }),
@@ -168,6 +169,7 @@ describe('Vendor Service (vendor.service.ts)', () => {
         name: 'Mechanical Keyboard',
         description: 'A great mechanical keyboard.',
         price: '99.99',
+        mrp: '99.99',
         stock: 20,
       });
 

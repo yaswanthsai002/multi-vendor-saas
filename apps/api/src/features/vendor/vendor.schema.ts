@@ -4,45 +4,54 @@ export const productIdParamSchema = z.object({
   productId: z.string().uuid('Invalid product ID format.'),
 });
 
-export const createProductSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, 'Product name must be at least 2 characters.')
-    .max(255, 'Product name cannot exceed 255 characters.'),
-  shortDescription: z
-    .string()
-    .trim()
-    .max(500, 'Short description cannot exceed 500 characters.')
-    .nullable()
-    .optional(),
-  description: z.string().default(''),
-  price: z
-    .string()
-    .regex(
-      /^\d{1,10}(\.\d{1,2})?$/,
-      'Price must be a valid non-negative decimal with up to 2 decimal places.',
-    ),
-  stock: z
-    .number({ message: 'Stock is required.' })
-    .int('Stock must be an integer.')
-    .min(1, 'Stock must be at least 1.'),
-  productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
-  galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).default([]),
-  categoryIds: z
-    .array(z.string().uuid('Category ID must be a valid UUID.'))
-    .max(1, 'A product can belong to at most one category.')
-    .default([]),
-  published: z.boolean().default(false),
-  slug: z
-    .string()
-    .trim()
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      'Slug must consist of lowercase alphanumeric characters separated by single hyphens.',
-    )
-    .optional(),
-});
+export const createProductSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Product name must be at least 2 characters.')
+      .max(255, 'Product name cannot exceed 255 characters.'),
+    shortDescription: z
+      .string()
+      .trim()
+      .max(500, 'Short description cannot exceed 500 characters.')
+      .nullable()
+      .optional(),
+    description: z.string().default(''),
+    price: z
+      .string()
+      .regex(
+        /^\d{1,10}(\.\d{1,2})?$/,
+        'Price must be a valid non-negative decimal with up to 2 decimal places.',
+      ),
+    mrp: z
+      .string()
+      .min(1, 'MRP is required.')
+      .regex(/^\d{1,10}(\.\d{1,2})?$/, 'MRP must be a valid non-negative decimal.'),
+    stock: z
+      .number({ message: 'Stock is required.' })
+      .int('Stock must be an integer.')
+      .min(1, 'Stock must be at least 1.'),
+    productImageId: z.string().uuid('Product image must be a valid UUID.').nullable().optional(),
+    galleryMediaIds: z.array(z.string().uuid('Media ID must be a valid UUID.')).default([]),
+    categoryIds: z
+      .array(z.string().uuid('Category ID must be a valid UUID.'))
+      .max(1, 'A product can belong to at most one category.')
+      .default([]),
+    published: z.boolean().default(false),
+    slug: z
+      .string()
+      .trim()
+      .regex(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+        'Slug must consist of lowercase alphanumeric characters separated by single hyphens.',
+      )
+      .optional(),
+  })
+  .refine((data) => Number(data.mrp) >= Number(data.price), {
+    path: ['mrp'],
+    message: 'MRP cannot be lower than selling price.',
+  });
 
 export const updateProductSchema = z
   .object({
@@ -65,6 +74,10 @@ export const updateProductSchema = z
         /^\d{1,10}(\.\d{1,2})?$/,
         'Price must be a valid non-negative decimal with up to 2 decimal places.',
       )
+      .optional(),
+    mrp: z
+      .string()
+      .regex(/^\d{1,10}(\.\d{1,2})?$/, 'MRP must be a valid non-negative decimal.')
       .optional(),
     stock: z
       .number()
@@ -89,7 +102,12 @@ export const updateProductSchema = z
   })
   .refine((data) => Object.values(data).some((val) => val !== undefined), {
     message: 'At least one field must be provided for update.',
-  });
+  })
+  .refine(
+    (data) =>
+      data.mrp === undefined || data.price === undefined || Number(data.mrp) >= Number(data.price),
+    { path: ['mrp'], message: 'MRP cannot be lower than selling price.' },
+  );
 
 export const getVendorProductsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

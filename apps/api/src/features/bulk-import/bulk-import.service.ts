@@ -40,6 +40,7 @@ export class BulkImportService {
       { header: 'name', key: 'name', width: 32 },
       { header: 'description', key: 'description', width: 55 },
       { header: 'price', key: 'price', width: 15 },
+      { header: 'mrp', key: 'mrp', width: 15 },
       { header: 'stock', key: 'stock', width: 12 },
       { header: 'category', key: 'category', width: 45 },
     ];
@@ -63,6 +64,7 @@ export class BulkImportService {
       name: 'Sony WH-1000XM5',
       description: 'Premium wireless noise-canceling headphones with 30-hour battery',
       price: '24999.00',
+      mrp: '34999.00',
       stock: 15,
       category: sampleCat1,
     });
@@ -71,6 +73,7 @@ export class BulkImportService {
       name: 'Organic Cotton Crewneck',
       description: '100% certified organic cotton everyday crewneck t-shirt',
       price: '799.00',
+      mrp: '999.00',
       stock: 40,
       category: sampleCat2,
     });
@@ -101,13 +104,13 @@ export class BulkImportService {
         });
       }
 
-      // Add Data Validation on Products sheet column E (E2 to E5000)
+      // MRP occupies E, so Category validation belongs in F.
       const maxRow = leafCategories.length + 1;
       (
         productsSheet as unknown as {
           dataValidations: { add: (range: string, rule: Record<string, unknown>) => void };
         }
-      ).dataValidations.add('E2:E5000', {
+      ).dataValidations.add('F2:F5000', {
         type: 'list',
         allowBlank: true,
         formulae: [`Categories!$A$2:$A$${maxRow}`],
