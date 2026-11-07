@@ -38,9 +38,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles = {
-      sm: 'h-control-sm px-sm text-xs rounded-sm gap-xs',
-      md: 'h-control-md px-md text-sm font-medium rounded-md gap-sm',
-      lg: 'h-control-lg px-lg text-base font-medium rounded-md gap-md',
+      sm: 'h-8 px-2 text-xs rounded-md gap-1',
+      md: 'h-10 px-3 text-sm font-medium rounded-lg gap-2',
+      lg: 'h-12 px-4 text-base font-medium rounded-lg gap-3',
       'icon-sm': 'h-7 w-7 p-0 rounded-full',
     };
 
