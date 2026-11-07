@@ -50,7 +50,7 @@ export function VendorStoreForm({
               className={`w-full px-3 py-2 text-sm rounded-lg bg-surface-subtle border ${
                 errors.name
                   ? 'border-danger focus:ring-danger'
-                  : 'border-border-default focus:ring-border-focus'
+                  : 'border-border-control focus:ring-border-focus'
               } text-text-primary focus:outline-none focus:ring-2 transition-colors`}
               placeholder="Store display name"
               maxLength={100}
@@ -98,7 +98,7 @@ export function VendorStoreForm({
             className={`w-full px-3 py-2 text-sm rounded-lg bg-surface-subtle border ${
               errors.tagline
                 ? 'border-danger focus:ring-danger'
-                : 'border-border-default focus:ring-border-focus'
+                : 'border-border-control focus:ring-border-focus'
             } text-text-primary focus:outline-none focus:ring-2 transition-colors`}
             placeholder="A short punchy headline about your store"
             maxLength={150}
@@ -125,7 +125,7 @@ export function VendorStoreForm({
             className={`w-full px-3 py-2 text-sm rounded-lg bg-surface-subtle border ${
               errors.description
                 ? 'border-danger focus:ring-danger'
-                : 'border-border-default focus:ring-border-focus'
+                : 'border-border-control focus:ring-border-focus'
             } text-text-primary focus:outline-none focus:ring-2 transition-colors resize-y`}
             placeholder="Tell customers about your story, craft, and mission..."
             maxLength={1000}

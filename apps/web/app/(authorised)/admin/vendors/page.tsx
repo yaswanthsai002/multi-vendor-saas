@@ -144,7 +144,7 @@ export default function AdminVendorsPage() {
             checked={table.getIsAllPageRowsSelected()}
             onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
             aria-label="Select all vendors"
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent accent-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
           />
         ),
         cell: ({ row }) => (
@@ -154,7 +154,7 @@ export default function AdminVendorsPage() {
             onChange={(e) => row.toggleSelected(!!e.target.checked)}
             onClick={(e) => e.stopPropagation()}
             aria-label={`Select ${row.original.name}`}
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent accent-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
           />
         ),
       },
@@ -173,7 +173,7 @@ export default function AdminVendorsPage() {
                   <Image src={v.logoUrl} alt={v.name} fill unoptimized className="object-cover" />
                 </div>
               ) : (
-                <div className="h-9 w-9 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 border border-accent/20">
+                <div className="h-9 w-9 rounded-xl bg-accent-subtle text-accent flex items-center justify-center shrink-0 border border-accent/20">
                   <Store className="h-4 w-4" />
                 </div>
               )}
@@ -421,7 +421,7 @@ export default function AdminVendorsPage() {
         <button
           type="button"
           onClick={() => setIsOnboardOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-on-accent bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Onboard Vendor</span>
@@ -491,7 +491,7 @@ export default function AdminVendorsPage() {
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                     isActive
-                      ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                      ? 'bg-accent-subtle text-accent'
                       : 'bg-surface-hover text-text-tertiary'
                   }`}
                 >
@@ -510,7 +510,7 @@ export default function AdminVendorsPage() {
             placeholder="Search by store name, slug, or owner..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary transition-colors"
+            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary transition-colors"
           />
           {searchInput && (
             <button
@@ -537,7 +537,7 @@ export default function AdminVendorsPage() {
             <button
               type="button"
               onClick={() => handleBulkStatusChange(selectedRows, 'active')}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-success text-white dark:text-text-inverse hover:bg-success/90 transition-colors cursor-pointer"
             >
               <Check className="h-3 w-3" />
               <span>Approve ({selectedRows.length})</span>
@@ -545,7 +545,7 @@ export default function AdminVendorsPage() {
             <button
               type="button"
               onClick={() => handleBulkStatusChange(selectedRows, 'suspended')}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-danger text-white hover:bg-danger/90 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-danger text-white dark:text-text-inverse hover:bg-danger/90 transition-colors cursor-pointer"
             >
               <ShieldAlert className="h-3 w-3" />
               <span>Suspend</span>
@@ -589,7 +589,7 @@ export default function AdminVendorsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="h-12 w-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 border border-accent/20">
+                  <div className="h-12 w-12 rounded-xl bg-accent-subtle text-accent flex items-center justify-center shrink-0 border border-accent/20">
                     <Store className="h-6 w-6" />
                   </div>
                 )}
@@ -680,7 +680,7 @@ export default function AdminVendorsPage() {
                         actionLabel: 'Approve Vendor Store',
                       });
                     }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-success text-white dark:text-text-inverse hover:bg-success/90 transition-colors cursor-pointer"
                   >
                     Approve Store
                   </button>
@@ -696,7 +696,7 @@ export default function AdminVendorsPage() {
                         actionLabel: 'Suspend Vendor Store',
                       });
                     }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-danger text-white hover:bg-danger/90 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-danger text-white dark:text-text-inverse hover:bg-danger/90 transition-colors cursor-pointer"
                   >
                     Suspend Store
                   </button>
@@ -768,7 +768,7 @@ export default function AdminVendorsPage() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Provide an explanation for this compliance decision (minimum 3 characters)..."
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                   required
                 />
               </div>

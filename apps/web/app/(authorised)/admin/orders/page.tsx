@@ -113,7 +113,7 @@ export default function AdminOrdersPage() {
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                     isActive
-                      ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                      ? 'bg-accent-subtle text-accent'
                       : 'bg-surface-hover text-text-tertiary'
                   }`}
                 >
@@ -132,7 +132,7 @@ export default function AdminOrdersPage() {
             placeholder="Search order number or customer..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary transition-colors"
+            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary transition-colors"
           />
           {search && (
             <button

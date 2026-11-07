@@ -111,7 +111,7 @@ export default function AdminMerchandisingPage() {
           <span
             className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
               activeTab === 'products'
-                ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                ? 'bg-accent-subtle text-accent'
                 : 'bg-surface-hover text-text-tertiary'
             }`}
           >
@@ -135,7 +135,7 @@ export default function AdminMerchandisingPage() {
           <span
             className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
               activeTab === 'brands'
-                ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                ? 'bg-accent-subtle text-accent'
                 : 'bg-surface-hover text-text-tertiary'
             }`}
           >
@@ -159,7 +159,7 @@ export default function AdminMerchandisingPage() {
           <span
             className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
               activeTab === 'deals'
-                ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                ? 'bg-accent-subtle text-accent'
                 : 'bg-surface-hover text-text-tertiary'
             }`}
           >
@@ -318,7 +318,7 @@ export default function AdminMerchandisingPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-xl bg-accent/10 text-accent font-bold text-sm flex items-center justify-center shrink-0">
+                      <div className="h-11 w-11 rounded-xl bg-accent-subtle text-accent font-bold text-sm flex items-center justify-center shrink-0">
                         {v.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div>

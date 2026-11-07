@@ -104,7 +104,7 @@ export function Header({ initialCartCount }: HeaderProps) {
             >
               <ShoppingCart className="h-5 w-5" aria-hidden="true" />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-white bg-accent rounded-full ring-2 ring-surface-raised">
+                <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-on-accent bg-accent rounded-full ring-2 ring-surface-raised">
                   {cartCount}
                 </span>
               )}
@@ -159,7 +159,7 @@ export function Header({ initialCartCount }: HeaderProps) {
             >
               <ShoppingCart className="h-5 w-5" aria-hidden="true" />
               {cartCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-white bg-accent rounded-full ring-2 ring-surface-raised">
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold leading-none text-on-accent bg-accent rounded-full ring-2 ring-surface-raised">
                   {cartCount}
                 </span>
               )}

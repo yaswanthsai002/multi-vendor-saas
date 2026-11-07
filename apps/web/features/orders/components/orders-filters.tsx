@@ -45,7 +45,7 @@ export function OrdersFilters({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search by order #, customer, email..."
-          className="w-full pl-9.5 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-default text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full pl-9.5 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
         />
         {search && (
           <button
@@ -67,7 +67,7 @@ export function OrdersFilters({
             value={dateFrom || ''}
             onChange={(e) => onDateChange({ dateFrom: e.target.value || undefined, dateTo })}
             aria-label="From Date"
-            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-default text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
+            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
           />
         </div>
 
@@ -80,7 +80,7 @@ export function OrdersFilters({
             value={dateTo || ''}
             onChange={(e) => onDateChange({ dateFrom, dateTo: e.target.value || undefined })}
             aria-label="To Date"
-            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-default text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
+            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
           />
         </div>
 
@@ -90,7 +90,7 @@ export function OrdersFilters({
             value={sort}
             onChange={(e) => onSortChange(e.target.value as OrderSortOption)}
             aria-label="Sort orders"
-            className="appearance-none pl-3.5 pr-8 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-default text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
+            className="appearance-none pl-3.5 pr-8 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

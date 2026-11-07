@@ -108,7 +108,7 @@ export default function AdminAdminsPage() {
                 <div className="font-semibold text-text-primary text-sm truncate flex items-center gap-1.5">
                   <span>{u.fullName}</span>
                   {isSelf && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-accent/15 text-accent border border-accent/30">
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-accent-subtle text-accent border border-accent/30">
                       You
                     </span>
                   )}
@@ -291,7 +291,7 @@ export default function AdminAdminsPage() {
             placeholder="Search administrators by name or email..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary transition-colors"
+            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary transition-colors"
           />
           {searchInput && (
             <button
@@ -376,7 +376,7 @@ export default function AdminAdminsPage() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="State the audit or authorization reason (minimum 3 characters)..."
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                   required
                 />
               </div>

@@ -41,7 +41,7 @@ export function NeedsAttentionCard({ pendingCount = 0 }: NeedsAttentionCardProps
         <div className="flex items-center gap-2 mb-4">
           <div
             className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 ${
-              count > 0 ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'
+              count > 0 ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'
             }`}
           >
             {count > 0 ? (

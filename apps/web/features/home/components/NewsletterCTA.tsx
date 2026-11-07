@@ -21,7 +21,7 @@ export default function NewsletterCTA() {
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl border border-accent/20 bg-linear-to-br from-surface-raised via-surface-raised to-accent/5 p-6 sm:p-10 lg:p-12 shadow-sm">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-subtle px-3 py-1 text-xs font-bold text-accent">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               NEW CUSTOMER PERK
             </span>
@@ -56,7 +56,7 @@ export default function NewsletterCTA() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address..."
-                    className="h-11 w-full rounded-xl border border-border-default bg-surface-raised pl-10 pr-4 text-xs font-medium text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 sm:text-sm"
+                    className="h-11 w-full rounded-xl border border-border-control bg-surface-raised pl-10 pr-4 text-xs font-medium text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 sm:text-sm"
                   />
                 </div>
 

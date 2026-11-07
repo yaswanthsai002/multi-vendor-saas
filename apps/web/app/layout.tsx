@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-text-primary selection:bg-accent/20 selection:text-accent">
+      <body className="min-h-full flex flex-col bg-background text-text-primary selection:bg-accent-subtle selection:text-accent">
         <QueryProvider>
           <ThemeProvider
             attribute="class"

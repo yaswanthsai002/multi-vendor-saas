@@ -64,7 +64,7 @@ export function ProductMediaActionsMenu({
               <Menu.Separator className="h-px bg-border-subtle my-1" />
               <Menu.Item
                 onClick={() => onRemove(media.mediaId)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-danger/10 transition-colors cursor-pointer focus:outline-none focus:bg-danger/10"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-danger-subtle transition-colors cursor-pointer focus:outline-none focus:bg-danger-subtle"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Remove</span>

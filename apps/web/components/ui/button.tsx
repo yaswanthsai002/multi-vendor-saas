@@ -27,19 +27,20 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variantStyles = {
       primary:
-        'bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-active shadow-sm border border-transparent',
+        'bg-accent-active text-on-accent hover:bg-accent-hover active:bg-accent-active shadow-sm border border-transparent',
       secondary:
         'bg-surface-raised text-text-primary border border-border-default hover:bg-surface-hover active:bg-surface-active shadow-sm',
       outline:
         'bg-surface-raised text-text-primary border border-border-default hover:bg-surface-hover active:bg-surface-active',
       ghost: 'bg-transparent text-text-secondary hover:bg-surface-hover hover:text-text-primary',
-      danger: 'bg-danger text-white hover:opacity-90 active:opacity-95 shadow-sm',
+      danger:
+        'bg-danger text-white dark:text-text-inverse hover:opacity-90 active:opacity-95 shadow-sm',
     };
 
     const sizeStyles = {
-      sm: 'h-control-sm px-sm text-caption rounded-sm gap-xs',
-      md: 'h-control-md px-md text-body-sm font-medium rounded-md gap-sm',
-      lg: 'h-control-lg px-lg text-body-md font-medium rounded-md gap-md',
+      sm: 'h-control-sm px-sm text-xs rounded-sm gap-xs',
+      md: 'h-control-md px-md text-sm font-medium rounded-md gap-sm',
+      lg: 'h-control-lg px-lg text-base font-medium rounded-md gap-md',
       'icon-sm': 'h-7 w-7 p-0 rounded-full',
     };
 

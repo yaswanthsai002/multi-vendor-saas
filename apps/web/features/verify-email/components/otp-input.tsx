@@ -116,7 +116,7 @@ export function OtpInput({
           onPaste={handlePaste}
           className={cn(
             'w-11 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold uppercase rounded-xl border bg-surface-raised transition-all duration-200',
-            'border-border-default hover:border-border-strong text-text-primary focus:outline-none',
+            'border-border-control text-text-primary focus:outline-none',
             'focus:border-accent focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent/30',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface-subtle',
             isInvalid && 'border-danger focus:border-danger focus:ring-danger/20 text-danger',

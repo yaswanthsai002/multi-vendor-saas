@@ -22,13 +22,12 @@ interface RecentOrdersTableProps {
 function StatusBadge({ status }: { status: string }) {
   const normalized = status.toLowerCase();
   const styles: Record<string, string> = {
-    pending: 'bg-warning/15 text-warning border-warning/30',
-    processing:
-      'bg-secondary-accent/15 text-[#2C657F] dark:text-[#7FB6CA] border-secondary-accent/30',
-    shipped: 'bg-accent/15 text-accent border-accent/30',
-    delivered: 'bg-success/15 text-emerald-700 dark:text-emerald-400 border-success/30',
-    completed: 'bg-success/15 text-emerald-700 dark:text-emerald-400 border-success/30',
-    cancelled: 'bg-danger/15 text-danger border-danger/30',
+    pending: 'bg-warning-subtle text-warning border-warning/30',
+    processing: 'bg-secondary-accent-subtle text-secondary-accent border-secondary-accent/30',
+    shipped: 'bg-accent-subtle text-accent border-accent/30',
+    delivered: 'bg-success-subtle text-success border-success/30',
+    completed: 'bg-success-subtle text-success border-success/30',
+    cancelled: 'bg-danger-subtle text-danger border-danger/30',
   };
 
   const label = normalized.charAt(0).toUpperCase() + normalized.slice(1);

@@ -45,7 +45,7 @@ colors:
   canvas-light: '#ECEFF4'
   surface-light: '#F7F9FC'
   text-primary-light: '#1E232D'
-  text-muted-light: '#6B7280'
+  text-muted-light: '#5F6775'
   border-light: '#D5D9E0'
 
   canvas-dark: '#0A0D14'
@@ -57,13 +57,13 @@ colors:
   white: '#FFFFFF'
   black: '#000000'
 
-  success-500: '#2E8B68'
+  success-500: '#236B51'
   success-100: '#E6F5EF'
-  warning-500: '#B7791F'
+  warning-500: '#926016'
   warning-100: '#FFF4D6'
-  danger-500: '#C74646'
+  danger-500: '#B33B3B'
   danger-100: '#FDEAEA'
-  info-500: '#367B9D'
+  info-500: '#2C657F'
   info-100: '#E7F3F7'
 ```
 
@@ -75,13 +75,13 @@ semantic:
     background: '#ECEFF4'
     surface: '#F7F9FC'
     surface-raised: '#FFFFFF'
-    surface-subtle: '#E5E9EF'
+    surface-subtle: '#EBEFF4'
     surface-hover: '#F0F3F7'
     surface-active: '#E7EBF1'
 
     text-primary: '#1E232D'
     text-secondary: '#4F5663'
-    text-tertiary: '#6B7280'
+    text-tertiary: '#5F6775'
     text-disabled: '#9AA1AD'
     text-inverse: '#FFFFFF'
 
@@ -89,24 +89,25 @@ semantic:
     border-subtle: '#E3E6EB'
     border-strong: '#B9BEC8'
     border-focus: '#D95D39'
+    border-control: '#7C8491'
 
-    accent: '#D95D39'
-    accent-hover: '#B9482A'
+    accent: '#B9482A'
+    accent-hover: '#93381F'
     accent-active: '#93381F'
     accent-subtle: '#FFF1EC'
     on-accent: '#FFFFFF'
 
-    secondary-accent: '#367B9D'
-    secondary-accent-hover: '#2C657F'
+    secondary-accent: '#2C657F'
+    secondary-accent-hover: '#245369'
     secondary-accent-subtle: '#EEF7FA'
 
-    success: '#2E8B68'
+    success: '#236B51'
     success-subtle: '#E6F5EF'
-    warning: '#B7791F'
+    warning: '#926016'
     warning-subtle: '#FFF4D6'
-    danger: '#C74646'
+    danger: '#B33B3B'
     danger-subtle: '#FDEAEA'
-    info: '#367B9D'
+    info: '#2C657F'
     info-subtle: '#E7F3F7'
 
   dark:
@@ -127,12 +128,13 @@ semantic:
     border-subtle: '#181D27'
     border-strong: '#343B49'
     border-focus: '#E66A45'
+    border-control: '#697484'
 
     accent: '#E66A45'
     accent-hover: '#F08060'
     accent-active: '#FF9476'
     accent-subtle: '#321C17'
-    on-accent: '#FFFFFF'
+    on-accent: '#1E232D'
 
     secondary-accent: '#4A90B2'
     secondary-accent-hover: '#68A8C4'

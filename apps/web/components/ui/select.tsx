@@ -44,7 +44,7 @@ export function Select<T extends string = string>({
       <BaseSelect.Trigger
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex h-8.5 items-center justify-between gap-2 rounded-lg border border-border-default bg-surface-raised px-3 text-xs font-medium text-text-primary shadow-2xs transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-focus cursor-pointer select-none',
+          'inline-flex h-8.5 items-center justify-between gap-2 rounded-lg border border-border-control bg-surface-raised px-3 text-xs font-medium text-text-primary shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-focus cursor-pointer select-none',
           triggerClassName,
         )}
       >

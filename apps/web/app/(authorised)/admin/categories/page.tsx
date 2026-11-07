@@ -293,7 +293,7 @@ export default function AdminCategoriesPage() {
             checked={table.getIsAllPageRowsSelected()}
             onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
             aria-label="Select all rows"
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent accent-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
           />
         ),
         cell: ({ row }) => (
@@ -302,7 +302,7 @@ export default function AdminCategoriesPage() {
             checked={row.getIsSelected()}
             onChange={(e) => row.toggleSelected(!!e.target.checked)}
             aria-label={`Select category ${row.original.name}`}
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent accent-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
           />
         ),
         enableSorting: false,
@@ -439,7 +439,7 @@ export default function AdminCategoriesPage() {
         cell: ({ row }) => {
           const depth = row.depth;
           return depth === 0 ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/10 text-accent border border-accent/20">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-subtle text-accent border border-accent/20">
               <Layers className="h-3 w-3" />
               <span>Root</span>
             </span>
@@ -531,7 +531,7 @@ export default function AdminCategoriesPage() {
               placeholder="Search categories or subcategories..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary transition-colors"
+              className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary transition-colors"
             />
             {searchInput && (
               <button
@@ -653,7 +653,7 @@ export default function AdminCategoriesPage() {
                   }
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
@@ -666,7 +666,7 @@ export default function AdminCategoriesPage() {
                   placeholder="https://example.com/category-image.png"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
@@ -678,7 +678,7 @@ export default function AdminCategoriesPage() {
                   <select
                     value={parentId}
                     onChange={(e) => setParentId(e.target.value)}
-                    className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary cursor-pointer"
+                    className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary cursor-pointer"
                   >
                     <option value="">None (Top-Level Root Category)</option>
                     {categories
@@ -750,7 +750,7 @@ export default function AdminCategoriesPage() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
@@ -763,7 +763,7 @@ export default function AdminCategoriesPage() {
                   placeholder="https://example.com/category-image.png"
                   value={editImageUrl}
                   onChange={(e) => setEditImageUrl(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
@@ -836,7 +836,7 @@ export default function AdminCategoriesPage() {
                   type="button"
                   onClick={() => deleteMutation.mutate(deleteTarget.categoryId)}
                   disabled={deleteMutation.isPending}
-                  className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-danger text-white hover:bg-danger/90 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
+                  className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-danger text-white dark:text-text-inverse hover:bg-danger/90 disabled:opacity-50 transition-all shadow-xs cursor-pointer"
                 >
                   {deleteMutation.isPending ? 'Deleting...' : 'Confirm Delete'}
                 </button>

@@ -49,9 +49,7 @@ export function OrdersTabs({ activeTab, counts, onTabChange }: OrdersTabsProps) 
             {count !== undefined && (
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[11px] font-semibold ${
-                  isActive
-                    ? 'bg-accent/10 text-accent dark:bg-accent/20'
-                    : 'bg-surface-hover text-text-tertiary'
+                  isActive ? 'bg-accent-subtle text-accent' : 'bg-surface-hover text-text-tertiary'
                 }`}
               >
                 {count}

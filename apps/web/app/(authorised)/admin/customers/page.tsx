@@ -99,7 +99,7 @@ export default function AdminCustomersPage() {
 
           return (
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center shrink-0 border border-accent/20">
+              <div className="h-9 w-9 rounded-full bg-accent-subtle text-accent font-bold text-xs flex items-center justify-center shrink-0 border border-accent/20">
                 {initials}
               </div>
               <div className="min-w-0">
@@ -297,7 +297,7 @@ export default function AdminCustomersPage() {
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                     isActive
-                      ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                      ? 'bg-accent-subtle text-accent'
                       : 'bg-surface-hover text-text-tertiary'
                   }`}
                 >
@@ -316,7 +316,7 @@ export default function AdminCustomersPage() {
             placeholder="Search by customer name or email..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary transition-colors"
+            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl bg-surface-raised dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary transition-colors"
           />
           {searchInput && (
             <button
@@ -402,7 +402,7 @@ export default function AdminCustomersPage() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="State the compliance or fraud reason (minimum 3 characters)..."
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-default  text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
                   required
                 />
               </div>

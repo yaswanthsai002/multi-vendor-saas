@@ -94,7 +94,7 @@ export function ProductInfoCard({
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Enter product name (e.g. Sony WH-1000XM5)"
             className={`block w-full px-3.5 py-2.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors ${
-              nameError ? 'border-danger ring-1 ring-danger' : 'border-border-default'
+              nameError ? 'border-danger ring-1 ring-danger' : 'border-border-control'
             }`}
           />
           {nameError ? <p className="text-xs text-danger mt-1 font-medium">{nameError}</p> : null}
@@ -120,7 +120,7 @@ export function ProductInfoCard({
             onChange={(e) => onShortDescriptionChange(e.target.value)}
             placeholder="Enter a short description (optional)"
             className={`block w-full px-3.5 py-2.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors resize-y ${
-              shortDescriptionError ? 'border-danger ring-1 ring-danger' : 'border-border-default'
+              shortDescriptionError ? 'border-danger ring-1 ring-danger' : 'border-border-control'
             }`}
           />
           {shortDescriptionError ? (
@@ -142,7 +142,7 @@ export function ProductInfoCard({
 
           <div
             className={`rounded-xl border bg-surface dark:bg-surface-subtle overflow-hidden transition-colors focus-within:ring-2 focus-within:ring-border-focus focus-within:border-transparent ${
-              descriptionError ? 'border-danger' : 'border-border-default'
+              descriptionError ? 'border-danger' : 'border-border-control'
             }`}
           >
             {/* Minimal Toolbar */}

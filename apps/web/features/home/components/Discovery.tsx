@@ -34,7 +34,7 @@ export default function Discovery() {
           </Link>
 
           <div className="flex min-w-0 flex-col items-start justify-center">
-            <span className="rounded-md bg-accent/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-accent uppercase">
+            <span className="rounded-md bg-accent-subtle px-2 py-0.5 text-[10px] font-bold tracking-wider text-accent uppercase">
               PERIGEE SPOTLIGHT
             </span>
 
@@ -104,7 +104,7 @@ export default function Discovery() {
 
           {/* Proposition callout */}
           <div className="flex min-w-0 flex-col items-start justify-center md:pl-2 lg:pl-6">
-            <span className="rounded-md bg-accent/10 px-2.5 py-1 text-xs font-bold tracking-wider text-accent uppercase">
+            <span className="rounded-md bg-accent-subtle px-2.5 py-1 text-xs font-bold tracking-wider text-accent uppercase">
               PERIGEE SPOTLIGHT
             </span>
 

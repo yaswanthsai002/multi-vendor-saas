@@ -185,7 +185,7 @@ export function ProductFilters({
           onChange={(e) => setLocalSearch(e.target.value)}
           placeholder="Search products..."
           aria-label="Search products"
-          className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors"
+          className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-control rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors"
         />
         {localSearch ? (
           <button

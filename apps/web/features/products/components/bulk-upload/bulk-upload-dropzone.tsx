@@ -127,7 +127,7 @@ export function BulkUploadDropzone({ onFileSelect, isUploading = false }: BulkUp
         <div className="md:col-span-5 p-6 rounded-2xl border border-border-default bg-surface dark:bg-surface-subtle shadow-xs flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
-              <div className="h-6 w-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="h-6 w-6 rounded-full bg-accent-subtle text-accent flex items-center justify-center text-xs font-bold shrink-0">
                 1
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
@@ -202,7 +202,7 @@ export function BulkUploadDropzone({ onFileSelect, isUploading = false }: BulkUp
             />
 
             <div className="flex items-center gap-2.5 mb-3 self-start">
-              <div className="h-6 w-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="h-6 w-6 rounded-full bg-accent-subtle text-accent flex items-center justify-center text-xs font-bold shrink-0">
                 2
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">

@@ -178,7 +178,7 @@ export default function AdminProductsPage() {
             checked={table.getIsAllPageRowsSelected()}
             onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
             aria-label="Select all"
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
           />
         ),
         cell: ({ row }) => (
@@ -187,7 +187,7 @@ export default function AdminProductsPage() {
             checked={row.getIsSelected()}
             onChange={(e) => row.toggleSelected(!!e.target.checked)}
             aria-label="Select row"
-            className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent cursor-pointer"
+            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
           />
         ),
       },
@@ -388,7 +388,7 @@ export default function AdminProductsPage() {
                   className={cn(
                     'px-1.5 py-0.5 rounded-full text-[11px] font-semibold font-mono',
                     isActive
-                      ? 'bg-accent/10 text-accent dark:bg-accent/20'
+                      ? 'bg-accent-subtle text-accent'
                       : 'bg-surface-hover text-text-tertiary',
                   )}
                 >
@@ -410,7 +410,7 @@ export default function AdminProductsPage() {
               setSearchInput(e.target.value);
               setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
-            className="w-full pl-9 pr-8 h-9 text-xs rounded-lg bg-surface-raised dark:bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary transition-colors"
+            className="w-full pl-9 pr-8 h-9 text-xs rounded-lg bg-surface-raised dark:bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary transition-colors"
           />
           {searchInput ? (
             <button
@@ -568,7 +568,7 @@ export default function AdminProductsPage() {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Explain why this listing is being withheld or rejected..."
-                  className="w-full p-2.5 text-xs rounded-lg bg-surface-subtle dark:bg-surface border border-border-default focus:outline-none focus:ring-1 focus:ring-accent text-text-primary placeholder:text-text-tertiary"
+                  className="w-full p-2.5 text-xs rounded-lg bg-surface-subtle dark:bg-surface border border-border-control focus:outline-none focus:ring-1 focus:ring-accent text-text-primary placeholder:text-text-tertiary"
                   required={selectedProduct.action === 'rejected'}
                 />
               </div>

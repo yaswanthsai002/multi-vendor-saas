@@ -206,7 +206,7 @@ export function MediaCard({
                       setMenuOpen(false);
                       onEnable(item.mediaId);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-accent hover:bg-accent/10 text-left cursor-pointer transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-accent hover:bg-accent-subtle text-left cursor-pointer transition-colors"
                   >
                     <Check className="h-3.5 w-3.5 text-accent" />
                     <span>Enable media</span>

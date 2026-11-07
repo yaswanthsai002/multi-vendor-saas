@@ -51,7 +51,7 @@ export function MediaSearchBar({
         onChange={(e) => setLocalValue(e.target.value)}
         placeholder={placeholder}
         aria-label="Search media by filename"
-        className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-default rounded-lg text-text-primary placeholder:text-text-tertiary transition-colors"
+        className="block w-full pl-9 pr-8 py-2 text-sm bg-surface dark:bg-surface-subtle border border-border-control rounded-lg text-text-primary placeholder:text-text-tertiary transition-colors"
       />
       {localValue ? (
         <button

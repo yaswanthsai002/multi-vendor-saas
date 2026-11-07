@@ -27,7 +27,7 @@
   --color-canvas-light: #eceff4;
   --color-surface-light: #f7f9fc;
   --color-text-primary-light: #1e232d;
-  --color-text-muted-light: #6b7280;
+  --color-text-muted-light: #5f6775;
   --color-border-light: #d5d9e0;
 
   --color-canvas-dark: #0a0d14;
@@ -39,13 +39,13 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  --color-success-500: #2e8b68;
+  --color-success-500: #236b51;
   --color-success-100: #e6f5ef;
-  --color-warning-500: #b7791f;
+  --color-warning-500: #926016;
   --color-warning-100: #fff4d6;
-  --color-danger-500: #c74646;
+  --color-danger-500: #b33b3b;
   --color-danger-100: #fdeaea;
-  --color-info-500: #367b9d;
+  --color-info-500: #2c657f;
   --color-info-100: #e7f3f7;
 
   /* --------------------------------------------------------------------------
@@ -54,13 +54,13 @@
   --background: #eceff4;
   --surface: #f7f9fc;
   --surface-raised: #ffffff;
-  --surface-subtle: #e5e9ef;
+  --surface-subtle: #ebeff4;
   --surface-hover: #f0f3f7;
   --surface-active: #e7ebf1;
 
   --text-primary: #1e232d;
   --text-secondary: #4f5663;
-  --text-tertiary: #6b7280;
+  --text-tertiary: #5f6775;
   --text-disabled: #9aa1ad;
   --text-inverse: #ffffff;
 
@@ -68,24 +68,25 @@
   --border-subtle: #e3e6eb;
   --border-strong: #b9bec8;
   --border-focus: #d95d39;
+  --border-control: #7c8491;
 
-  --accent: #d95d39;
-  --accent-hover: #b9482a;
+  --accent: #b9482a;
+  --accent-hover: #93381f;
   --accent-active: #93381f;
   --accent-subtle: #fff1ec;
   --on-accent: #ffffff;
 
-  --secondary-accent: #367b9d;
-  --secondary-accent-hover: #2c657f;
+  --secondary-accent: #2c657f;
+  --secondary-accent-hover: #245369;
   --secondary-accent-subtle: #eef7fa;
 
-  --success: #2e8b68;
+  --success: #236b51;
   --success-subtle: #e6f5ef;
-  --warning: #b7791f;
+  --warning: #926016;
   --warning-subtle: #fff4d6;
-  --danger: #c74646;
+  --danger: #b33b3b;
   --danger-subtle: #fdeaea;
-  --info: #367b9d;
+  --info: #2c657f;
   --info-subtle: #e7f3f7;
 
   /* --------------------------------------------------------------------------
@@ -119,12 +120,13 @@
   --border-subtle: #181d27;
   --border-strong: #343b49;
   --border-focus: #e66a45;
+  --border-control: #697484;
 
   --accent: #e66a45;
   --accent-hover: #f08060;
   --accent-active: #ff9476;
   --accent-subtle: #321c17;
-  --on-accent: #ffffff;
+  --on-accent: #1e232d;
 
   --secondary-accent: #4a90b2;
   --secondary-accent-hover: #68a8c4;

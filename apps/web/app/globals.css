@@ -23,6 +23,7 @@
   --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
   --color-border-focus: var(--border-focus);
+  --color-border-control: var(--border-control);
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);

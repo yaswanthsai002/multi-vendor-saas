@@ -57,7 +57,7 @@ export function ProductPricingCard({
               onChange={(e) => onPriceChange(e.target.value)}
               placeholder="0.00"
               className={`block w-full pl-8 pr-3.5 py-2.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors ${
-                priceError ? 'border-danger ring-1 ring-danger' : 'border-border-default'
+                priceError ? 'border-danger ring-1 ring-danger' : 'border-border-control'
               }`}
             />
           </div>
@@ -88,7 +88,7 @@ export function ProductPricingCard({
               value={mrp}
               onChange={(e) => onMrpChange(e.target.value)}
               placeholder="0.00"
-              className={`block w-full py-2.5 pl-8 pr-3.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary ${mrpError ? 'border-danger ring-1 ring-danger' : 'border-border-default'}`}
+              className={`block w-full py-2.5 pl-8 pr-3.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary ${mrpError ? 'border-danger ring-1 ring-danger' : 'border-border-control'}`}
             />
           </div>
           {mrpError ? (
@@ -117,7 +117,7 @@ export function ProductPricingCard({
             onChange={(e) => onStockChange(e.target.value)}
             placeholder="e.g. 10"
             className={`block w-full px-3.5 py-2.5 text-sm bg-surface dark:bg-surface-subtle border rounded-xl text-text-primary placeholder:text-text-tertiary  transition-colors ${
-              stockError ? 'border-danger ring-1 ring-danger' : 'border-border-default'
+              stockError ? 'border-danger ring-1 ring-danger' : 'border-border-control'
             }`}
           />
           {stockError ? (

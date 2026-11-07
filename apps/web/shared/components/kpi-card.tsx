@@ -50,8 +50,8 @@ export function KpiCard({
               className={cn(
                 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
                 isPositive
-                  ? 'bg-success/15 text-emerald-700 dark:text-emerald-400 border-success/30'
-                  : 'bg-danger/15 text-danger border-danger/30',
+                  ? 'bg-success-subtle text-success border-success/30'
+                  : 'bg-danger-subtle text-danger border-danger/30',
               )}
             >
               {change.startsWith('▲') || change.startsWith('▼')

@@ -302,7 +302,7 @@ export default function VendorMediaPage() {
             }}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
               isSelectionMode
-                ? 'bg-accent/10 border-accent text-accent'
+                ? 'bg-accent-subtle border-accent text-accent'
                 : 'bg-surface dark:bg-surface-subtle border-border-default text-text-secondary hover:text-text-primary hover:bg-surface-hover'
             }`}
           >
@@ -379,7 +379,7 @@ export default function VendorMediaPage() {
                 type="button"
                 disabled={selectedCount === 0 || bulkActionMutation.isPending}
                 onClick={handleBulkEnable}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-subtle hover:bg-accent-subtle text-accent transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Check className="h-3.5 w-3.5 stroke-3" />
                 <span>Enable</span>

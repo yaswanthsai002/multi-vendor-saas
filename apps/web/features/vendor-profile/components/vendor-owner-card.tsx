@@ -37,7 +37,7 @@ export function VendorOwnerCard({ user, fullName, onFullNameChange, error }: Ven
             className={`w-full px-3 py-2 text-sm rounded-lg bg-surface-subtle border ${
               error
                 ? 'border-danger focus:ring-danger'
-                : 'border-border-default focus:ring-border-focus'
+                : 'border-border-control focus:ring-border-focus'
             } text-text-primary focus:outline-none focus:ring-2 transition-colors`}
             placeholder="Your full name"
             maxLength={100}

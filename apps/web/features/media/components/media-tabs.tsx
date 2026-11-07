@@ -46,7 +46,7 @@ export function MediaTabs({ activeTab, onTabChange, counts }: MediaTabsProps) {
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${
                   isActive
-                    ? 'bg-accent/10 text-accent font-semibold'
+                    ? 'bg-accent-subtle text-accent font-semibold'
                     : 'bg-surface-subtle text-text-tertiary'
                 }`}
               >

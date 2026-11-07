@@ -21,7 +21,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             'flex w-full rounded-md border bg-surface-raised px-md text-body-sm text-text-primary placeholder:text-text-tertiary px-4 py-2 my-1',
             'transition-colors duration-200',
-            'border-border-default hover:border-border-strong',
+            'border-border-control',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface-subtle',
             isInvalid && 'border-danger focus-visible:ring-danger text-text-primary',
             rightElement && 'pr-xl',

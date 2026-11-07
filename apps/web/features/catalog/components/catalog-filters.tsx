@@ -192,7 +192,7 @@ export function CatalogFilters({
                 key={preset.label}
                 className={`group flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer select-none transition-colors ${
                   isPresetActive
-                    ? 'bg-accent/10 text-accent font-semibold'
+                    ? 'bg-accent-subtle text-accent font-semibold'
                     : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                 }`}
               >
@@ -203,7 +203,7 @@ export function CatalogFilters({
                   onClick={() => handleSelectPreset(preset)}
                   onChange={() => {}}
                   aria-label={preset.label}
-                  className="h-3.5 w-3.5 border-border-default text-accent focus:ring-border-focus cursor-pointer shrink-0"
+                  className="h-3.5 w-3.5 border-border-control text-accent focus:ring-border-focus cursor-pointer shrink-0"
                 />
                 <span>{preset.label}</span>
               </label>
@@ -224,7 +224,7 @@ export function CatalogFilters({
               value={minPriceInput}
               onChange={(e) => setMinPriceInput(e.target.value)}
               aria-label="Minimum price"
-              className="h-8 w-full rounded-md border border-border-default bg-surface pl-6 pr-2 text-xs text-text-primary placeholder:text-text-tertiary focus:border-border-focus focus:outline-none focus:ring-1 focus:ring-border-focus"
+              className="h-8 w-full rounded-md border border-border-control bg-surface pl-6 pr-2 text-xs text-text-primary placeholder:text-text-tertiary focus:border-border-focus focus:outline-none focus:ring-1 focus:ring-border-focus"
             />
           </div>
           <span className="text-xs text-text-tertiary">—</span>
@@ -239,7 +239,7 @@ export function CatalogFilters({
               value={maxPriceInput}
               onChange={(e) => setMaxPriceInput(e.target.value)}
               aria-label="Maximum price"
-              className="h-8 w-full rounded-md border border-border-default bg-surface pl-6 pr-2 text-xs text-text-primary placeholder:text-text-tertiary focus:border-border-focus focus:outline-none focus:ring-1 focus:ring-border-focus"
+              className="h-8 w-full rounded-md border border-border-control bg-surface pl-6 pr-2 text-xs text-text-primary placeholder:text-text-tertiary focus:border-border-focus focus:outline-none focus:ring-1 focus:ring-border-focus"
             />
           </div>
         </div>
@@ -259,7 +259,7 @@ export function CatalogFilters({
             onChange={(e) =>
               onFilterChange({ inStock: e.target.checked ? true : undefined, page: 1 })
             }
-            className="h-3.5 w-3.5 rounded border-border-default text-accent focus:ring-border-focus cursor-pointer"
+            className="h-3.5 w-3.5 rounded border-border-control text-accent focus:ring-border-focus cursor-pointer"
           />
           <span>In Stock Only</span>
         </label>
@@ -272,7 +272,7 @@ export function CatalogFilters({
             onChange={(e) =>
               onFilterChange({ isFeatured: e.target.checked ? true : undefined, page: 1 })
             }
-            className="h-3.5 w-3.5 rounded border-border-default text-accent focus:ring-border-focus cursor-pointer"
+            className="h-3.5 w-3.5 rounded border-border-control text-accent focus:ring-border-focus cursor-pointer"
           />
           <span>Featured Products Only</span>
         </label>

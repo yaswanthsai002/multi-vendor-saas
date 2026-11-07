@@ -113,7 +113,7 @@ export function OrderActionDialog({
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
                 placeholder="e.g., Out of stock inventory, customer requested cancellation..."
-                className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-surface dark:bg-surface-subtle border border-border-default text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-surface dark:bg-surface-subtle border border-border-control text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
               />
             </div>
           )}

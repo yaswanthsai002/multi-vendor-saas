@@ -101,7 +101,7 @@ export default function FeaturedBrands() {
               <div>
                 {/* Store Avatar + Verified Badge */}
                 <div className="flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 font-bold text-accent shadow-2xs transition-transform group-hover:scale-105">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-subtle font-bold text-accent shadow-2xs transition-transform group-hover:scale-105">
                     {store.initial}
                   </div>
 

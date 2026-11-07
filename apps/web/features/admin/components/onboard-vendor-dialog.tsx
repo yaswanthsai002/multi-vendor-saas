@@ -168,7 +168,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs"
+                className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-on-accent bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs"
               >
                 Done
               </button>
@@ -187,7 +187,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Apex Hardware & Tools"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
               />
             </div>
 
@@ -200,7 +200,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief summary of the storefront's catalog or specialties..."
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none resize-none"
+                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none resize-none"
               />
             </div>
 
@@ -215,7 +215,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                   value={ownerEmail}
                   onChange={(e) => setOwnerEmail(e.target.value)}
                   placeholder="merchant@example.com"
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
                 />
               </div>
 
@@ -229,7 +229,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                   value={ownerFullName}
                   onChange={(e) => setOwnerFullName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
                 />
               </div>
             </div>
@@ -243,7 +243,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Leave blank to generate secure temporary password"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-default text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface border border-border-control text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none"
               />
               <p className="text-[11px] text-text-tertiary mt-1">
                 If the email already belongs to a registered customer, their existing login
@@ -257,7 +257,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
                   type="checkbox"
                   checked={isFeatured}
                   onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="h-4 w-4 rounded border-border-default text-accent focus:ring-accent"
+                  className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent"
                 />
                 <span className="text-xs font-medium text-text-primary">
                   Mark as Featured Brand on marketplace
@@ -276,7 +276,7 @@ export function OnboardVendorDialog({ isOpen, onClose }: OnboardVendorDialogProp
               <button
                 type="submit"
                 disabled={onboardMutation.isPending}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-on-accent bg-accent hover:bg-accent/90 transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {onboardMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

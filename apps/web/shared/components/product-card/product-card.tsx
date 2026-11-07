@@ -77,9 +77,9 @@ export function ProductCard({
             <span
               className={`inline-flex items-center rounded-xs px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-xs sm:text-[10px] ${
                 product.badge.variant === 'warning'
-                  ? 'bg-warning text-white'
+                  ? 'bg-warning text-white dark:text-text-inverse'
                   : product.badge.variant === 'success'
-                    ? 'bg-success text-white'
+                    ? 'bg-success text-white dark:text-text-inverse'
                     : product.badge.variant === 'neutral'
                       ? 'bg-surface-raised/90 text-text-primary backdrop-blur-xs'
                       : 'bg-accent text-on-accent'
@@ -91,7 +91,7 @@ export function ProductCard({
         )}
 
         {/* Top-Right Floating Action Stack */}
-        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1.5 transition-opacity duration-300 ease-out focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100">
+        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1.5">
           {/* Wishlist Button */}
           <Button
             type="button"

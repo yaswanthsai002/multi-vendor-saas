@@ -95,7 +95,7 @@ export default function DealsSpotlight() {
         <div className="mb-4 flex flex-col justify-between gap-3 sm:mb-6 sm:flex-row sm:items-end">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2 py-0.5 text-xs font-bold text-danger">
+              <span className="inline-flex items-center gap-1 rounded-md bg-danger-subtle px-2 py-0.5 text-xs font-bold text-danger">
                 <Flame className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
                 FLASH DEALS
               </span>

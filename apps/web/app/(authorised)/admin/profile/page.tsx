@@ -374,7 +374,7 @@ function AdminProfileContent({ user }: { user: CurrentUserData }) {
                       <h2 className="text-xl font-bold text-text-primary truncate">
                         {user?.fullName || 'Platform Administrator'}
                       </h2>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/15 text-accent border border-accent/25">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-subtle text-accent border border-accent/25">
                         <Shield className="h-3 w-3" />
                         <span>Superadmin</span>
                       </span>
@@ -460,7 +460,7 @@ function AdminProfileContent({ user }: { user: CurrentUserData }) {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Enter your full name..."
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-default focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-control focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
                       />
                     </div>
 
@@ -545,7 +545,7 @@ function AdminProfileContent({ user }: { user: CurrentUserData }) {
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
                           placeholder="Enter current password..."
-                          className="w-full px-3.5 py-2.5 pr-10 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-default focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
+                          className="w-full px-3.5 py-2.5 pr-10 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-control focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
                         />
                         <button
                           type="button"
@@ -575,7 +575,7 @@ function AdminProfileContent({ user }: { user: CurrentUserData }) {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="Minimum 8 characters..."
-                          className="w-full px-3.5 py-2.5 pr-10 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-default focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
+                          className="w-full px-3.5 py-2.5 pr-10 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface-subtle border border-border-control focus:outline-none focus:ring-2 focus:ring-accent text-text-primary placeholder:text-text-tertiary transition-colors"
                         />
                         <button
                           type="button"

@@ -20,7 +20,7 @@ export function HeaderSearch({
     <form
       onSubmit={onSubmit}
       role="search"
-      className="w-full flex items-center bg-surface hover:bg-surface-hover/60 border border-border-default rounded-lg px-3.5 py-2 text-sm focus-within:ring-2 focus-within:ring-border-focus focus-within:border-transparent transition-all duration-150 shadow-2xs"
+      className="w-full flex items-center bg-surface hover:bg-surface-hover/60 border border-border-control rounded-lg px-3.5 py-2 text-sm focus-within:ring-2 focus-within:ring-border-focus focus-within:border-transparent transition-all duration-150 shadow-2xs"
     >
       <Search className="h-4 w-4 text-text-tertiary mr-2.5 shrink-0" aria-hidden="true" />
       <input

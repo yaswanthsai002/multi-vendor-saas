@@ -22,7 +22,7 @@ export function OrderCustomerCard({ name, email, phone }: OrderCustomerCardProps
       <h3 className="text-sm font-semibold text-text-primary mb-4">Customer Details</h3>
 
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-sm border border-accent/20 shrink-0">
+        <div className="h-10 w-10 rounded-full bg-accent-subtle text-accent font-bold flex items-center justify-center text-sm border border-accent/20 shrink-0">
           {initials}
         </div>
         <div className="min-w-0">

@@ -91,7 +91,7 @@ export function CatalogCategoryTree({
             placeholder="Search categories..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-7.5 w-full rounded-md border border-border-default bg-surface pl-8 pr-2.5 text-xs text-text-primary placeholder:text-text-tertiary "
+            className="h-7.5 w-full rounded-md border border-border-control bg-surface pl-8 pr-2.5 text-xs text-text-primary placeholder:text-text-tertiary "
           />
         </div>
       )}
@@ -103,7 +103,7 @@ export function CatalogCategoryTree({
           onClick={onClearCategories}
           className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors text-left cursor-pointer ${
             isAllSelected
-              ? 'bg-accent/10 text-accent font-bold'
+              ? 'bg-accent-subtle text-accent font-bold'
               : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
           }`}
         >
@@ -111,7 +111,7 @@ export function CatalogCategoryTree({
             <span
               className={`h-3.5 w-3.5 rounded border flex items-center justify-center transition-colors ${
                 isAllSelected
-                  ? 'border-accent bg-accent text-white'
+                  ? 'border-accent bg-accent text-on-accent'
                   : 'border-border-default bg-surface-raised'
               }`}
             >
@@ -145,7 +145,7 @@ export function CatalogCategoryTree({
               <div
                 className={`group flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-colors cursor-pointer select-none ${
                   isRootSelected
-                    ? 'bg-accent/10 text-accent font-semibold'
+                    ? 'bg-accent-subtle text-accent font-semibold'
                     : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                 }`}
                 onClick={() => onToggleCategory(root.slug)}
@@ -176,7 +176,7 @@ export function CatalogCategoryTree({
                     onChange={() => onToggleCategory(root.slug)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Filter by ${root.name}`}
-                    className="h-3.5 w-3.5 rounded border-border-default text-accent focus:ring-border-focus cursor-pointer shrink-0"
+                    className="h-3.5 w-3.5 rounded border-border-control text-accent focus:ring-border-focus cursor-pointer shrink-0"
                   />
 
                   {/* Category Name */}
@@ -204,7 +204,7 @@ export function CatalogCategoryTree({
                         key={child.categoryId}
                         className={`flex items-center justify-between px-2 py-1 rounded-md text-xs transition-colors cursor-pointer select-none ${
                           isChildSelected
-                            ? 'bg-accent/10 text-accent font-semibold'
+                            ? 'bg-accent-subtle text-accent font-semibold'
                             : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                         }`}
                         onClick={() => onToggleCategory(child.slug)}
@@ -216,7 +216,7 @@ export function CatalogCategoryTree({
                             onChange={() => onToggleCategory(child.slug)}
                             onClick={(e) => e.stopPropagation()}
                             aria-label={`Filter by ${child.name}`}
-                            className="h-3.5 w-3.5 rounded border-border-default text-accent focus:ring-border-focus cursor-pointer shrink-0"
+                            className="h-3.5 w-3.5 rounded border-border-control text-accent focus:ring-border-focus cursor-pointer shrink-0"
                           />
                           <span className="truncate">{child.name}</span>
                         </div>
