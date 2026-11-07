@@ -67,3 +67,36 @@ body {
   outline: 1px solid var(--border-focus);
   outline-offset: 2px;
 }
+
+.product-quantity-input {
+  appearance: textfield;
+}
+
+.product-quantity-input::-webkit-inner-spin-button,
+.product-quantity-input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.product-gallery-strip {
+  overscroll-behavior-x: contain;
+  scrollbar-color: var(--accent) transparent;
+  scrollbar-width: thin;
+}
+
+.product-gallery-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.product-gallery-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.product-gallery-strip::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.product-gallery-strip::-webkit-scrollbar-button {
+  display: none;
+}
