@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -19,6 +20,7 @@ export function useSignin() {
   const redirectUrl = searchParams.get('redirect') || '/';
 
   const signinMutation = useSigninMutation();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -45,6 +47,7 @@ export function useSignin() {
       toast.success('Signed in successfully!', {
         description: `Welcome back, ${response.user.fullName || 'User'}!`,
       });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       router.push(redirectUrl);
     } catch (error) {
       if (error instanceof ApiError) {
