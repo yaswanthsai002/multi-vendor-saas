@@ -63,6 +63,13 @@ body {
   min-height: 100vh;
 }
 
+a[href]:not([aria-disabled='true']),
+button:not(:disabled):not([aria-disabled='true']),
+[role='button']:not([aria-disabled='true']),
+[role='menuitem']:not([aria-disabled='true']):not([data-disabled]) {
+  cursor: pointer;
+}
+
 :focus-visible {
   outline: 1px solid var(--border-focus);
   outline-offset: 2px;
