@@ -10,6 +10,7 @@ export * from './orderItems.js';
 export * from './carts.js';
 export * from './cartItems.js';
 export * from './productReviews.js';
+export * from './wishlistItems.js';
 export * from './mediaLibrary.js';
 export * from './productMedia.js';
 export * from './orderDeliveryAddresses.js';

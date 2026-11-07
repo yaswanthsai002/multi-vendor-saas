@@ -13,6 +13,8 @@ interface CatalogProductGridProps {
   hasFilters: boolean;
   onResetFilters: () => void;
   onWishlistToggle?: (product: Product) => void;
+  wishlistedProductIds?: Set<string>;
+  wishlistDisabled?: boolean;
   onAddToCart?: (product: Product) => void;
 }
 
@@ -22,6 +24,8 @@ export function CatalogProductGrid({
   hasFilters,
   onResetFilters,
   onWishlistToggle,
+  wishlistedProductIds,
+  wishlistDisabled,
   onAddToCart,
 }: CatalogProductGridProps) {
   if (isLoading) {
@@ -59,6 +63,8 @@ export function CatalogProductGrid({
 
         const cardProduct: Product = {
           id: product.productId,
+          wishlistProductId: product.productId,
+          isWishlisted: wishlistedProductIds?.has(product.productId) ?? false,
           slug: product.slug,
           name: product.name,
           brand: product.vendor.name,
@@ -81,6 +87,7 @@ export function CatalogProductGrid({
             key={product.productId}
             product={cardProduct}
             onWishlistToggle={onWishlistToggle}
+            wishlistDisabled={wishlistDisabled}
             onAddToCart={onAddToCart}
           />
         );

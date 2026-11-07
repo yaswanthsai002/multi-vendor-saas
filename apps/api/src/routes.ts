@@ -9,6 +9,7 @@ import { categoryRouter } from './features/category/category.routes.js';
 import healthRouter from './features/health/health.routes.js';
 import { mediaRouter } from './features/media/media.routes.js';
 import { vendorRouter } from './features/vendor/vendor.routes.js';
+import { wishlistRouter } from './features/wishlist/wishlist.routes.js';
 import { requireAdmin } from './shared/middleware/requireAdmin.js';
 import { verifyToken } from './shared/middleware/verifyToken.js';
 
@@ -20,6 +21,7 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/auth', otpRouter);
 apiRouter.use('/categories', categoryRouter);
 apiRouter.use('/products', catalogRouter);
+apiRouter.use('/wishlist', wishlistRouter);
 apiRouter.use('/vendor', vendorRouter);
 apiRouter.use('/vendor/media', mediaRouter);
 apiRouter.use('/admin', verifyToken, requireAdmin, adminRouter);

@@ -7,6 +7,7 @@ export interface ProductBadge {
 
 export interface Product {
   id?: string | number;
+  wishlistProductId?: string;
   slug?: string;
   name: string;
   brand: string;
@@ -27,5 +28,6 @@ export interface ProductCardProps {
   variant?: 'default' | 'compact' | 'rail';
   className?: string;
   onWishlistToggle?: (product: Product) => void;
+  wishlistDisabled?: boolean;
   onAddToCart?: (product: Product) => void;
 }

@@ -6,12 +6,14 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { useCatalog, useCatalogFacets } from '../hooks/use-catalog';
+import { useWishlist } from '../hooks/use-wishlist';
 
 import { CatalogFilters } from './catalog-filters';
 import { CatalogProductGrid } from './catalog-product-grid';
 import { CatalogSortBar } from './catalog-sort-bar';
 
 import type { CatalogFilters as FilterValues, CatalogSortBy } from '../types/catalog.types';
+import type { Product } from '@/shared/components/product-card/product-card.types';
 
 import { Pagination } from '@/shared/components/pagination/pagination';
 
@@ -67,6 +69,16 @@ export function CatalogView({ initialCategory }: CatalogViewProps) {
 
   const { data: catalogData, isLoading } = useCatalog(filters);
   const { data: facetsData } = useCatalogFacets();
+  const wishlist = useWishlist();
+
+  function toggleWishlist(product: Product) {
+    if (!wishlist.userId) {
+      const returnTo = `${pathname ?? '/products'}${searchParams?.toString() ? `?${searchParams}` : ''}`;
+      router.push(`/signin?redirect=${encodeURIComponent(returnTo)}`);
+      return;
+    }
+    if (product.wishlistProductId) wishlist.toggle(product.wishlistProductId);
+  }
 
   // Helper to push URL changes
   const updateUrl = React.useCallback(
@@ -312,6 +324,11 @@ export function CatalogView({ initialCategory }: CatalogViewProps) {
               isLoading={isLoading}
               hasFilters={hasFilters}
               onResetFilters={handleResetFilters}
+              wishlistedProductIds={wishlist.productIds}
+              wishlistDisabled={
+                wishlist.isUserLoading || wishlist.wishlist.isLoading || wishlist.mutation.isPending
+              }
+              onWishlistToggle={toggleWishlist}
             />
 
             {/* Pagination Controls */}

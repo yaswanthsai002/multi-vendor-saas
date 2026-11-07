@@ -39,6 +39,10 @@ export const queryKeys = {
     facets: () => ['catalog', 'facets'] as const,
     detail: (slug: string) => ['catalog', 'detail', slug] as const,
   },
+  wishlist: {
+    all: () => ['wishlist'] as const,
+    list: (userId?: string | number) => ['wishlist', userId] as const,
+  },
   bulkImports: {
     all: () => ['vendor', 'bulk-imports'] as const,
     active: () => ['vendor', 'bulk-imports', 'active'] as const,

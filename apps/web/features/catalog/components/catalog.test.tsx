@@ -253,6 +253,29 @@ describe('Catalog Components', () => {
       expect(screen.getByText('Featured')).toBeDefined();
     });
 
+    it('renders the persisted wishlist state and forwards the selected product', () => {
+      const onWishlistToggle = vi.fn();
+      render(
+        <CatalogProductGrid
+          products={mockProducts}
+          isLoading={false}
+          hasFilters={false}
+          onResetFilters={vi.fn()}
+          wishlistedProductIds={new Set(['prod-1'])}
+          onWishlistToggle={onWishlistToggle}
+        />,
+      );
+
+      const button = screen.getByRole('button', {
+        name: 'Remove Wireless Studio Headphones from wishlist',
+      });
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+      fireEvent.click(button);
+      expect(onWishlistToggle).toHaveBeenCalledWith(
+        expect.objectContaining({ wishlistProductId: 'prod-1' }),
+      );
+    });
+
     it('renders empty state when products array is empty', () => {
       render(
         <CatalogProductGrid

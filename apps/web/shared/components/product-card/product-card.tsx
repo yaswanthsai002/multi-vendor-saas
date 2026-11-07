@@ -3,9 +3,9 @@
 import { Heart, ShoppingBag, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
 
 import type { ProductCardProps } from './product-card.types';
+import type { MouseEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -13,9 +13,10 @@ export function ProductCard({
   product,
   className = '',
   onWishlistToggle,
+  wishlistDisabled = false,
   onAddToCart,
 }: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(product.isWishlisted ?? false);
+  const isWishlisted = product.isWishlisted ?? false;
 
   const productSlug =
     product.slug ??
@@ -32,14 +33,13 @@ export function ProductCard({
   const reviewsCount = product.reviewsCount ?? product.reviews ?? 0;
   const originalPrice = product.oldPrice ?? product.originalPrice;
 
-  const handleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted((prev) => !prev);
     onWishlistToggle?.(product);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onAddToCart?.(product);
@@ -93,25 +93,28 @@ export function ProductCard({
         {/* Top-Right Floating Action Stack */}
         <div className="absolute right-2 top-2 z-10 flex flex-col gap-1.5">
           {/* Wishlist Button */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label={
-              isWishlisted
-                ? `Remove ${product.name} from wishlist`
-                : `Add ${product.name} to wishlist`
-            }
-            aria-pressed={isWishlisted}
-            onClick={handleWishlist}
-            className="h-7 w-7 rounded-full border-border-default bg-surface-raised/95 p-0 text-text-secondary shadow-xs backdrop-blur-xs transition-[transform,color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:text-accent active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus sm:h-8 sm:w-8"
-          >
-            <Heart
-              size={14}
-              strokeWidth={1.75}
-              className={isWishlisted ? 'fill-accent text-accent' : ''}
-            />
-          </Button>
+          {product.wishlistProductId && onWishlistToggle && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={wishlistDisabled}
+              aria-label={
+                isWishlisted
+                  ? `Remove ${product.name} from wishlist`
+                  : `Add ${product.name} to wishlist`
+              }
+              aria-pressed={isWishlisted}
+              onClick={handleWishlist}
+              className="h-7 w-7 rounded-full border-border-default bg-surface-raised/95 p-0 text-text-secondary shadow-xs backdrop-blur-xs transition-[transform,color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:text-accent active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus sm:h-8 sm:w-8"
+            >
+              <Heart
+                size={14}
+                strokeWidth={1.75}
+                className={isWishlisted ? 'fill-accent text-accent' : ''}
+              />
+            </Button>
+          )}
 
           {/* Add to Cart Button */}
           {onAddToCart && (

@@ -71,6 +71,13 @@
       "when": 1793802072741,
       "tag": "0009_common_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793875125303,
+      "tag": "0010_wishlist_items",
+      "breakpoints": true
     }
   ]
 }

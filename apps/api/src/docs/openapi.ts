@@ -27,6 +27,7 @@ export const openapiSpec = {
     { name: 'Vendor Profile', description: 'Vendor store profile and owner management endpoints' },
     { name: 'Categories', description: 'Global category taxonomy and management' },
     { name: 'Catalog', description: 'Public customer product browsing and discovery endpoints' },
+    { name: 'Wishlist', description: 'Authenticated customer saved products' },
   ],
   components: {
     securitySchemes: {
@@ -246,6 +247,40 @@ export const openapiSpec = {
           },
         },
         required: ['items', 'pagination', 'averageRating', 'ratingCount', 'distribution'],
+      },
+      WishlistResponse: {
+        type: 'object',
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                productId: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                slug: { type: 'string' },
+                price: { type: 'string' },
+                mrp: { type: 'string' },
+                stock: { type: 'integer', minimum: 0 },
+                imageUrl: { type: ['string', 'null'], format: 'uri' },
+                vendorName: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+              },
+              required: [
+                'productId',
+                'name',
+                'slug',
+                'price',
+                'mrp',
+                'stock',
+                'imageUrl',
+                'vendorName',
+                'createdAt',
+              ],
+            },
+          },
+        },
+        required: ['items'],
       },
       SignUpInput: {
         type: 'object',
@@ -3111,6 +3146,89 @@ export const openapiSpec = {
           },
           '404': {
             description: 'Product unavailable.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+        },
+      },
+    },
+    '/api/wishlist/items': {
+      post: {
+        tags: ['Wishlist'],
+        summary: 'Save a product to the authenticated customer wishlist',
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['productId'],
+                properties: { productId: { type: 'string', format: 'uuid' } },
+                example: { productId: 'e6c6a4de-e718-4ecb-a0d7-9d0aefb38c6e' },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Product saved.' },
+          '400': {
+            description: 'Invalid product ID.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '403': {
+            description: 'Active account required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '404': {
+            description: 'Product unavailable.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+        },
+      },
+    },
+    '/api/wishlist/items/{productId}': {
+      delete: {
+        tags: ['Wishlist'],
+        summary: 'Remove a product from the authenticated customer wishlist',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          {
+            name: 'productId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          '204': { description: 'Wishlist item removed.' },
+          '400': {
+            description: 'Invalid product ID.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '403': {
+            description: 'Active account required.',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
             },
