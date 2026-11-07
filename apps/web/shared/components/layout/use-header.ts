@@ -1,7 +1,10 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 
 export interface UseHeaderOptions {
@@ -11,12 +14,19 @@ export interface UseHeaderOptions {
 export function useHeader(options?: UseHeaderOptions) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [cartCount, setCartCount] = React.useState(options?.initialCartCount ?? 0);
   const { data, isLoading } = useCurrentUser();
 
   const user = data?.user ?? null;
   const displayName = user?.fullName || user?.email?.split('@')[0] || 'User';
   const avatarInitial = displayName.charAt(0).toUpperCase();
+  const cart = useQuery({
+    queryKey: ['cart', user?.userId],
+    queryFn: () =>
+      makeApiRequest<{ itemCount: number }>({ url: API_ENDPOINTS.cart.root, method: 'GET' }),
+    enabled: Boolean(user?.userId),
+    retry: false,
+  });
+  const cartCount = cart.data?.itemCount ?? options?.initialCartCount ?? 0;
 
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -30,7 +40,6 @@ export function useHeader(options?: UseHeaderOptions) {
     searchQuery,
     setSearchQuery,
     cartCount,
-    setCartCount,
     toggleMobileMenu,
     closeMobileMenu,
   };

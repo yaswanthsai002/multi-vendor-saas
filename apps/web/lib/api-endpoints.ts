@@ -32,6 +32,11 @@ export const API_ENDPOINTS = {
     items: '/api/wishlist/items',
     item: (productId: string) => `/api/wishlist/items/${productId}` as const,
   },
+  cart: {
+    root: '/api/cart',
+    items: '/api/cart/items',
+    item: (productId: string) => `/api/cart/items/${productId}` as const,
+  },
   vendor: {
     dashboard: '/api/vendor/dashboard',
     dashboardMetrics: '/api/vendor/dashboard/metrics',

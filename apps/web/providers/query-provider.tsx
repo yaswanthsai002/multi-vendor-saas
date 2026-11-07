@@ -44,5 +44,14 @@ function getQueryClient() {
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
 
+  React.useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('perigee-cart');
+    channel.onmessage = () => {
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    };
+    return () => channel.close();
+  }, [queryClient]);
+
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

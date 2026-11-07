@@ -282,6 +282,61 @@ export const openapiSpec = {
         },
         required: ['items'],
       },
+      CartResponse: {
+        type: 'object',
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              oneOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    productId: { type: 'string', format: 'uuid' },
+                    quantity: { type: 'integer', minimum: 1 },
+                    available: { type: 'boolean', enum: [false] },
+                  },
+                  required: ['productId', 'quantity', 'available'],
+                },
+                {
+                  type: 'object',
+                  properties: {
+                    productId: { type: 'string', format: 'uuid' },
+                    quantity: { type: 'integer', minimum: 1 },
+                    available: { type: 'boolean', enum: [true] },
+                    name: { type: 'string' },
+                    slug: { type: 'string' },
+                    price: { type: 'string' },
+                    mrp: { type: 'string' },
+                    stock: { type: 'integer', minimum: 0 },
+                    imageUrl: { type: ['string', 'null'], format: 'uri' },
+                    vendorId: { type: 'string', format: 'uuid' },
+                    vendorName: { type: 'string' },
+                    lineTotal: { type: 'string' },
+                  },
+                  required: [
+                    'productId',
+                    'quantity',
+                    'available',
+                    'name',
+                    'slug',
+                    'price',
+                    'mrp',
+                    'stock',
+                    'imageUrl',
+                    'vendorId',
+                    'vendorName',
+                    'lineTotal',
+                  ],
+                },
+              ],
+            },
+          },
+          subtotal: { type: 'string' },
+          itemCount: { type: 'integer', minimum: 0 },
+        },
+        required: ['items', 'subtotal', 'itemCount'],
+      },
       SignUpInput: {
         type: 'object',
         properties: {
@@ -3232,6 +3287,150 @@ export const openapiSpec = {
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
             },
+          },
+        },
+      },
+    },
+  },
+  '/api/cart': {
+    get: {
+      tags: ['Cart'],
+      summary: 'Get the authenticated customer cart',
+      security: [{ cookieAuth: [] }],
+      responses: {
+        '200': {
+          description:
+            'Cart items, with unavailable lines redacted, and server-calculated subtotal.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/CartResponse' } },
+          },
+        },
+        '401': {
+          description: 'Authentication required.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+          },
+        },
+        '403': {
+          description: 'Active account required.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+          },
+        },
+      },
+    },
+  },
+  '/api/cart/items': {
+    post: {
+      tags: ['Cart'],
+      summary: 'Add quantity to a cart product',
+      security: [{ cookieAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['productId', 'quantity'],
+              properties: {
+                productId: { type: 'string', format: 'uuid' },
+                quantity: { type: 'integer', minimum: 1, maximum: 999 },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        '200': {
+          description: 'Updated cart.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/CartResponse' } },
+          },
+        },
+        '401': { description: 'Authentication required.' },
+        '409': { description: 'Requested quantity exceeds stock.' },
+      },
+    },
+  },
+  '/api/cart/items/{productId}': {
+    put: {
+      tags: ['Cart'],
+      summary: 'Set a cart item quantity',
+      security: [{ cookieAuth: [] }],
+      parameters: [
+        {
+          name: 'productId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['quantity'],
+              properties: { quantity: { type: 'integer', minimum: 1, maximum: 999 } },
+            },
+          },
+        },
+      },
+      responses: {
+        '200': {
+          description: 'Updated cart.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/CartResponse' } },
+          },
+        },
+        '401': { description: 'Authentication required.' },
+        '404': { description: 'Product or cart item unavailable.' },
+        '409': { description: 'Requested quantity exceeds stock.' },
+      },
+    },
+    delete: {
+      tags: ['Cart'],
+      summary: 'Remove an item from the authenticated cart',
+      security: [{ cookieAuth: [] }],
+      parameters: [
+        {
+          name: 'productId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        },
+      ],
+      responses: {
+        '204': { description: 'Item removed.' },
+        '401': { description: 'Authentication required.' },
+      },
+    },
+  },
+  '/api/wishlist': {
+    get: {
+      tags: ['Wishlist'],
+      summary: 'Get the authenticated customer wishlist',
+      security: [{ cookieAuth: [] }],
+      responses: {
+        '200': {
+          description: 'Wishlist with currently available catalog products.',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/WishlistResponse' },
+            },
+          },
+        },
+        '401': {
+          description: 'Authentication required.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+          },
+        },
+        '403': {
+          description: 'Active account required.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
           },
         },
       },
