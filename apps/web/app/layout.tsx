@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 
 import { AuthToastListener } from '@/components/auth-toast-listener';
 import { Toaster } from '@/components/ui/toaster';
+import { DeliveryAddressPicker } from '@/features/account/components/delivery-address-picker';
 import { QueryProvider } from '@/providers/query-provider';
 import { Footer } from '@/shared/components/layout/footer';
 import { Header } from '@/shared/components/layout/header';
@@ -49,7 +50,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             disableTransitionOnChange={false}
           >
             {/* Domain-agnostic Header on every page */}
-            <Header />
+            <Header
+              deliveryAddressDesktop={<DeliveryAddressPicker variant="desktop" />}
+              deliveryAddressMobile={<DeliveryAddressPicker variant="mobile" />}
+            />
 
             {/* Main content area */}
             <main className="flex-1 flex flex-col">{children}</main>

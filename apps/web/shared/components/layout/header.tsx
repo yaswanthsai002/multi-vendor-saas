@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { HeaderDeliveryAddress } from './header-delivery-address';
 import { HeaderNavBar } from './header-nav-bar';
 import { HeaderSearch } from './header-search';
 import { HeaderUserMenu } from './header-user-menu';
@@ -14,6 +13,8 @@ import { useHeader } from './use-header';
 
 export interface HeaderProps {
   initialCartCount?: number;
+  deliveryAddressDesktop: React.ReactNode;
+  deliveryAddressMobile: React.ReactNode;
 }
 
 function PerigeeBrandLogo() {
@@ -43,7 +44,11 @@ function PerigeeBrandLogo() {
   );
 }
 
-export function Header({ initialCartCount }: HeaderProps) {
+export function Header({
+  initialCartCount,
+  deliveryAddressDesktop,
+  deliveryAddressMobile,
+}: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, searchQuery, setSearchQuery, cartCount } = useHeader({
@@ -72,7 +77,7 @@ export function Header({ initialCartCount }: HeaderProps) {
           {/* Left: Brand Logo + Desktop Delivery Address Selector */}
           <div className="flex items-center gap-4 shrink-0">
             <PerigeeBrandLogo />
-            <HeaderDeliveryAddress variant="desktop" />
+            {deliveryAddressDesktop}
           </div>
 
           {/* Center: Search Bar */}
@@ -193,9 +198,7 @@ export function Header({ initialCartCount }: HeaderProps) {
         </div>
 
         {/* Row 3: Deliver to Location */}
-        <div className="px-3.5 pb-2">
-          <HeaderDeliveryAddress variant="mobile" />
-        </div>
+        <div className="px-3.5 pb-2">{deliveryAddressMobile}</div>
 
         {/* Row 4: Sub Navigation Bar */}
         <HeaderNavBar />

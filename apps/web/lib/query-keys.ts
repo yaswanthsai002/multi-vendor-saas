@@ -43,6 +43,10 @@ export const queryKeys = {
     all: () => ['wishlist'] as const,
     list: (userId?: string | number) => ['wishlist', userId] as const,
   },
+  account: {
+    addresses: (userId?: string | number) => ['account', 'addresses', userId] as const,
+    postalCode: (postalCode: string) => ['account', 'postal-code', postalCode] as const,
+  },
   bulkImports: {
     all: () => ['vendor', 'bulk-imports'] as const,
     active: () => ['vendor', 'bulk-imports', 'active'] as const,

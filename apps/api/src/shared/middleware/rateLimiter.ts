@@ -77,3 +77,9 @@ export const resetPasswordLimiter = createRateLimiter({
   max: 5, // Max 5 requests per IP per window
   message: 'Too many reset password requests from this IP. Please try again in 15 minutes.',
 });
+
+export const postalLookupLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: 'Too many PIN code lookups. Please try again later.',
+});

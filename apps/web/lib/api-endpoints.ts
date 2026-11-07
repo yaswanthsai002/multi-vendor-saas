@@ -37,6 +37,13 @@ export const API_ENDPOINTS = {
     items: '/api/cart/items',
     item: (productId: string) => `/api/cart/items/${productId}` as const,
   },
+  customer: {
+    addresses: '/api/customer/addresses',
+    address: (addressId: string) => `/api/customer/addresses/${addressId}` as const,
+  },
+  locations: {
+    postalCode: (postalCode: string) => `/api/locations/pincodes/${postalCode}` as const,
+  },
   vendor: {
     dashboard: '/api/vendor/dashboard',
     dashboardMetrics: '/api/vendor/dashboard/metrics',
