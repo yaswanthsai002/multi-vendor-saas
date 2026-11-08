@@ -12,6 +12,7 @@ import { signinSchema, type SigninFormData } from '../schema/signin.schema';
 import { useSigninMutation } from './use-signin-mutation';
 
 import { ApiError } from '@/lib/api-client';
+import { clearAuthSessionCache } from '@/lib/auth/session-cache';
 
 export function useSignin() {
   const [showPassword, setShowPassword] = useState(false);
@@ -47,8 +48,11 @@ export function useSignin() {
       toast.success('Signed in successfully!', {
         description: `Welcome back, ${response.user.fullName || 'User'}!`,
       });
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      router.push(redirectUrl);
+      clearAuthSessionCache(queryClient, 'session-changed');
+      const destination = new URL(redirectUrl, window.location.origin);
+      window.location.replace(
+        destination.origin === window.location.origin ? destination.href : '/',
+      );
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 403 || error.code === 'EMAIL_NOT_VERIFIED') {

@@ -1,14 +1,10 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useCallback, useState, useEffect, useRef } from 'react';
 
 import type { CurrentUserData } from '@/lib/auth/current-user';
 
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
-import { queryKeys } from '@/lib/query-keys';
+import { useSignOut } from '@/shared/hooks/use-sign-out';
 
 export function getPrimaryRoleBadge(roles?: string[]): 'Admin' | 'Vendor' | null {
   if (!roles || roles.length === 0) return null;
@@ -23,8 +19,6 @@ export function getDiceBearAvatarUrl(seed: string): string {
 }
 
 export function useUserMenu(user: CurrentUserData) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -34,19 +28,7 @@ export function useUserMenu(user: CurrentUserData) {
   const primaryRole = getPrimaryRoleBadge(user.roles);
   const avatarUrl = user.avatarUrl || getDiceBearAvatarUrl(user.fullName || user.email);
 
-  const signoutMutation = useMutation({
-    mutationFn: () =>
-      makeApiRequest<{ message: string }>({
-        url: API_ENDPOINTS.auth.signout,
-        method: 'POST',
-      }),
-    onSettled: () => {
-      queryClient.setQueryData(queryKeys.auth.me(), null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
-      router.push('/signin');
-      router.refresh();
-    },
-  });
+  const signoutMutation = useSignOut();
 
   const clearTimer = useCallback(() => {
     if (timeoutRef.current) {

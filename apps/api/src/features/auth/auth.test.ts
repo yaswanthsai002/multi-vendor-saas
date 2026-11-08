@@ -6,12 +6,22 @@ import app from '../../app.js';
 import { AppError } from '../../shared/errors/AppError.js';
 
 import * as authService from './auth.service.js';
+import * as googleService from './google.service.js';
 
 // Mock auth service to test controller, routing, validation, and cookie emission
 vi.mock('./auth.service.js', () => ({
   signup: vi.fn(),
   signin: vi.fn(),
   getMe: vi.fn(),
+}));
+
+vi.mock('./google.service.js', () => ({
+  getGoogleAuthUrl: vi.fn(),
+  handleGoogleCallback: vi.fn(),
+}));
+
+vi.mock('../../shared/redis/redis.client.js', () => ({
+  redis: { get: vi.fn().mockResolvedValue(null) },
 }));
 
 describe('Auth API (/api/auth)', () => {
@@ -255,6 +265,30 @@ describe('Auth API (/api/auth)', () => {
       const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
       const authCookie = cookies.find((c: string) => c.startsWith('auth_token='));
       expect(authCookie).toBeDefined();
+    });
+  });
+
+  describe('GET /api/auth/google/callback', () => {
+    it('marks successful OAuth redirect so other tabs can refresh their session', async () => {
+      vi.mocked(googleService.handleGoogleCallback).mockResolvedValueOnce({
+        token: 'test-token',
+        user: {
+          userId: '1',
+          fullName: 'Jane Doe',
+          email: 'jane@example.com',
+          roles: ['customer'],
+          emailVerifiedAt: new Date(),
+        },
+        redirectUrl: '/account?tab=profile',
+      });
+
+      const res = await request(app).get('/api/auth/google/callback?code=code&state=state');
+
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe(
+        'http://localhost:3000/account?tab=profile&auth_session_changed=1',
+      );
+      expect(res.headers['set-cookie']?.[0]).toContain('auth_token=test-token');
     });
   });
 });

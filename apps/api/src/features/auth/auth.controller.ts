@@ -201,7 +201,9 @@ export async function googleAuthCallback(req: Request, res: Response, _next: Nex
     });
 
     const targetUrl = result.redirectUrl.startsWith('/') ? result.redirectUrl : '/';
-    return res.redirect(`${webOrigin}${targetUrl}`);
+    const redirectUrl = new URL(`${webOrigin}${targetUrl}`);
+    redirectUrl.searchParams.set('auth_session_changed', '1');
+    return res.redirect(redirectUrl.toString());
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Google authentication failed';
     return res.redirect(`${webOrigin}${fromUrl}?error=${encodeURIComponent(errorMessage)}`);

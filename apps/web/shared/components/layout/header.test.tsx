@@ -11,6 +11,7 @@ import * as currentUserHook from '@/shared/hooks/use-current-user';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+const mockSignOut = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
@@ -20,6 +21,10 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/api-client', () => ({
   makeApiRequest: vi.fn().mockResolvedValue({ message: 'Success' }),
+}));
+
+vi.mock('@/shared/hooks/use-sign-out', () => ({
+  useSignOut: () => ({ mutate: mockSignOut, isPending: false }),
 }));
 
 function renderWithClient(ui: React.ReactElement) {
@@ -221,7 +226,7 @@ describe('Header & User Menu Unit & Integration Tests', () => {
       await user.click(signoutBtns[0]);
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/signin');
+        expect(mockSignOut).toHaveBeenCalledOnce();
       });
     });
   });

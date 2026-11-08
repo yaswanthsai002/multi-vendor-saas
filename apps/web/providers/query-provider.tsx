@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as React from 'react';
 
 import { ApiError } from '@/lib/api-client';
+import { clearAuthSessionCache, getRemoteAuthSessionChange } from '@/lib/auth/session-cache';
 
 function makeQueryClient() {
   return new QueryClient({
@@ -45,10 +46,36 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
 
   React.useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('auth_session_changed') !== '1') return;
+
+    url.searchParams.delete('auth_session_changed');
+    window.history.replaceState(window.history.state, '', url);
+    clearAuthSessionCache(queryClient, 'session-changed');
+  }, [queryClient]);
+
+  React.useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const channel = new BroadcastChannel('perigee-cart');
     channel.onmessage = () => {
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    };
+    return () => channel.close();
+  }, [queryClient]);
+
+  React.useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('perigee-auth-session');
+    channel.onmessage = ({ data }: MessageEvent<unknown>) => {
+      const change = getRemoteAuthSessionChange(data);
+
+      if (change === 'signed-out') {
+        queryClient.clear();
+        window.location.replace('/signin');
+      } else if (change === 'session-changed') {
+        queryClient.clear();
+        window.location.reload();
+      }
     };
     return () => channel.close();
   }, [queryClient]);

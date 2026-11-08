@@ -1458,7 +1458,7 @@ export const openapiSpec = {
         tags: ['OAuth'],
         summary: 'Google OAuth callback handler',
         description:
-          'Validates anti-CSRF state from Redis, exchanges authorization code for tokens, verifies Google ID token, performs implicit account linking, sets auth_token cookie, and redirects to frontend destination.',
+          'Validates anti-CSRF state from Redis, exchanges authorization code for tokens, verifies Google ID token, performs implicit account linking, sets auth_token cookie, and redirects to frontend destination with auth_session_changed=1 after successful sign-in.',
         parameters: [
           {
             name: 'code',
@@ -1485,7 +1485,7 @@ export const openapiSpec = {
         responses: {
           '302': {
             description:
-              'Redirects to frontend destination (on success) or origin page with ?error=... query param (on failure).',
+              'Redirects to frontend destination with ?auth_session_changed=1 on success, or origin page with ?error=... query param on failure.',
             headers: {
               Location: {
                 schema: { type: 'string', example: 'http://localhost:3000/dashboard' },

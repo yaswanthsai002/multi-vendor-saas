@@ -15,11 +15,10 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { useSignOut } from '@/shared/hooks/use-sign-out';
 
 interface NavItemProps {
   href: string;
@@ -50,20 +49,7 @@ function NavItem({ href, label, icon: Icon, active }: NavItemProps) {
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    try {
-      await makeApiRequest({
-        url: API_ENDPOINTS.auth.signout,
-        method: 'POST',
-      });
-      router.push('/signin');
-      router.refresh();
-    } catch {
-      router.push('/signin');
-    }
-  };
+  const signoutMutation = useSignOut();
 
   const isDashboard = pathname === '/admin' || pathname === '/admin/';
   const isProducts = pathname.startsWith('/admin/products');
@@ -172,11 +158,13 @@ export function AdminSidebar() {
         <NavItem href="/admin/profile" label="Admin Profile" icon={User} active={isProfile} />
         <button
           type="button"
-          onClick={handleSignOut}
+          onClick={() => signoutMutation.mutate()}
+          disabled={signoutMutation.isPending}
+          aria-busy={signoutMutation.isPending}
           className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-text-secondary hover:text-danger hover:bg-danger-subtle/50 rounded-lg transition-colors cursor-pointer text-left"
         >
           <LogOut className="h-4 w-4 shrink-0 text-text-tertiary hover:text-danger" />
-          <span>Sign out</span>
+          <span>{signoutMutation.isPending ? 'Signing out...' : 'Sign out'}</span>
         </button>
       </div>
     </aside>

@@ -141,6 +141,7 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               type="button"
               onClick={handleSignout}
               disabled={isSigningOut}
+              aria-busy={isSigningOut}
               role="menuitem"
               className="w-full flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-danger hover:bg-danger-subtle hover:text-danger transition-colors cursor-pointer disabled:opacity-50"
             >
