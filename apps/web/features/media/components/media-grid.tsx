@@ -23,6 +23,7 @@ interface MediaGridProps {
     total: number;
     totalPages: number;
   };
+  showPagination?: boolean;
   onPageChange?: (page: number) => void;
   selectable?: boolean;
   selectedIds?: string[];
@@ -41,6 +42,7 @@ export function MediaGrid({
   onEnable,
   onDelete,
   pagination,
+  showPagination = true,
   onPageChange,
   selectable = false,
   selectedIds = [],
@@ -140,7 +142,7 @@ export function MediaGrid({
       </div>
 
       {/* Shared Pagination Component */}
-      {pagination && onPageChange ? (
+      {showPagination && pagination && onPageChange ? (
         <Pagination
           page={pagination.page}
           totalPages={pagination.totalPages}

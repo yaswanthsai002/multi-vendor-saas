@@ -17,10 +17,14 @@ import type { ListMediaFilters } from '../types/media.types';
 
 import { queryKeys } from '@/lib/query-keys';
 
-export function useMediaList(filters: ListMediaFilters = {}) {
+export function useMediaList(
+  filters: ListMediaFilters = {},
+  scope: 'vendor' | 'catalog' = 'vendor',
+) {
   return useQuery({
-    queryKey: queryKeys.media.list(filters),
-    queryFn: () => fetchMediaList(filters),
+    queryKey:
+      scope === 'catalog' ? queryKeys.admin.media.catalog(filters) : queryKeys.media.list(filters),
+    queryFn: () => fetchMediaList(filters, scope),
     placeholderData: keepPreviousData,
   });
 }

@@ -41,6 +41,83 @@ export const openapiSpec = {
       },
     },
     schemas: {
+      MediaItem: {
+        type: 'object',
+        required: [
+          'mediaId',
+          'type',
+          'originalFileName',
+          'mimeType',
+          'fileSizeBytes',
+          'width',
+          'height',
+          'status',
+          'original',
+          'createdAt',
+          'updatedAt',
+          'disabledAt',
+        ],
+        properties: {
+          mediaId: { type: 'string', format: 'uuid' },
+          type: { type: 'string', enum: ['image', 'video'] },
+          originalFileName: { type: 'string' },
+          mimeType: { type: 'string' },
+          fileSizeBytes: { type: 'integer' },
+          width: { type: ['integer', 'null'] },
+          height: { type: ['integer', 'null'] },
+          durationSeconds: { type: ['number', 'null'] },
+          status: { type: 'string', enum: ['active', 'disabled'] },
+          original: { type: 'string', format: 'uri' },
+          variants: {
+            type: 'object',
+            required: ['thumbnail', 'medium', 'large'],
+            properties: {
+              thumbnail: { type: 'string', format: 'uri' },
+              medium: { type: 'string', format: 'uri' },
+              large: { type: 'string', format: 'uri' },
+            },
+          },
+          poster: { type: 'string', format: 'uri' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          disabledAt: { type: ['string', 'null'], format: 'date-time' },
+        },
+      },
+      MediaListResponse: {
+        type: 'object',
+        required: ['items', 'pagination'],
+        properties: {
+          items: { type: 'array', items: { $ref: '#/components/schemas/MediaItem' } },
+          pagination: {
+            type: 'object',
+            required: ['page', 'limit', 'total', 'totalPages'],
+            properties: {
+              page: { type: 'integer' },
+              limit: { type: 'integer' },
+              total: { type: 'integer' },
+              totalPages: { type: 'integer' },
+            },
+          },
+          counts: {
+            type: 'object',
+            properties: {
+              all: { type: 'integer' },
+              image: { type: 'integer' },
+              video: { type: 'integer' },
+              disabled: { type: 'integer' },
+            },
+          },
+        },
+      },
+      MediaUploadResponse: {
+        type: 'object',
+        required: ['message', 'media', 'items'],
+        properties: {
+          message: { type: 'string' },
+          media: { $ref: '#/components/schemas/MediaItem' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/MediaItem' } },
+        },
+      },
       HealthCheck: {
         type: 'object',
         properties: {
@@ -2147,6 +2224,55 @@ export const openapiSpec = {
         responses: {
           '201': {
             description: 'Media verified, processed, and persisted.',
+          },
+        },
+      },
+    },
+    '/api/admin/media/catalog': {
+      get: {
+        tags: ['Admin Media'],
+        summary: 'List active image assets for campaign banners',
+        description: 'Returns active image assets across the media library to administrators.',
+        security: [{ cookieAuth: [] }],
+        parameters: [
+          { name: 'search', in: 'query', required: false, schema: { type: 'string' } },
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, default: 1 },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated active image assets.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/MediaListResponse' } },
+            },
+          },
+          '400': {
+            description: 'Invalid query parameters.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+          '403': {
+            description: 'Administrator role required.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
           },
         },
       },

@@ -9,6 +9,8 @@ import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
 
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
+export { processImage } from '../../shared/media/image-processor.js';
+export type { ImageProcessingResult } from '../../shared/media/image-processor.js';
 
 // register static cross-platform ffmpeg & ffprobe binaries if available
 if (ffmpegInstaller && ffmpegInstaller.path) {
@@ -18,61 +20,10 @@ if (ffprobeInstaller && ffprobeInstaller.path) {
   ffmpeg.setFfprobePath(ffprobeInstaller.path);
 }
 
-export interface ImageProcessingResult {
-  width: number | null;
-  height: number | null;
-}
-
 export interface VideoProcessingResult {
   width: number | null;
   height: number | null;
   durationSeconds: number | null;
-}
-
-/**
- * Generates thumbnail, medium, and large variants from an image buffer and saves them to object storage.
- */
-export async function processImage(
-  buffer: Buffer,
-  storagePrefix: string,
-): Promise<ImageProcessingResult> {
-  const bucket = STORAGE_BUCKETS.productMedia;
-  const metadata = await sharp(buffer).metadata();
-  const width = metadata.width ?? null;
-  const height = metadata.height ?? null;
-
-  // 1. Thumbnail variant (150x150, cover fit)
-  const thumbnailBuffer = await sharp(buffer)
-    .resize(150, 150, { fit: 'cover' })
-    .webp({ quality: 80 })
-    .toBuffer();
-  await storageService.putObject(
-    `${storagePrefix}/thumbnail.webp`,
-    thumbnailBuffer,
-    'image/webp',
-    bucket,
-  );
-
-  // 2. Medium variant (600x600, inside fit, preserve aspect ratio)
-  const mediumBuffer = await sharp(buffer)
-    .resize(600, 600, { fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 85 })
-    .toBuffer();
-  await storageService.putObject(
-    `${storagePrefix}/medium.webp`,
-    mediumBuffer,
-    'image/webp',
-    bucket,
-  );
-
-  // 3. Large variant (1200x1200, inside fit, preserve aspect ratio)
-  const largeBuffer = await sharp(buffer)
-    .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 90 })
-    .toBuffer();
-  await storageService.putObject(`${storagePrefix}/large.webp`, largeBuffer, 'image/webp', bucket);
-
-  return { width, height };
 }
 
 /**

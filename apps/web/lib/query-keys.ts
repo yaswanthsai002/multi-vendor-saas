@@ -52,6 +52,7 @@ export const queryKeys = {
     active: () => ['vendor', 'bulk-imports', 'active'] as const,
   },
   admin: {
+    media: { catalog: (filters?: unknown) => ['admin', 'media', 'catalog', filters] as const },
     dashboard: {
       metrics: () => ['admin', 'dashboard', 'metrics'] as const,
       performance: (days?: number) => ['admin', 'dashboard', 'performance', days ?? 7] as const,

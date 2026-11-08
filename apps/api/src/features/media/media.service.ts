@@ -235,6 +235,33 @@ export async function listMedia(vendorId: string, query: ListMediaQuery) {
   };
 }
 
+export async function listCampaignMediaAssets(query: ListMediaQuery) {
+  const db = getDb();
+  const { search, page, limit } = query;
+  const conditions = [eq(mediaLibrary.status, 'active'), eq(mediaLibrary.mediaType, 'image')];
+  if (search) conditions.push(ilike(mediaLibrary.originalFileName, `%${search}%`));
+
+  const [[{ count: totalCount }], rows] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(mediaLibrary)
+      .where(and(...conditions)),
+    db
+      .select()
+      .from(mediaLibrary)
+      .where(and(...conditions))
+      .orderBy(desc(mediaLibrary.createdAt))
+      .limit(limit)
+      .offset((page - 1) * limit),
+  ]);
+  const total = Number(totalCount);
+
+  return {
+    items: rows.map(formatMediaResponse),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+  };
+}
+
 /**
  * Retrieves a single media item owned by the vendor.
  */

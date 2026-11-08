@@ -12,6 +12,8 @@ import { MediaUploadDialog } from './media-upload-dialog';
 
 import type { MediaItem } from '../types/media.types';
 
+import { Pagination } from '@/shared/components/pagination/pagination';
+
 export interface MediaPickerModalProps {
   open: boolean;
   onClose: () => void;
@@ -21,6 +23,11 @@ export interface MediaPickerModalProps {
   multiple?: boolean;
   acceptedType?: 'image' | 'video';
   maxSelect?: number;
+  mediaScope?: 'vendor' | 'catalog';
+  allowUpload?: boolean;
+  maxUploadFiles?: number;
+  uploadAccept?: string;
+  onUploadFiles?: (files: File[], onProgress: (percent: number) => void) => Promise<void>;
 }
 
 function MediaPickerContent({
@@ -31,12 +38,18 @@ function MediaPickerContent({
   multiple = false,
   acceptedType,
   maxSelect,
+  mediaScope = 'vendor',
+  allowUpload = true,
+  maxUploadFiles,
+  uploadAccept,
+  onUploadFiles,
 }: Omit<MediaPickerModalProps, 'open'>) {
   const [activeTab, setActiveTab] = React.useState<MediaTab>(acceptedType || 'all');
   const [search, setSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [uploadOpen, setUploadOpen] = React.useState(false);
   const [selectedMap, setSelectedMap] = React.useState<Map<string, MediaItem>>(() => new Map());
+  const mediaContentRef = React.useRef<HTMLDivElement>(null);
 
   // Handle ESC key to close
   React.useEffect(() => {
@@ -73,7 +86,7 @@ function MediaPickerContent({
     return params;
   }, [activeTab, search, page]);
 
-  const { data, isLoading, isFetching } = useMediaList(queryParams);
+  const { data, isLoading, isFetching } = useMediaList(queryParams, mediaScope);
 
   const handleItemSelect = (item: MediaItem) => {
     if (item.status === 'disabled') return;
@@ -129,7 +142,22 @@ function MediaPickerContent({
   }, []);
 
   if (uploadOpen) {
-    return <MediaUploadDialog open onClose={() => setUploadOpen(false)} />;
+    return (
+      <MediaUploadDialog
+        open
+        maxFiles={maxUploadFiles}
+        accept={uploadAccept}
+        onUploadComplete={onUploadFiles ? onClose : undefined}
+        onUploadFiles={
+          onUploadFiles
+            ? async (files, onProgress) => {
+                await onUploadFiles(files, onProgress);
+              }
+            : undefined
+        }
+        onClose={() => setUploadOpen(false)}
+      />
+    );
   }
 
   return (
@@ -149,14 +177,16 @@ function MediaPickerContent({
             <p className="text-xs text-text-secondary mt-0.5">{description}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setUploadOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-primary text-xs font-semibold border border-border-default transition-colors cursor-pointer"
-            >
-              <UploadCloud className="h-3.5 w-3.5 text-accent" />
-              <span>Upload new</span>
-            </button>
+            {allowUpload && (
+              <button
+                type="button"
+                onClick={() => setUploadOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-primary text-xs font-semibold border border-border-default transition-colors cursor-pointer"
+              >
+                <UploadCloud className="h-3.5 w-3.5 text-accent" />
+                <span>Upload new</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -194,16 +224,16 @@ function MediaPickerContent({
         </div>
 
         {/* Media Grid Content */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-90">
+        <div ref={mediaContentRef} className="min-h-0 flex-1 overflow-y-auto p-6">
           <MediaGrid
             items={data?.items ?? []}
             isLoading={isLoading}
             isFetching={isFetching}
             searchQuery={search}
             onClearSearch={() => setSearch('')}
-            onOpenUpload={() => setUploadOpen(true)}
+            onOpenUpload={allowUpload ? () => setUploadOpen(true) : undefined}
             pagination={data?.pagination}
-            onPageChange={setPage}
+            showPagination={false}
             selectable={true}
             selectedIds={selectedIds}
             getSelectionIndex={
@@ -217,6 +247,20 @@ function MediaPickerContent({
             onSelect={handleItemSelect}
           />
         </div>
+
+        {data?.pagination && (
+          <Pagination
+            page={data.pagination.page}
+            totalPages={data.pagination.totalPages}
+            totalItems={data.pagination.total}
+            limit={data.pagination.limit}
+            onPageChange={(nextPage) => {
+              setPage(nextPage);
+              mediaContentRef.current?.scrollTo({ top: 0 });
+            }}
+            className="px-6"
+          />
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border-default bg-surface-subtle/50">

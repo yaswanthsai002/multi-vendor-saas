@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 
+import { requireAdmin } from '../../shared/middleware/requireAdmin.js';
 import { verifyToken } from '../../shared/middleware/verifyToken.js';
 import { requireActiveVendor } from '../vendor/vendor.middleware.js';
 
@@ -13,11 +14,15 @@ import {
   getMediaById,
   initiateUpload,
   listMedia,
+  listCampaignMedia,
   uploadMedia,
 } from './media.controller.js';
 import { MAX_VIDEO_SIZE_BYTES } from './media.schema.js';
 
 export const mediaRouter = Router();
+export const adminMediaRouter = Router();
+adminMediaRouter.use(verifyToken, requireAdmin);
+adminMediaRouter.get('/catalog', listCampaignMedia);
 
 // ponytail: use in-memory buffer storage so Sharp and storage service operate directly without duplicate disk writes
 const upload = multer({

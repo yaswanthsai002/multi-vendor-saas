@@ -428,15 +428,17 @@ export default function VendorMediaPage() {
       ) : null}
 
       {/* Upload Dialog Modal */}
-      <MediaUploadDialog
-        open={isUploadOpen}
-        initialFiles={droppedFiles}
-        onUploadInBackground={handleBackgroundUpload}
-        onClose={() => {
-          setIsUploadOpen(false);
-          setDroppedFiles([]);
-        }}
-      />
+      {isUploadOpen ? (
+        <MediaUploadDialog
+          open
+          initialFiles={droppedFiles}
+          onUploadInBackground={handleBackgroundUpload}
+          onClose={() => {
+            setIsUploadOpen(false);
+            setDroppedFiles([]);
+          }}
+        />
+      ) : null}
 
       {/* Single / Bulk Delete Confirmation Modal */}
       <MediaDeleteDialog

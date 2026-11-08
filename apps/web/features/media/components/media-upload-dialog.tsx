@@ -10,6 +10,10 @@ import { validateMediaFiles } from '../types/media.types';
 interface MediaUploadDialogProps {
   open: boolean;
   initialFiles?: File[];
+  maxFiles?: number;
+  accept?: string;
+  onUploadFiles?: (files: File[], onProgress: (percent: number) => void) => Promise<void>;
+  onUploadComplete?: () => void;
   onClose: () => void;
   onUploadInBackground?: (files: File[]) => void;
 }
@@ -23,20 +27,24 @@ function formatFileSize(bytes: number): string {
 export function MediaUploadDialog({
   open,
   initialFiles = [],
+  maxFiles,
+  accept = '.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov',
+  onUploadFiles,
+  onUploadComplete,
   onClose,
   onUploadInBackground,
 }: MediaUploadDialogProps) {
-  const [files, setFiles] = React.useState<File[]>([]);
+  const [files, setFiles] = React.useState<File[]>(initialFiles);
   const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [customProgress, setCustomProgress] = React.useState(0);
+  const [customUploading, setCustomUploading] = React.useState(false);
 
   const [isDragging, setIsDragging] = React.useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadMedia();
-
-  React.useEffect(() => {
-    if (open && initialFiles.length > 0) setFiles(initialFiles);
-  }, [open, initialFiles]);
+  const isUploading = uploadMutation.isPending || customUploading;
+  const uploadProgress = onUploadFiles ? customProgress : uploadMutation.progress;
 
   const handleClose = React.useCallback(() => {
     setFiles([]);
@@ -76,6 +84,11 @@ export function MediaUploadDialog({
       }
     });
 
+    if (maxFiles !== undefined && files.length + newFiles.length > maxFiles) {
+      setValidationError(`Choose up to ${maxFiles} ${maxFiles === 1 ? 'file' : 'files'}.`);
+      return;
+    }
+
     if (errors.length > 0) {
       setValidationError(errors.join('. '));
     }
@@ -101,6 +114,22 @@ export function MediaUploadDialog({
 
   const handleForegroundUpload = async () => {
     if (files.length === 0) return;
+
+    if (onUploadFiles) {
+      setCustomUploading(true);
+      setCustomProgress(0);
+      setValidationError(null);
+      try {
+        await onUploadFiles(files, setCustomProgress);
+        setCustomUploading(false);
+        handleClose();
+        onUploadComplete?.();
+      } catch (error) {
+        setCustomUploading(false);
+        setValidationError(error instanceof Error ? error.message : 'Upload failed. Try again.');
+      }
+      return;
+    }
 
     try {
       await uploadMutation.mutateAsync(files);
@@ -137,6 +166,7 @@ export function MediaUploadDialog({
           <button
             type="button"
             onClick={handleClose}
+            disabled={isUploading}
             aria-label="Close dialog"
             className="p-1 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
           >
@@ -164,8 +194,8 @@ export function MediaUploadDialog({
             <input
               ref={fileInputRef}
               type="file"
-              multiple
-              accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.mov"
+              multiple={maxFiles !== 1}
+              accept={accept}
               onChange={(e) => {
                 if (e.target.files && e.target.files.length > 0) {
                   validateAndAddFiles(e.target.files);
@@ -182,8 +212,9 @@ export function MediaUploadDialog({
               Click to browse or drag and drop files here
             </p>
             <p className="text-xs text-text-tertiary mt-1">
-              Supports multiple images (JPEG, PNG, WebP up to 10MB) and videos (MP4, WebM up to
-              100MB)
+              {maxFiles === 1
+                ? 'Choose one image (JPEG, PNG, or WebP up to 10MB)'
+                : 'Supports multiple images (JPEG, PNG, WebP up to 10MB) and videos (MP4, WebM up to 100MB)'}
             </p>
           </div>
 
@@ -269,16 +300,16 @@ export function MediaUploadDialog({
 
         {/* Footer */}
         <div className="space-y-3 border-t border-border-default bg-surface px-6 py-4 dark:bg-surface-subtle">
-          {uploadMutation.isPending && (
+          {isUploading && (
             <div aria-live="polite">
               <div className="mb-1 flex justify-between text-xs text-text-secondary">
                 <span>Uploading files</span>
-                <span>{uploadMutation.progress}%</span>
+                <span>{uploadProgress}%</span>
               </div>
               <progress
                 className="h-2 w-full accent-accent"
                 max={100}
-                value={uploadMutation.progress}
+                value={uploadProgress}
                 aria-label="Upload progress"
               />
             </div>
@@ -287,7 +318,7 @@ export function MediaUploadDialog({
             <button
               type="button"
               onClick={handleClose}
-              disabled={uploadMutation.isPending}
+              disabled={isUploading}
               className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
@@ -298,7 +329,7 @@ export function MediaUploadDialog({
                 <button
                   type="button"
                   onClick={handleBackgroundUpload}
-                  disabled={uploadMutation.isPending}
+                  disabled={isUploading}
                   className="px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border border-border-default text-text-primary hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Upload in background
@@ -308,10 +339,10 @@ export function MediaUploadDialog({
               <button
                 type="button"
                 onClick={handleForegroundUpload}
-                disabled={files.length === 0 || uploadMutation.isPending}
+                disabled={files.length === 0 || isUploading}
                 className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {uploadMutation.isPending ? (
+                {isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>

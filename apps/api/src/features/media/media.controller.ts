@@ -10,7 +10,7 @@ import {
 import * as mediaService from './media.service.js';
 
 import type { VendorRequest } from '../vendor/vendor.middleware.js';
-import type { NextFunction, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 export async function uploadMedia(req: VendorRequest, res: Response, next: NextFunction) {
   try {
@@ -53,6 +53,19 @@ export async function listMedia(req: VendorRequest, res: Response, next: NextFun
     const result = await mediaService.listMedia(vendorId, query);
 
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function listCampaignMedia(req: Request, res: Response, next: NextFunction) {
+  try {
+    const query = listMediaQuerySchema.parse({
+      ...req.query,
+      status: 'active',
+      mediaType: 'image',
+    });
+    return res.status(200).json(await mediaService.listCampaignMediaAssets(query));
   } catch (error) {
     return next(error);
   }
