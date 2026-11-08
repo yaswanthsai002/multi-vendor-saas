@@ -1,5 +1,6 @@
 import {
   catalogProductParamsSchema,
+  listBrandsQuerySchema,
   listCatalogProductsQuerySchema,
   productReviewsQuerySchema,
 } from './catalog.schema.js';
@@ -12,6 +13,15 @@ export async function listCatalogProducts(req: Request, res: Response, next: Nex
     const query = listCatalogProductsQuerySchema.parse(req.query);
     const result = await catalogService.listCatalogProducts(query);
     return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function listBrands(req: Request, res: Response, next: NextFunction) {
+  try {
+    const query = listBrandsQuerySchema.parse(req.query);
+    return res.status(200).json(await catalogService.listBrands(query));
   } catch (error) {
     return next(error);
   }

@@ -28,6 +28,18 @@ export const listCatalogProductsQuerySchema = z.object({
 
 export type ListCatalogProductsQuery = z.infer<typeof listCatalogProductsQuerySchema>;
 
+export const listBrandsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(48).default(24),
+  search: z.string().trim().max(100).optional(),
+  featured: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+});
+
+export type ListBrandsQuery = z.infer<typeof listBrandsQuerySchema>;
+
 export const catalogProductParamsSchema = z.object({
   slug: z.string().trim().min(1),
 });

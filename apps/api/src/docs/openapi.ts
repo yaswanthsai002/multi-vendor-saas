@@ -905,6 +905,81 @@ export const openapiSpec = {
     },
   },
   paths: {
+    '/api/brands': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List active brands with publicly available products',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer', minimum: 1, maximum: 48, default: 24 },
+          },
+          { name: 'search', in: 'query', schema: { type: 'string', maxLength: 100 } },
+          { name: 'featured', in: 'query', schema: { type: 'boolean' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated active brands.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['items', 'pagination'],
+                  properties: {
+                    items: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        required: [
+                          'vendorId',
+                          'name',
+                          'slug',
+                          'tagline',
+                          'description',
+                          'logoUrl',
+                          'bannerUrl',
+                          'isFeatured',
+                          'productCount',
+                        ],
+                        properties: {
+                          vendorId: { type: 'string', format: 'uuid' },
+                          name: { type: 'string' },
+                          slug: { type: 'string' },
+                          tagline: { type: ['string', 'null'] },
+                          description: { type: ['string', 'null'] },
+                          logoUrl: { type: ['string', 'null'] },
+                          bannerUrl: { type: ['string', 'null'] },
+                          isFeatured: { type: 'boolean' },
+                          productCount: { type: 'integer' },
+                        },
+                      },
+                    },
+                    pagination: {
+                      type: 'object',
+                      required: ['page', 'limit', 'total', 'totalPages'],
+                      properties: {
+                        page: { type: 'integer' },
+                        limit: { type: 'integer' },
+                        total: { type: 'integer' },
+                        totalPages: { type: 'integer' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid pagination, search, or featured filter.',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+            },
+          },
+        },
+      },
+    },
     '/api/health/live': {
       get: {
         tags: ['System'],

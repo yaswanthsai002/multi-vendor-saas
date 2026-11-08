@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { sql } from 'drizzle-orm';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,6 +23,60 @@ describe('Catalog Feature', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('GET /api/brands', () => {
+    it('returns a paginated directory of public brands without authentication', async () => {
+      const existsQuery = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getSQL: () => sql`SELECT 1`,
+      };
+      const countQuery = {
+        from: vi.fn().mockReturnThis(),
+        innerJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue([{ total: 1 }]),
+      };
+      const brandQuery = {
+        from: vi.fn().mockReturnThis(),
+        innerJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockResolvedValue([
+          {
+            vendorId,
+            name: 'Northstar Audio',
+            slug: 'northstar-audio',
+            tagline: 'Thoughtful sound for everyday listening',
+            description: null,
+            logoUrl: null,
+            bannerUrl: null,
+            isFeatured: true,
+            productCount: 8,
+          },
+        ]),
+      };
+      db.select
+        .mockReturnValueOnce(existsQuery)
+        .mockReturnValueOnce(countQuery)
+        .mockReturnValueOnce(brandQuery);
+
+      const res = await request(app).get('/api/brands?page=1&limit=24&featured=true');
+
+      expect(res.status).toBe(200);
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0]).toMatchObject({ slug: 'northstar-audio', productCount: 8 });
+      expect(res.body.pagination).toEqual({ page: 1, limit: 24, total: 1, totalPages: 1 });
+      expect(db.select).toHaveBeenCalledTimes(3);
+    });
+
+    it('rejects invalid pagination and filters before querying the database', async () => {
+      const res = await request(app).get('/api/brands?page=0&featured=sometimes');
+
+      expect(res.status).toBe(400);
+      expect(db.select).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /api/products', () => {

@@ -9,14 +9,93 @@ import {
   users,
   vendors,
 } from '@repo/db/schema';
-import { and, count, desc, eq, exists, gt, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
-import type { ListCatalogProductsQuery } from './catalog.schema.js';
+import type { ListBrandsQuery, ListCatalogProductsQuery } from './catalog.schema.js';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function publicBrandProductCondition() {
+  return and(
+    eq(products.vendorId, vendors.vendorId),
+    eq(products.published, true),
+    eq(products.moderationStatus, 'approved'),
+    eq(products.isSoftDeleted, false),
+  );
+}
+
+export async function listBrands(query: ListBrandsQuery) {
+  const db = getDb();
+  const productCondition = publicBrandProductCondition();
+  const conditions = [
+    eq(vendors.status, 'active'),
+    eq(users.status, 'active'),
+    exists(db.select({ productId: products.productId }).from(products).where(productCondition)),
+  ];
+
+  if (query.search) {
+    conditions.push(
+      or(
+        ilike(vendors.name, `%${query.search}%`),
+        ilike(vendors.tagline, `%${query.search}%`),
+        ilike(vendors.description, `%${query.search}%`),
+      )!,
+    );
+  }
+  if (query.featured !== undefined) conditions.push(eq(vendors.isFeatured, query.featured));
+
+  const where = and(...conditions);
+  const [{ total = 0 } = {}] = await db
+    .select({ total: count() })
+    .from(vendors)
+    .innerJoin(users, eq(users.userId, vendors.userId))
+    .where(where);
+  const items = await db
+    .select({
+      vendorId: vendors.vendorId,
+      name: vendors.name,
+      slug: vendors.slug,
+      tagline: vendors.tagline,
+      description: vendors.description,
+      logoUrl: vendors.logoUrl,
+      bannerUrl: vendors.bannerUrl,
+      isFeatured: vendors.isFeatured,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM ${products} WHERE ${productCondition})`,
+    })
+    .from(vendors)
+    .innerJoin(users, eq(users.userId, vendors.userId))
+    .where(where)
+    .orderBy(desc(vendors.isFeatured), asc(vendors.name), asc(vendors.vendorId))
+    .limit(query.limit)
+    .offset((query.page - 1) * query.limit);
+
+  return {
+    items,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.ceil(total / query.limit),
+    },
+  };
+}
 
 // ponytail: helper to resolve image storage key into public CDN/API URL
 function resolveImageUrl(media: {

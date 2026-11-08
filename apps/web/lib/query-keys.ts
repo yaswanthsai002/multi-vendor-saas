@@ -39,6 +39,10 @@ export const queryKeys = {
     facets: () => ['catalog', 'facets'] as const,
     detail: (slug: string) => ['catalog', 'detail', slug] as const,
   },
+  brands: {
+    all: () => ['brands'] as const,
+    list: (filters?: unknown) => ['brands', 'list', filters] as const,
+  },
   merchandising: {
     homepage: () => ['merchandising', 'homepage'] as const,
   },
