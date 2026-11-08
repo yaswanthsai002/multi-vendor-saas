@@ -15,6 +15,7 @@ export interface HeaderProps {
   initialCartCount?: number;
   deliveryAddressDesktop: React.ReactNode;
   deliveryAddressMobile: React.ReactNode;
+  secondaryNavigation?: React.ReactNode;
 }
 
 function PerigeeBrandLogo() {
@@ -48,6 +49,7 @@ export function Header({
   initialCartCount,
   deliveryAddressDesktop,
   deliveryAddressMobile,
+  secondaryNavigation,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -135,7 +137,7 @@ export function Header({
         </div>
 
         {/* Sub Navigation Bar (Desktop) */}
-        <HeaderNavBar />
+        <HeaderNavBar>{secondaryNavigation}</HeaderNavBar>
       </div>
 
       {/* ========================================================================= */}
@@ -201,7 +203,7 @@ export function Header({
         <div className="px-3.5 pb-2">{deliveryAddressMobile}</div>
 
         {/* Row 4: Sub Navigation Bar */}
-        <HeaderNavBar />
+        <HeaderNavBar>{secondaryNavigation}</HeaderNavBar>
       </div>
     </header>
   );

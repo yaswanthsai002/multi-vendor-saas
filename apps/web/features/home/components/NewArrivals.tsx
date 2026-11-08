@@ -1,140 +1,99 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-import type { Product } from '@/shared/components/product-card/product-card.types';
+import { useHomeProducts } from '../hooks/use-homepage-data';
 
+import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/shared/components/product-card/product-card';
 
-const products: Product[] = [
-  {
-    brand: 'TechPulse',
-    name: 'Wireless Studio Noise-Cancelling Headphones',
-    price: '₹1,899',
-    oldPrice: '₹3,499',
-    discount: '-45%',
-    rating: '4.8',
-    reviews: 124,
-    image: '/assets/products/product2.jpg',
-    badge: { text: 'Best Seller', variant: 'warning' },
-  },
-  {
-    brand: 'UrbanVogue',
-    name: 'Casual Streetwear Full-Grain Backpack',
-    price: '₹1,299',
-    oldPrice: '₹2,199',
-    discount: '-40%',
-    rating: '4.7',
-    reviews: 88,
-    image: '/assets/products/product.png',
-    badge: { text: 'Trending', variant: 'accent' },
-  },
-  {
-    brand: 'Apex Living',
-    name: 'Compact Digital Kitchen Air Fryer',
-    price: '₹2,499',
-    oldPrice: '₹4,499',
-    discount: '-44%',
-    rating: '4.9',
-    reviews: 215,
-    image: '/assets/products/product1.jpg',
-    badge: { text: 'Top Rated', variant: 'success' },
-  },
-  {
-    brand: 'SoundWave',
-    name: 'Ultra-Bass Portable Wireless Speaker',
-    price: '₹999',
-    oldPrice: '₹1,899',
-    discount: '-47%',
-    rating: '4.8',
-    reviews: 64,
-    image: '/assets/products/product3.jpg',
-  },
-  {
-    brand: 'ActiveFit',
-    name: 'Breathable Running Athletic Shoes',
-    price: '₹1,599',
-    oldPrice: '₹2,999',
-    discount: '-46%',
-    rating: '4.6',
-    reviews: 79,
-    image: '/assets/products/product4.jpg',
-  },
-  {
-    brand: 'PureGlow',
-    name: 'Essential Skincare Botanical Gift Set',
-    price: '₹799',
-    oldPrice: '₹1,299',
-    discount: '-38%',
-    rating: '4.8',
-    reviews: 135,
-    image: '/assets/products/product5.jpg',
-    badge: { text: 'Popular', variant: 'neutral' },
-  },
-  {
-    brand: 'TechPulse',
-    name: 'Ergonomic Vertical Wireless Mouse',
-    price: '₹699',
-    oldPrice: '₹1,199',
-    discount: '-41%',
-    rating: '4.7',
-    reviews: 54,
-    image: '/assets/products/product.png',
-  },
-  {
-    brand: 'UrbanVogue',
-    name: 'Classic Everyday Leather Messenger',
-    price: '₹1,699',
-    oldPrice: '₹2,899',
-    discount: '-41%',
-    rating: '4.9',
-    reviews: 98,
-    image: '/assets/products/product1.jpg',
-    badge: { text: 'New', variant: 'accent' },
-  },
-];
+function formatPrice(value: string) {
+  return `₹${Number(value).toLocaleString('en-IN')}`;
+}
 
 export default function NewArrivals() {
-  const handleAddToCart = () => {};
+  const { data, isLoading, isError, refetch } = useHomeProducts({ sortBy: 'newest', limit: 8 });
+  const products = (data?.items ?? []).filter((product) => product.imageUrl && product.stock > 0);
+
+  if (isLoading) {
+    return (
+      <section
+        aria-label="Loading new arrivals"
+        className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+      >
+        <div className="h-6 w-40 animate-pulse rounded bg-surface-subtle" />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="aspect-square animate-pulse rounded-xl bg-surface-subtle" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8" aria-live="polite">
+        <p className="text-sm text-text-secondary">New arrivals couldn’t load.</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
+          Try again
+        </Button>
+      </section>
+    );
+  }
+
+  if (!products.length) return null;
 
   return (
-    <section className="w-full bg-background py-6 sm:py-8 md:py-10">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
-        <div className="mb-4 flex items-end justify-between sm:mb-5">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-              New Arrivals & Trending Drops
-            </h2>
-            <p className="mt-0.5 text-xs text-text-secondary sm:text-sm">
-              Fresh additions from verified multi-vendor storefronts
-            </p>
-          </div>
-
-          <Link
-            href="/products"
-            className="group flex min-h-11 items-center gap-1 rounded-md px-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 sm:text-sm"
+    <section
+      id="new-arrivals"
+      aria-labelledby="new-arrivals-title"
+      className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8"
+    >
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <h2
+            id="new-arrivals-title"
+            className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl"
           >
-            <span>View All Products</span>
-            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
-              →
-            </span>
-          </Link>
+            New arrivals
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Recently added products from active sellers.
+          </p>
         </div>
-
-        {/* Product rail */}
-        <div className="-mx-4 overflow-x-auto px-4 pt-2 pb-4 scrollbar-none sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-          <div className="flex gap-3 sm:gap-4">
-            {products.map((product, index) => (
-              <ProductCard
-                key={`${product.name}-${index}`}
-                product={product}
-                onAddToCart={handleAddToCart}
-                className="w-[44vw] max-w-48 min-w-0 flex-none sm:w-[30vw] md:w-[22vw] lg:w-[calc((100vw-112px)/6)]"
-              />
-            ))}
-          </div>
-        </div>
+        <Link
+          href="/products?sortBy=newest"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+        >
+          Browse all <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+        {products.map((product) => {
+          const price = Number(product.price);
+          const mrp = Number(product.mrp);
+          const discount = mrp > price ? Math.round((1 - price / mrp) * 100) : 0;
+          return (
+            <ProductCard
+              key={product.productId}
+              product={{
+                id: product.productId,
+                slug: product.slug,
+                name: product.name,
+                brand: product.vendor.name,
+                price: formatPrice(product.price),
+                oldPrice: mrp > price ? formatPrice(product.mrp) : undefined,
+                discount: discount > 0 ? `-${discount}%` : undefined,
+                rating: product.rating ?? undefined,
+                reviewsCount: product.ratingCount,
+                image: product.imageUrl!,
+                badge: product.isFeatured ? { text: 'Featured', variant: 'accent' } : undefined,
+              }}
+            />
+          );
+        })}
       </div>
     </section>
   );

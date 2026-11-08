@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { AuthToastListener } from '@/components/auth-toast-listener';
 import { Toaster } from '@/components/ui/toaster';
 import { DeliveryAddressPicker } from '@/features/account/components/delivery-address-picker';
+import { HomeCategoryNavigation } from '@/features/home/components/home-category-navigation';
 import { QueryProvider } from '@/providers/query-provider';
 import { Footer } from '@/shared/components/layout/footer';
 import { Header } from '@/shared/components/layout/header';
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Header
               deliveryAddressDesktop={<DeliveryAddressPicker variant="desktop" />}
               deliveryAddressMobile={<DeliveryAddressPicker variant="mobile" />}
+              secondaryNavigation={<HomeCategoryNavigation />}
             />
 
             {/* Main content area */}
