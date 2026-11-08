@@ -65,14 +65,15 @@ export function Select<T extends string = string>({
       <BaseSelect.Portal>
         <BaseSelect.Positioner
           side="bottom"
-          align="end"
+          align="start"
           sideOffset={4}
           alignItemWithTrigger={false}
           className="z-50"
         >
           <BaseSelect.Popup
+            style={{ width: 'var(--anchor-width)' }}
             className={cn(
-              'w-48 overflow-hidden rounded-xl border border-border-default bg-surface-raised p-1 shadow-xl outline-none backdrop-blur-xs transition-all animate-in fade-in-50 zoom-in-95',
+              'overflow-hidden rounded-xl border border-border-default bg-surface-raised p-1 shadow-xl outline-none backdrop-blur-xs transition-all animate-in fade-in-50 zoom-in-95',
               className,
             )}
           >
@@ -81,7 +82,7 @@ export function Select<T extends string = string>({
                 <BaseSelect.Item
                   key={opt.value}
                   value={opt.value}
-                  className="relative flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary focus:bg-surface-hover focus:text-text-primary focus:outline-none cursor-pointer data-[selected]:font-semibold data-[selected]:text-text-primary"
+                  className="relative flex items-center justify-between whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer data-[selected]:font-semibold"
                 >
                   <BaseSelect.ItemText>{opt.label}</BaseSelect.ItemText>
                   <BaseSelect.ItemIndicator>
