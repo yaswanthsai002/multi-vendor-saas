@@ -4,6 +4,7 @@ import {
   Home,
   Layers,
   LogOut,
+  Megaphone,
   Package,
   ShieldCheck,
   ShoppingCart,
@@ -68,6 +69,7 @@ export function AdminSidebar() {
   const isProducts = pathname.startsWith('/admin/products');
   const isCategories = pathname.startsWith('/admin/categories');
   const isMerchandising = pathname.startsWith('/admin/merchandising');
+  const isCampaigns = pathname.startsWith('/admin/campaigns');
   const isOrders = pathname.startsWith('/admin/orders');
   const isVendors = pathname.startsWith('/admin/vendors');
   const isCustomers = pathname.startsWith('/admin/customers');
@@ -132,6 +134,12 @@ export function AdminSidebar() {
               label="Merchandising"
               icon={Tag}
               active={isMerchandising}
+            />
+            <NavItem
+              href="/admin/campaigns"
+              label="Campaigns"
+              icon={Megaphone}
+              active={isCampaigns}
             />
           </div>
         </div>

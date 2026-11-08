@@ -39,6 +39,9 @@ export const queryKeys = {
     facets: () => ['catalog', 'facets'] as const,
     detail: (slug: string) => ['catalog', 'detail', slug] as const,
   },
+  merchandising: {
+    homepage: () => ['merchandising', 'homepage'] as const,
+  },
   wishlist: {
     all: () => ['wishlist'] as const,
     list: (userId?: string | number) => ['wishlist', userId] as const,
@@ -80,7 +83,10 @@ export const queryKeys = {
       detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
     },
     merchandising: {
+      all: () => ['admin', 'merchandising'] as const,
       overview: () => ['admin', 'merchandising', 'overview'] as const,
+      campaigns: () => ['admin', 'merchandising', 'campaigns'] as const,
+      draft: (id: string) => ['admin', 'merchandising', 'draft', id] as const,
     },
   },
 } as const;

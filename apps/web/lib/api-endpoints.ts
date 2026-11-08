@@ -104,6 +104,13 @@ export const API_ENDPOINTS = {
     },
     merchandising: {
       overview: '/api/admin/merchandising/overview',
+      campaigns: '/api/admin/campaigns',
+      campaign: (id: string) => `/api/admin/campaigns/${id}` as const,
+      draftBanner: (id: string, slot: 'desktop' | 'mobile') =>
+        `/api/admin/campaigns/${id}/banners/${slot}` as const,
+      completeDraftBanner: (id: string, slot: 'desktop' | 'mobile') =>
+        `/api/admin/campaigns/${id}/banners/${slot}/complete` as const,
     },
+    media: { catalog: '/api/admin/media/catalog' },
   },
 } as const;

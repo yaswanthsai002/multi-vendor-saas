@@ -1,5 +1,6 @@
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { putFileToStorage } from '@/lib/direct-upload';
 
 export interface DashboardMetrics {
   kpi: {
@@ -166,6 +167,50 @@ export interface AdminProductItem {
     slug: string;
     status: string;
   };
+}
+
+export interface AdminCampaign {
+  campaignId: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  mobileImageUrl: string | null;
+  ctaLabel: string;
+  ctaHref: string;
+  startsAt: string;
+  endsAt: string;
+  position: number;
+  published: boolean;
+  products: Array<{
+    productId: string;
+    name: string;
+    price: string;
+    dealPrice: string;
+    imageUrl?: string | null;
+    vendorName?: string;
+  }>;
+}
+
+export interface AdminPromotionDraftPayload {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  mobileImageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  startsAt?: string;
+  endsAt?: string;
+  position?: number;
+  products?: Array<{ productId: string; dealPrice: string }>;
+}
+export interface AdminPromotionDraft {
+  draftId: string;
+  campaignId: string | null;
+  payload: AdminPromotionDraftPayload;
+  products?: AdminCampaign['products'];
+  updatedAt: string;
 }
 
 export interface AdminProductsResponse {
@@ -383,4 +428,77 @@ export const adminService = {
       method: 'GET',
       signal,
     }),
+
+  getCampaigns: (signal?: AbortSignal) =>
+    makeApiRequest<{ items: AdminCampaign[]; drafts: AdminPromotionDraft[] }>({
+      url: API_ENDPOINTS.admin.merchandising.campaigns,
+      method: 'GET',
+      signal,
+    }),
+
+  createPromotionDraft: (campaignId?: string) =>
+    makeApiRequest<{ draft: AdminPromotionDraft }>({
+      url: API_ENDPOINTS.admin.merchandising.campaigns,
+      method: 'POST',
+      data: campaignId ? { sourceCampaignId: campaignId } : {},
+    }),
+
+  getPromotionDraft: (draftId: string, signal?: AbortSignal) =>
+    makeApiRequest<{ draft: AdminPromotionDraft }>({
+      url: API_ENDPOINTS.admin.merchandising.campaign(draftId),
+      method: 'GET',
+      signal,
+    }),
+
+  savePromotionDraft: (draftId: string, data: AdminPromotionDraftPayload) =>
+    makeApiRequest<{ draft: AdminPromotionDraft }>({
+      url: API_ENDPOINTS.admin.merchandising.campaign(draftId),
+      method: 'PUT',
+      data,
+    }),
+
+  discardPromotionDraft: (draftId: string) =>
+    makeApiRequest<void>({
+      url: API_ENDPOINTS.admin.merchandising.campaign(draftId),
+      method: 'DELETE',
+    }),
+
+  publishPromotionDraft: (draftId: string) =>
+    makeApiRequest<{ campaign: AdminCampaign }>({
+      url: API_ENDPOINTS.admin.merchandising.campaign(draftId),
+      method: 'PATCH',
+    }),
+
+  uploadPromotionDraftBanner: (
+    draftId: string,
+    slot: 'desktop' | 'mobile',
+    file: File,
+    onUploadProgress: (percent: number) => void,
+  ) =>
+    (async () => {
+      const metadata = {
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        mimeType: file.type,
+      };
+      const upload = await makeApiRequest<{
+        uploadUrl: string;
+        storageKey: string;
+        fileName: string;
+        fileSizeBytes: number;
+        mimeType: string;
+      }>({
+        url: API_ENDPOINTS.admin.merchandising.draftBanner(draftId, slot),
+        method: 'POST',
+        data: metadata,
+      });
+      await putFileToStorage(upload.uploadUrl, file, (loaded) =>
+        onUploadProgress(Math.round((loaded / Math.max(file.size, 1)) * 100)),
+      );
+      return makeApiRequest<{ imageUrl: string }>({
+        url: API_ENDPOINTS.admin.merchandising.completeDraftBanner(draftId, slot),
+        method: 'POST',
+        data: { storageKey: upload.storageKey, ...metadata },
+      });
+    })(),
 };

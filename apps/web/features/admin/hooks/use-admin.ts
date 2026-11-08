@@ -3,7 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { adminService, type OnboardVendorInput } from '../services/admin.service';
+import {
+  adminService,
+  type AdminPromotionDraftPayload,
+  type OnboardVendorInput,
+} from '../services/admin.service';
 
 import { queryKeys } from '@/lib/query-keys';
 
@@ -140,19 +144,23 @@ export function useOnboardVendor() {
   });
 }
 
-export function useAdminProducts(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  moderationStatus?: string;
-  isFeatured?: string;
-  published?: string;
-  sortBy?: string;
-  sortOrder?: string;
-}) {
+export function useAdminProducts(
+  params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    moderationStatus?: string;
+    isFeatured?: string;
+    published?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  },
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.admin.products.list(params),
     queryFn: ({ signal }) => adminService.getProducts(params, signal),
+    enabled,
   });
 }
 
@@ -211,5 +219,72 @@ export function useMerchandisingOverview() {
   return useQuery({
     queryKey: queryKeys.admin.merchandising.overview(),
     queryFn: ({ signal }) => adminService.getMerchandisingOverview(signal),
+  });
+}
+
+export function useAdminCampaigns() {
+  return useQuery({
+    queryKey: queryKeys.admin.merchandising.campaigns(),
+    queryFn: ({ signal }) => adminService.getCampaigns(signal),
+  });
+}
+
+export function useAdminPromotionDrafts() {
+  return useQuery({
+    queryKey: queryKeys.admin.merchandising.campaigns(),
+    queryFn: ({ signal }) => adminService.getCampaigns(signal),
+    select: ({ drafts }) => ({ items: drafts }),
+  });
+}
+
+export function useAdminPromotionDraft(draftId: string) {
+  return useQuery({
+    queryKey: queryKeys.admin.merchandising.draft(draftId),
+    queryFn: ({ signal }) => adminService.getPromotionDraft(draftId, signal),
+    enabled: Boolean(draftId),
+  });
+}
+
+export function useCreateAdminPromotionDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (campaignId?: string) => adminService.createPromotionDraft(campaignId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.merchandising.campaigns() }),
+  });
+}
+
+export function useSaveAdminPromotionDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ draftId, data }: { draftId: string; data: AdminPromotionDraftPayload }) =>
+      adminService.savePromotionDraft(draftId, data),
+    onSuccess: (response) => {
+      queryClient.setQueryData(
+        queryKeys.admin.merchandising.draft(response.draft.draftId),
+        response,
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.merchandising.campaigns() });
+    },
+  });
+}
+
+export function useDiscardAdminPromotionDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: string) => adminService.discardPromotionDraft(draftId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.merchandising.campaigns() }),
+  });
+}
+
+export function usePublishAdminPromotionDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (draftId: string) => adminService.publishPromotionDraft(draftId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.merchandising.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.merchandising.homepage() });
+    },
   });
 }
