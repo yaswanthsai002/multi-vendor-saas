@@ -6,6 +6,10 @@ description: Token-driven visual and interaction system for the Perigee marketpl
 
 # Perigee Design System
 
+## Implementation ownership
+
+This document is the source of truth for design tokens and visual rules. Web tokens are implemented in `apps/web/app/index.css`; shared controls live in `apps/web/components/ui`. Reuse those controls and semantic tokens before adding feature-local styles. Repository architecture and contribution rules live in [`AGENTS.md`](AGENTS.md); web-specific boundaries live in [`apps/web/AGENTS.md`](apps/web/AGENTS.md).
+
 ## Design Personality
 
 Perigee is **clean, minimal, professional, intuitive, interactive, and lightly playful**.

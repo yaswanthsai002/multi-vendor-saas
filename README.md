@@ -1,215 +1,94 @@
-# multi-vendor-saas
+# Perigee marketplace
 
-A multi-vendor commerce platform designed to allow vendors to create and operate stores while customers can discover products and place orders.
+Perigee is a multi-vendor marketplace monorepo. Customers discover products, manage addresses, save wishlists, and use a cart. Vendors manage products and fulfillment; admins manage marketplace operations and promotions.
 
-## Overview
+## System overview
 
-This repository is structured as a pnpm workspace and organized into separate application layers to keep the codebase maintainable and scalable:
+The web app runs on the host during local development. PostgreSQL, Redis, API, background worker, and nginx run in Docker Compose.
 
-- Web app: Next.js storefront / frontend experience
-- API: Express-based backend for application logic and routes
-- Database: PostgreSQL powered by Drizzle ORM
+```mermaid
+flowchart LR
+  browser[Browser]
+  web[Next.js web<br/>host :3000]
+  nginx[nginx<br/>Docker :80]
+  api[Express API<br/>Docker :4000]
+  worker[BullMQ worker<br/>Docker]
+  postgres[(PostgreSQL)]
+  redis[(Redis)]
+  r2[(R2 object storage)]
 
-The project is designed as a clean starting point for building a SaaS product with a strong frontend, typed backend, and reliable database tooling.
-
-## Architecture
-
-- Frontend: Next.js 16, React 19, Tailwind CSS
-- Backend: Express, TypeScript
-- Database: PostgreSQL
-- ORM: Drizzle
-- Package manager: pnpm
-- Local infrastructure: Docker Compose
-
-## Project Structure
-
-```text
-multi-vendor-saas/
-├── apps/
-│   ├── api/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── web/
-│       ├── app/
-│       ├── package.json
-│       └── tsconfig.json
-├── packages/
-│   └── db/
-│       ├── src/
-│       ├── drizzle/
-│       ├── drizzle.config.ts
-│       └── package.json
-├── compose.yml
-├── package.json
-├── pnpm-workspace.yaml
-├── README.md
-├── eslint.config.mjs
-├── prettier.config.mjs
-├── commitlint.config.mjs
-└── ...
+  browser -->|pages| web
+  browser -->|/api/*| nginx
+  nginx -->|proxy| api
+  api --> postgres
+  api --> redis
+  api --> r2
+  worker --> redis
+  worker --> postgres
+  worker --> r2
 ```
 
-## Tech Stack
+Nginx publishes port 80 and forwards requests to the API container; port 4000 is internal to Compose. See [architecture diagrams](docs/architecture.md) for request and async-work sequences.
 
-- [apps/web](apps/web) — Next.js frontend
-- [apps/api](apps/api) — Express API
-- [packages/db](packages/db) — Drizzle-based database package
+## Workspace
 
-## Prerequisites
+- [`apps/web`](apps/web/README.md): Next.js storefront and authenticated vendor/admin UI.
+- [`apps/api`](apps/api/README.md): Express API, domain services, and BullMQ worker.
+- [`packages/db`](packages/db/README.md): Drizzle schema, PostgreSQL access, and migrations.
+- [`docs`](docs/README.md): documentation index; [codebase map](docs/agent-guide.md) routes agents and developers to owning modules, contracts, and checks.
+- [`docs/architecture.md`](docs/architecture.md): system boundaries and sequence diagrams.
+- [`docs/local-development.md`](docs/local-development.md): Docker workflow, environment, migrations, and troubleshooting.
+- [`docs/testing.md`](docs/testing.md): unit, API, typecheck, and browser verification.
+- [`docs/domain-flows.md`](docs/domain-flows.md): current customer, vendor, and admin flows plus known gaps.
+- [`DESIGN.md`](DESIGN.md): UI tokens and visual rules.
+- [`AGENTS.md`](AGENTS.md): engineering and AI-agent rules.
 
-Before proceeding, make sure the following are installed:
+## Requirements
 
-- Node.js 20+
-- pnpm
-- Docker Desktop or Docker Engine with Compose
-- Git
+- Node.js `22.x` (declared in root and workspace package manifests; Docker and CI use Node 22).
+- pnpm `11.5.3`.
+- Docker Desktop or Docker Engine with Compose.
 
-## Installation
+## Run locally
 
-1. Clone the repository:
+1. Install workspace dependencies: `pnpm install`.
+2. Copy `.env.example` to root `.env` and replace placeholders. Do not commit secrets. Set `NEXT_PUBLIC_API_URL=http://localhost/api` for the host web process and `WEB_ORIGIN=http://localhost:3000` for API CORS. Some OAuth and media features require valid credentials.
+3. Start PostgreSQL, Redis, API, worker, and nginx: `docker compose up -d`.
+4. Apply migrations through the API container: `docker compose exec api pnpm --filter @repo/db migrate`.
+5. Start the host web app: `pnpm dev:web`.
 
-   ```bash
-   git clone https://github.com/yaswanthsai002/multi-vendor-saas
-   cd multi-vendor-saas
-   ```
+Open web at <http://localhost:3000>. API base URL is <http://localhost/api>; Swagger UI is <http://localhost/api/docs/> and OpenAPI JSON is <http://localhost/api/docs.json>.
 
-2. Install project dependencies:
+For API/DB source synchronization during development, use Compose Watch as described in [local development](docs/local-development.md).
 
-   ```bash
-   pnpm install
-   ```
+## Verification
 
-3. Start PostgreSQL with Docker Compose:
-
-   ```bash
-   docker compose up -d postgres
-   ```
-
-4. Create a root environment file:
-
-   ```bash
-   touch .env
-   ```
-
-   Add the following environment variable:
-
-   ```env
-   DATABASE_URL=postgres://username:password@localhost:5432/multi_vendor_saas
-   ```
-
-   Replace `username` and `password` with your PostgreSQL credentials.
-
-## Running the Application
-
-Start the backend:
-
-```bash
-pnpm dev:api
-```
-
-Start the frontend:
-
-```bash
-pnpm dev:web
-```
-
-The app will be available at:
-
-- Frontend: <http://localhost:3000>
-- API: <http://localhost:4000>
-
-## Database Setup
-
-This project uses Drizzle ORM with PostgreSQL.
-
-Generate migrations:
-
-```bash
-pnpm --filter @repo/db generate
-```
-
-Apply migrations:
-
-```bash
-pnpm --filter @repo/db migrate
-```
-
-## Available Scripts
-
-From the repository root:
-
-```bash
-pnpm dev:web
-pnpm dev:api
+```sh
+pnpm test
+pnpm check
 pnpm build
-pnpm lint
-pnpm lint:fix
-pnpm typecheck
-pnpm check
-pnpm format
-pnpm format:check
 ```
 
-## Development Workflow
+`pnpm check` runs formatting, lint, and type checks. Package-level commands and database/browser testing notes are in [testing](docs/testing.md).
 
-A standard local workflow looks like this:
+## Repository invariants
 
-1. Install dependencies with `pnpm install`
-2. Start PostgreSQL with `docker compose up -d postgres`
-3. Confirm the `.env` file is configured correctly
-4. Run database migrations
-5. Start the API and web app
-6. Build features and fix issues
-7. Validate formatting, linting, and type safety
-8. Commit and push only after checks pass
+- Web calls API contracts; it does not access the database directly.
+- API derives identity and enforces authorization and tenant ownership server-side.
+- API endpoint changes include Zod validation and synchronized OpenAPI documentation.
+- Database schema changes include reviewed migrations.
+- `AGENTS.md` defines repository rules; `DESIGN.md` defines UI tokens.
 
-## Before Committing and Pushing
+## External side effects
 
-Run the following checks before every commit and push to keep the repository clean and production-ready:
+- PostgreSQL stores marketplace state.
+- Redis/BullMQ coordinate bulk-import jobs and progress events.
+- R2 stores uploaded media and import files.
+- Google OAuth uses an external identity provider.
 
-```bash
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm check
-```
+## Change workflow
 
-If the check output reports formatting or lint issues, fix them before continuing:
-
-```bash
-pnpm format
-pnpm lint:fix
-```
-
-Then re-run the project validation:
-
-```bash
-pnpm check
-```
-
-Before pushing, verify the branch is ready:
-
-```bash
-git status
-git add .
-git commit -m "feat: your commit message"
-git push origin <your-branch-name>
-```
-
-For a complete pre-push sequence, use:
-
-```bash
-pnpm check
-git status
-git add .
-git commit -m "feat: your commit message"
-git push origin <your-branch-name>
-```
-
-## Notes
-
-This repository provides a solid monorepo foundation for a SaaS application and is ready to be extended with authentication, tenant management, billing, dashboards, and deployment configuration.
+Keep changes in their owning package. Run relevant checks, inspect `git status`, and stage only files for the intended change; avoid blanket `git add .` when other work may be present.
 
 ## License
 
