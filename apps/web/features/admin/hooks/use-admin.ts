@@ -52,16 +52,20 @@ export function useAdminUsers(params?: {
   });
 }
 
-export function useAdminVendors(params?: {
-  page?: number;
-  limit?: number;
-  status?: string;
-  search?: string;
-  isFeatured?: string;
-}) {
+export function useAdminVendors(
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    isFeatured?: string;
+  },
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.admin.vendors.list(params),
     queryFn: ({ signal }) => adminService.getVendors(params, signal),
+    enabled,
   });
 }
 

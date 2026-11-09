@@ -23,7 +23,7 @@ export function MerchandisingCard({
             Merchandising
           </h3>
         </div>
-        <p className="text-xs text-text-tertiary">Active campaigns & featured assets</p>
+        <p className="text-xs text-text-tertiary">Featured products, brands, and price discounts</p>
       </div>
 
       {/* Stats Counter Rows */}
@@ -51,7 +51,7 @@ export function MerchandisingCard({
         <div className="flex items-center justify-between p-3 rounded-lg bg-surface-subtle/60 border border-border-subtle">
           <div className="flex items-center gap-2.5">
             <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs font-medium text-text-secondary">Active Deals</span>
+            <span className="text-xs font-medium text-text-secondary">Product Discounts</span>
           </div>
           <span className="font-mono font-bold text-text-primary text-sm tabular-nums">
             {activeDeals}
