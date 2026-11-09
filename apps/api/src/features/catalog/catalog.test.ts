@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -82,44 +83,46 @@ describe('Catalog Feature', () => {
   describe('GET /api/products', () => {
     it('returns 200 with paginated product catalog without authentication', async () => {
       // Mock total count query
+      const countWhere = vi.fn().mockResolvedValue([{ total: 1 }]);
       const mockCountQuery = {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ total: 1 }]),
+            where: countWhere,
           }),
         }),
       };
 
       // Mock products rows query
+      const productOrderBy = vi.fn().mockReturnValue({
+        limit: vi.fn().mockReturnValue({
+          offset: vi.fn().mockResolvedValue([
+            {
+              productId,
+              name: 'Studio Wireless Headphones',
+              slug: 'studio-wireless-headphones',
+              shortDescription: 'High quality wireless sound',
+              price: '1999.00',
+              mrp: '4999.00',
+              stock: 15,
+              isFeatured: true,
+              createdAt: new Date().toISOString(),
+              vendorId,
+              vendorName: 'TechPulse',
+              vendorSlug: 'techpulse',
+              vendorLogoUrl: 'https://example.com/logo.webp',
+              mediaId: null,
+              mediaVendorId: null,
+              mediaStorageKey: null,
+            },
+          ]),
+        }),
+      });
       const mockProductsQuery = {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             leftJoin: vi.fn().mockReturnValue({
               where: vi.fn().mockReturnValue({
-                orderBy: vi.fn().mockReturnValue({
-                  limit: vi.fn().mockReturnValue({
-                    offset: vi.fn().mockResolvedValue([
-                      {
-                        productId,
-                        name: 'Studio Wireless Headphones',
-                        slug: 'studio-wireless-headphones',
-                        shortDescription: 'High quality wireless sound',
-                        price: '2499.00',
-                        mrp: '4999.00',
-                        stock: 15,
-                        isFeatured: true,
-                        createdAt: new Date().toISOString(),
-                        vendorId,
-                        vendorName: 'TechPulse',
-                        vendorSlug: 'techpulse',
-                        vendorLogoUrl: 'https://example.com/logo.webp',
-                        mediaId: null,
-                        mediaVendorId: null,
-                        mediaStorageKey: null,
-                      },
-                    ]),
-                  }),
-                }),
+                orderBy: productOrderBy,
               }),
             }),
           }),
@@ -155,7 +158,9 @@ describe('Catalog Feature', () => {
         .mockReturnValueOnce(mockCategoriesQuery)
         .mockReturnValueOnce(mockRatingsQuery);
 
-      const res = await request(app).get('/api/products?page=1&limit=20');
+      const res = await request(app).get(
+        '/api/products?page=1&limit=20&minPrice=1000&maxPrice=2000&sortBy=price_asc',
+      );
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('items');
@@ -165,10 +170,17 @@ describe('Catalog Feature', () => {
       expect(res.body.pagination.limit).toBe(20);
       expect(res.body.items).toHaveLength(1);
       expect(res.body.items[0].name).toBe('Studio Wireless Headphones');
+      expect(res.body.items[0].price).toBe('1999.00');
+      expect(res.body.items[0]).not.toHaveProperty('regularPrice');
+      expect(res.body.items[0]).not.toHaveProperty('activeDealEndsAt');
       expect(res.body.items[0].vendor.name).toBe('TechPulse');
       expect(res.body.items[0].categories[0].slug).toBe('audio');
       expect(res.body.items[0].rating).toBe(4.5);
       expect(res.body.items[0].ratingCount).toBe(2);
+      const priceFilterSql = new PgDialect().sqlToQuery(countWhere.mock.calls[0][0]).sql;
+      expect(priceFilterSql).toContain('"campaign_products"."deal_price"');
+      const priceOrderSql = new PgDialect().sqlToQuery(productOrderBy.mock.calls[0][0]).sql;
+      expect(priceOrderSql).toContain('"campaign_products"."deal_price"');
     });
 
     it('rejects invalid limit exceeding 50 with 400', async () => {
@@ -185,7 +197,7 @@ describe('Catalog Feature', () => {
         slug: 'studio-wireless-headphones',
         shortDescription: 'High quality wireless sound',
         description: 'Complete description of the headphones...',
-        price: '2499.00',
+        price: '1999.00',
         mrp: '4999.00',
         stock: 15,
         isFeatured: true,
@@ -250,6 +262,9 @@ describe('Catalog Feature', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('product');
       expect(res.body.product.name).toBe('Studio Wireless Headphones');
+      expect(res.body.product.price).toBe('1999.00');
+      expect(res.body.product).not.toHaveProperty('regularPrice');
+      expect(res.body.product).not.toHaveProperty('activeDealEndsAt');
       expect(res.body.product.vendor.tagline).toBe('Audio Specialists');
       expect(res.body.product.categories[0].name).toBe('Audio');
     });
@@ -422,9 +437,7 @@ describe('Catalog Feature', () => {
         }),
       };
 
-      const leftJoinChain: any = {};
-      leftJoinChain.leftJoin = vi.fn().mockReturnValue(leftJoinChain);
-      leftJoinChain.groupBy = vi.fn().mockReturnValue({
+      const categoryOrderQuery = {
         orderBy: vi.fn().mockResolvedValue([
           {
             categoryId,
@@ -434,7 +447,12 @@ describe('Catalog Feature', () => {
             productCount: 12,
           },
         ]),
-      });
+      };
+      const leftJoinChain = {
+        leftJoin: vi.fn(),
+        groupBy: vi.fn().mockReturnValue(categoryOrderQuery),
+      };
+      leftJoinChain.leftJoin.mockReturnValue(leftJoinChain);
 
       const mockCategoryCountsQuery = {
         from: vi.fn().mockReturnValue(leftJoinChain),
@@ -452,6 +470,10 @@ describe('Catalog Feature', () => {
       expect(res.body.priceRange.max).toBe(9999);
       expect(res.body.categories).toHaveLength(1);
       expect(res.body.categories[0].name).toBe('Electronics');
+      const priceSelection = (db.select as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(new PgDialect().sqlToQuery(priceSelection.minPrice).sql).toContain(
+        '"campaign_products"."deal_price"',
+      );
     });
   });
 });

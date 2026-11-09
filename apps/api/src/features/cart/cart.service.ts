@@ -3,6 +3,7 @@ import { carts, cartItems, mediaLibrary, products, vendors, users } from '@repo/
 import { and, eq, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { currentProductPriceSql } from '../../shared/pricing/current-product-price.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 type Transaction = Parameters<Parameters<ReturnType<typeof getDb>['transaction']>[0]>[0];
@@ -64,7 +65,7 @@ export async function getCart(userId: string) {
       quantity: cartItems.quantity,
       name: products.name,
       slug: products.slug,
-      price: products.price,
+      price: currentProductPriceSql(products.productId, products.price),
       mrp: products.mrp,
       stock: products.stock,
       mediaId: mediaLibrary.mediaId,
@@ -72,7 +73,7 @@ export async function getCart(userId: string) {
       vendorId: vendors.vendorId,
       vendorName: vendors.name,
       available: sql<boolean>`(${products.published} AND ${products.moderationStatus} = 'approved' AND NOT ${products.isSoftDeleted} AND ${products.stock} >= ${cartItems.quantity} AND ${vendors.status} = 'active' AND ${users.status} = 'active')`,
-      lineTotal: sql<string>`CAST(${products.price} * ${cartItems.quantity} AS NUMERIC(12,2))`,
+      lineTotal: sql<string>`CAST(${currentProductPriceSql(products.productId, products.price)} * ${cartItems.quantity} AS NUMERIC(12,2))`,
     })
     .from(cartItems)
     .leftJoin(products, eq(products.productId, cartItems.productId))
@@ -108,7 +109,7 @@ export async function getCart(userId: string) {
   });
   const [totals] = await db
     .select({
-      subtotal: sql<string>`COALESCE(SUM(${products.price} * ${cartItems.quantity}), 0)::numeric(12,2)::text`,
+      subtotal: sql<string>`COALESCE(SUM(${currentProductPriceSql(products.productId, products.price)} * ${cartItems.quantity}), 0)::numeric(12,2)::text`,
     })
     .from(cartItems)
     .innerJoin(products, eq(products.productId, cartItems.productId))

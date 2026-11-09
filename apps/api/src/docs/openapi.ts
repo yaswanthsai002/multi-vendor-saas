@@ -435,6 +435,166 @@ export const openapiSpec = {
         },
         required: ['items'],
       },
+      CatalogVendor: {
+        type: 'object',
+        properties: {
+          vendorId: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+          logoUrl: { type: ['string', 'null'], format: 'uri' },
+          tagline: { type: ['string', 'null'] },
+          description: { type: ['string', 'null'] },
+        },
+        required: ['vendorId', 'name', 'slug', 'logoUrl'],
+      },
+      CatalogCategory: {
+        type: 'object',
+        properties: {
+          categoryId: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+        },
+        required: ['categoryId', 'name', 'slug'],
+      },
+      CatalogProduct: {
+        type: 'object',
+        properties: {
+          productId: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+          shortDescription: { type: ['string', 'null'] },
+          price: {
+            type: 'string',
+            description:
+              'Current price, using an active published campaign deal when available; otherwise product price.',
+          },
+          mrp: { type: 'string' },
+          stock: { type: 'integer', minimum: 0 },
+          isFeatured: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+          imageUrl: { type: ['string', 'null'], format: 'uri' },
+          rating: { type: ['number', 'null'] },
+          ratingCount: { type: 'integer', minimum: 0 },
+          vendor: { $ref: '#/components/schemas/CatalogVendor' },
+          categories: { type: 'array', items: { $ref: '#/components/schemas/CatalogCategory' } },
+        },
+        required: [
+          'productId',
+          'name',
+          'slug',
+          'shortDescription',
+          'price',
+          'mrp',
+          'stock',
+          'isFeatured',
+          'createdAt',
+          'imageUrl',
+          'rating',
+          'ratingCount',
+          'vendor',
+          'categories',
+        ],
+      },
+      CatalogProductDetail: {
+        type: 'object',
+        properties: {
+          productId: { type: 'string', format: 'uuid' },
+          name: { type: 'string' },
+          slug: { type: 'string' },
+          shortDescription: { type: ['string', 'null'] },
+          description: { type: 'string' },
+          price: {
+            type: 'string',
+            description:
+              'Current price, using an active published campaign deal when available; otherwise product price.',
+          },
+          mrp: { type: 'string' },
+          stock: { type: 'integer', minimum: 0 },
+          isFeatured: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+          primaryImage: { type: ['string', 'null'], format: 'uri' },
+          gallery: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                mediaId: { type: 'string', format: 'uuid' },
+                url: { type: 'string', format: 'uri' },
+                sortOrder: { type: 'integer' },
+              },
+              required: ['mediaId', 'url', 'sortOrder'],
+            },
+          },
+          categories: { type: 'array', items: { $ref: '#/components/schemas/CatalogCategory' } },
+          vendor: { $ref: '#/components/schemas/CatalogVendor' },
+        },
+        required: [
+          'productId',
+          'name',
+          'slug',
+          'shortDescription',
+          'description',
+          'price',
+          'mrp',
+          'stock',
+          'isFeatured',
+          'createdAt',
+          'primaryImage',
+          'gallery',
+          'categories',
+          'vendor',
+        ],
+      },
+      CatalogProductsResponse: {
+        type: 'object',
+        properties: {
+          items: { type: 'array', items: { $ref: '#/components/schemas/CatalogProduct' } },
+          pagination: {
+            type: 'object',
+            properties: {
+              page: { type: 'integer' },
+              limit: { type: 'integer' },
+              total: { type: 'integer' },
+              totalPages: { type: 'integer' },
+            },
+            required: ['page', 'limit', 'total', 'totalPages'],
+          },
+        },
+        required: ['items', 'pagination'],
+      },
+      CatalogProductResponse: {
+        type: 'object',
+        properties: { product: { $ref: '#/components/schemas/CatalogProductDetail' } },
+        required: ['product'],
+      },
+      CatalogFacetsResponse: {
+        type: 'object',
+        properties: {
+          priceRange: {
+            type: 'object',
+            properties: {
+              min: { type: 'integer' },
+              max: { type: 'integer' },
+            },
+            required: ['min', 'max'],
+          },
+          categories: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                categoryId: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+                slug: { type: 'string' },
+                parentCategoryId: { type: ['string', 'null'], format: 'uuid' },
+                productCount: { type: 'integer', minimum: 0 },
+              },
+              required: ['categoryId', 'name', 'slug', 'parentCategoryId', 'productCount'],
+            },
+          },
+        },
+        required: ['priceRange', 'categories'],
+      },
       CartResponse: {
         type: 'object',
         properties: {
@@ -459,13 +619,20 @@ export const openapiSpec = {
                     available: { type: 'boolean', enum: [true] },
                     name: { type: 'string' },
                     slug: { type: 'string' },
-                    price: { type: 'string' },
+                    price: {
+                      type: 'string',
+                      description:
+                        'Current price, using an active published campaign deal when available.',
+                    },
                     mrp: { type: 'string' },
                     stock: { type: 'integer', minimum: 0 },
                     imageUrl: { type: ['string', 'null'], format: 'uri' },
                     vendorId: { type: 'string', format: 'uuid' },
                     vendorName: { type: 'string' },
-                    lineTotal: { type: 'string' },
+                    lineTotal: {
+                      type: 'string',
+                      description: 'Current price multiplied by item quantity.',
+                    },
                   },
                   required: [
                     'productId',
@@ -485,7 +652,10 @@ export const openapiSpec = {
               ],
             },
           },
-          subtotal: { type: 'string' },
+          subtotal: {
+            type: 'string',
+            description: 'Sum of current prices for available cart items.',
+          },
           itemCount: { type: 'integer', minimum: 0 },
         },
         required: ['items', 'subtotal', 'itemCount'],
@@ -3541,8 +3711,18 @@ export const openapiSpec = {
           { name: 'search', in: 'query', schema: { type: 'string' } },
           { name: 'category', in: 'query', schema: { type: 'string' } },
           { name: 'vendor', in: 'query', schema: { type: 'string' } },
-          { name: 'minPrice', in: 'query', schema: { type: 'number' } },
-          { name: 'maxPrice', in: 'query', schema: { type: 'number' } },
+          {
+            name: 'minPrice',
+            in: 'query',
+            schema: { type: 'number' },
+            description: 'Filter by current price, including active campaign deals.',
+          },
+          {
+            name: 'maxPrice',
+            in: 'query',
+            schema: { type: 'number' },
+            description: 'Filter by current price, including active campaign deals.',
+          },
           { name: 'inStock', in: 'query', schema: { type: 'boolean' } },
           { name: 'isFeatured', in: 'query', schema: { type: 'boolean' } },
           {
@@ -3557,7 +3737,13 @@ export const openapiSpec = {
         ],
         responses: {
           '200': {
-            description: 'Paginated public product list.',
+            description:
+              'Paginated public product list. Product price reflects an active published campaign deal when available.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CatalogProductsResponse' },
+              },
+            },
           },
         },
       },
@@ -3567,10 +3753,16 @@ export const openapiSpec = {
         tags: ['Catalog'],
         summary: 'Get catalog facets and aggregations',
         description:
-          'Returns available category product counts and price range for catalog filtering.',
+          'Returns available category product counts and the current price range, including active campaign deals.',
         responses: {
           '200': {
-            description: 'Filter facets with price range and categories.',
+            description:
+              'Category counts and current price range, including active campaign deals.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CatalogFacetsResponse' },
+              },
+            },
           },
         },
       },
@@ -3592,7 +3784,13 @@ export const openapiSpec = {
         ],
         responses: {
           '200': {
-            description: 'Product details found.',
+            description:
+              'Product details found. Price reflects an active published campaign deal when available.',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CatalogProductResponse' },
+              },
+            },
           },
           '404': {
             description: 'Product not found or not active.',

@@ -26,6 +26,7 @@ import {
 } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { currentProductPriceSql } from '../../shared/pricing/current-product-price.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import type { ListBrandsQuery, ListCatalogProductsQuery } from './catalog.schema.js';
@@ -176,11 +177,15 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
   }
 
   if (minPrice !== undefined) {
-    conditions.push(gte(products.price, minPrice.toString()));
+    conditions.push(
+      gte(currentProductPriceSql(products.productId, products.price), minPrice.toString()),
+    );
   }
 
   if (maxPrice !== undefined) {
-    conditions.push(lte(products.price, maxPrice.toString()));
+    conditions.push(
+      lte(currentProductPriceSql(products.productId, products.price), maxPrice.toString()),
+    );
   }
 
   if (inStock) {
@@ -196,9 +201,13 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
   // Sorting
   let orderByClause = [desc(products.isFeatured), desc(products.createdAt)];
   if (sortBy === 'price_asc') {
-    orderByClause = [sql`CAST(${products.price} AS NUMERIC) ASC`];
+    orderByClause = [
+      sql`CAST(${currentProductPriceSql(products.productId, products.price)} AS NUMERIC) ASC`,
+    ];
   } else if (sortBy === 'price_desc') {
-    orderByClause = [sql`CAST(${products.price} AS NUMERIC) DESC`];
+    orderByClause = [
+      sql`CAST(${currentProductPriceSql(products.productId, products.price)} AS NUMERIC) DESC`,
+    ];
   } else if (sortBy === 'newest') {
     orderByClause = [desc(products.createdAt)];
   }
@@ -220,7 +229,7 @@ export async function listCatalogProducts(query: ListCatalogProductsQuery) {
       name: products.name,
       slug: products.slug,
       shortDescription: products.shortDescription,
-      price: products.price,
+      price: currentProductPriceSql(products.productId, products.price),
       mrp: products.mrp,
       stock: products.stock,
       isFeatured: products.isFeatured,
@@ -337,7 +346,7 @@ export async function getCatalogProductBySlug(slug: string) {
       slug: products.slug,
       shortDescription: products.shortDescription,
       description: products.description,
-      price: products.price,
+      price: currentProductPriceSql(products.productId, products.price),
       mrp: products.mrp,
       stock: products.stock,
       isFeatured: products.isFeatured,
@@ -449,8 +458,8 @@ export async function getCatalogFacets() {
 
   const [priceStats] = await db
     .select({
-      minPrice: sql<string>`MIN(CAST(${products.price} AS NUMERIC))`,
-      maxPrice: sql<string>`MAX(CAST(${products.price} AS NUMERIC))`,
+      minPrice: sql<string>`MIN(CAST(${currentProductPriceSql(products.productId, products.price)} AS NUMERIC))`,
+      maxPrice: sql<string>`MAX(CAST(${currentProductPriceSql(products.productId, products.price)} AS NUMERIC))`,
     })
     .from(products)
     .innerJoin(vendors, eq(vendors.vendorId, products.vendorId))
