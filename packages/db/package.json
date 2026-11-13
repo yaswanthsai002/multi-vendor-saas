@@ -2,15 +2,28 @@
   "name": "@repo/db",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "dist",
+    "drizzle"
+  ],
   "engines": {
     "node": ">=22 <23"
   },
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "development": "./src/schema/index.ts",
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    }
   },
   "scripts": {
+    "build": "tsc",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "lint": "eslint .",

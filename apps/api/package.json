@@ -2,6 +2,9 @@
   "name": "api",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=22 <23"
   },

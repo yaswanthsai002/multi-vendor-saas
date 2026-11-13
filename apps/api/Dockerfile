@@ -9,8 +9,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json ./packages/db/
 
-# Install workspace dependencies
-RUN pnpm install --frozen-lockfile
+# Install API and its workspace dependencies, including @repo/db at runtime.
+RUN pnpm install --filter api... --frozen-lockfile
 
 # Copy source
 COPY packages/db ./packages/db

@@ -55,6 +55,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      NODE_OPTIONS: --conditions=development
       NODE_ENV: ${NODE_ENV}
       PORT: 4000
       WEB_ORIGIN: ${WEB_ORIGIN}
@@ -111,6 +112,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      NODE_OPTIONS: --conditions=development
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       JWT_SECRET: ${JWT_SECRET}
