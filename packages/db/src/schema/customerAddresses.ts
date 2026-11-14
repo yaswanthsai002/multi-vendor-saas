@@ -16,7 +16,7 @@ export const customerAddresses = pgTable(
     city: text('city').notNull(),
     state: text('state').notNull(),
     postalCode: text('postalCode').notNull(),
-    country: text('country').notNull().default('US'),
+    country: text('country').notNull().default('IN'),
     isDefault: boolean('isDefault').notNull().default(false),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),

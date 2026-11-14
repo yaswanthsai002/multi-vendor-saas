@@ -28,6 +28,8 @@ export const openapiSpec = {
     { name: 'Categories', description: 'Global category taxonomy and management' },
     { name: 'Catalog', description: 'Public customer product browsing and discovery endpoints' },
     { name: 'Wishlist', description: 'Authenticated customer saved products' },
+    { name: 'Vendor Orders', description: 'Vendor-owned order fulfillment' },
+    { name: 'Customer Orders', description: 'Atomic checkout and owned customer order lifecycle' },
     { name: 'Customer Account', description: 'Authenticated customer profile and address book' },
     { name: 'Locations', description: 'Public Indian PIN code and postal area lookup' },
     {
@@ -45,6 +47,445 @@ export const openapiSpec = {
       },
     },
     schemas: {
+      CustomerOrderDeliveryAddress: {
+        type: 'object',
+        required: [
+          'recipientName',
+          'phone',
+          'addressLine1',
+          'addressLine2',
+          'city',
+          'state',
+          'postalCode',
+          'country',
+        ],
+        properties: {
+          recipientName: {
+            type: 'string',
+          },
+          phone: {
+            type: 'string',
+          },
+          addressLine1: {
+            type: 'string',
+          },
+          addressLine2: {
+            type: ['string', 'null'],
+          },
+          city: {
+            type: 'string',
+          },
+          state: {
+            type: 'string',
+          },
+          postalCode: {
+            type: 'string',
+          },
+          country: {
+            type: 'string',
+            example: 'IN',
+          },
+        },
+      },
+      CheckoutReview: {
+        type: 'object',
+        required: ['lines', 'addresses', 'addressId', 'addressEligible', 'total'],
+        properties: {
+          lines: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: [
+                'productId',
+                'name',
+                'quantity',
+                'unitPrice',
+                'subtotal',
+                'stock',
+                'available',
+                'imageUrl',
+              ],
+              properties: {
+                productId: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                name: {
+                  type: 'string',
+                },
+                quantity: {
+                  type: 'integer',
+                  minimum: 1,
+                },
+                unitPrice: {
+                  type: 'string',
+                  pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                  example: '199.00',
+                },
+                subtotal: {
+                  type: 'string',
+                  pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                  example: '199.00',
+                },
+                imageUrl: {
+                  type: ['string', 'null'],
+                  description: 'Product thumbnail URL, or null when no image exists.',
+                },
+                stock: {
+                  type: 'integer',
+                },
+                available: {
+                  type: 'boolean',
+                },
+              },
+            },
+          },
+          addresses: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: [
+                'recipientName',
+                'phone',
+                'addressLine1',
+                'addressLine2',
+                'city',
+                'state',
+                'postalCode',
+                'country',
+                'addressId',
+                'isDefault',
+              ],
+              properties: {
+                recipientName: {
+                  type: 'string',
+                },
+                phone: {
+                  type: 'string',
+                },
+                addressLine1: {
+                  type: 'string',
+                },
+                addressLine2: {
+                  type: ['string', 'null'],
+                },
+                city: {
+                  type: 'string',
+                },
+                state: {
+                  type: 'string',
+                },
+                postalCode: {
+                  type: 'string',
+                },
+                country: {
+                  type: 'string',
+                  example: 'IN',
+                },
+                addressId: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                isDefault: {
+                  type: 'boolean',
+                },
+              },
+            },
+          },
+          addressId: {
+            type: ['string', 'null'],
+            format: 'uuid',
+          },
+          addressEligible: {
+            type: 'boolean',
+          },
+          total: {
+            type: 'string',
+            pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+            example: '199.00',
+          },
+        },
+      },
+      PlaceCustomerOrder: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['addressId', 'lines'],
+        properties: {
+          addressId: {
+            type: 'string',
+            format: 'uuid',
+          },
+          lines: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 200,
+            description:
+              'Unique product IDs. Must match the complete current cart, including quantities.',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['productId', 'quantity', 'expectedUnitPrice'],
+              properties: {
+                productId: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                quantity: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 2147483647,
+                },
+                expectedUnitPrice: {
+                  type: 'string',
+                  pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                  example: '199.00',
+                  description:
+                    'Reviewed effective price. Server recomputes and compares before creating snapshots.',
+                },
+              },
+            },
+          },
+        },
+      },
+      CustomerOrder: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'orderId',
+          'orderNumber',
+          'placedAt',
+          'status',
+          'items',
+          'address',
+          'total',
+          'canCancel',
+        ],
+        properties: {
+          orderId: {
+            type: 'string',
+            format: 'uuid',
+          },
+          orderNumber: {
+            type: 'string',
+          },
+          placedAt: {
+            type: 'string',
+            format: 'date-time',
+          },
+          status: {
+            type: 'string',
+            enum: [
+              'Order placed',
+              'In progress',
+              'Partially cancelled',
+              'Partially fulfilled',
+              'Completed',
+              'Cancelled',
+            ],
+          },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: [
+                'productId',
+                'name',
+                'quantity',
+                'unitPrice',
+                'subtotal',
+                'orderItemId',
+                'status',
+                'imageUrl',
+                'productSlug',
+              ],
+              properties: {
+                productId: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                name: {
+                  type: 'string',
+                },
+                quantity: {
+                  type: 'integer',
+                  minimum: 1,
+                },
+                unitPrice: {
+                  type: 'string',
+                  pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                  example: '199.00',
+                },
+                subtotal: {
+                  type: 'string',
+                  pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                  example: '199.00',
+                },
+                orderItemId: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                productSlug: {
+                  type: ['string', 'null'],
+                  description:
+                    'Current product slug for linking to its product detail page, or null when unavailable. Purchase snapshots are unchanged.',
+                },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'processing', 'completed', 'cancelled'],
+                },
+                imageUrl: {
+                  type: ['string', 'null'],
+                  description:
+                    'Current product thumbnail, or null when unavailable. Order names and prices remain purchase snapshots.',
+                },
+              },
+            },
+          },
+          address: {
+            oneOf: [
+              {
+                type: 'object',
+                required: [
+                  'recipientName',
+                  'phone',
+                  'addressLine1',
+                  'addressLine2',
+                  'city',
+                  'state',
+                  'postalCode',
+                  'country',
+                ],
+                properties: {
+                  recipientName: {
+                    type: 'string',
+                  },
+                  phone: {
+                    type: 'string',
+                  },
+                  addressLine1: {
+                    type: 'string',
+                  },
+                  addressLine2: {
+                    type: ['string', 'null'],
+                  },
+                  city: {
+                    type: 'string',
+                  },
+                  state: {
+                    type: 'string',
+                  },
+                  postalCode: {
+                    type: 'string',
+                  },
+                  country: {
+                    type: 'string',
+                    example: 'IN',
+                  },
+                },
+              },
+              {
+                type: 'null',
+              },
+            ],
+          },
+          total: {
+            type: 'string',
+            pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+            example: '199.00',
+          },
+          canCancel: {
+            type: 'boolean',
+            description: 'At least one active portion and none completed.',
+          },
+        },
+      },
+      CustomerOrderList: {
+        type: 'object',
+        required: ['items', 'pagination'],
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/CustomerOrder',
+            },
+          },
+          pagination: {
+            type: 'object',
+            required: ['page', 'limit', 'total', 'totalPages'],
+            properties: {
+              page: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100000,
+              },
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100,
+              },
+              total: {
+                type: 'integer',
+              },
+              totalPages: {
+                type: 'integer',
+              },
+            },
+          },
+        },
+      },
+      CheckoutError: {
+        type: 'object',
+        required: ['code', 'error', 'requestId'],
+        properties: {
+          code: {
+            type: 'string',
+            example: 'CHECKOUT_CONFLICT',
+          },
+          error: {
+            type: 'string',
+            example: 'Price or availability changed. Review the highlighted items.',
+          },
+          requestId: {
+            type: 'string',
+            format: 'uuid',
+          },
+          details: {
+            type: 'object',
+            description:
+              'Zod field errors for validation; addressId field for invalid address; affected lines for price/stock conflicts.',
+            properties: {
+              field: {
+                type: 'string',
+                example: 'addressId',
+              },
+              lines: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    productId: {
+                      type: 'string',
+                      format: 'uuid',
+                    },
+                    stock: {
+                      type: 'integer',
+                    },
+                    unitPrice: {
+                      type: 'string',
+                      pattern: '^(0|[1-9]\\d*)\\.\\d{2}$',
+                      example: '199.00',
+                    },
+                    available: {
+                      type: 'boolean',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       MediaItem: {
         type: 'object',
         required: [
@@ -1075,6 +1516,1382 @@ export const openapiSpec = {
     },
   },
   paths: {
+    '/api/customer/checkout/review': {
+      get: {
+        tags: ['Customer Orders'],
+        summary: 'Review current cart and owned delivery addresses',
+        description: 'Active signed-in account. Does not reserve inventory or prices.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'addressId',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Live effective prices, stock, eligibility, addresses, and total.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutReview',
+                },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Invalid path, query, body, duplicate product, or missing/invalid Idempotency-Key.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Sign in required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Inactive account or customer role missing. Review requires an active signed-in account.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Order not found or not owned by authenticated customer.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '409': {
+            description:
+              'CHECKOUT_CONFLICT, CART_CHANGED, IDEMPOTENCY_CONFLICT, or ORDER_CANNOT_CANCEL. No partial writes. Conflict details include affected product IDs and current prices/stock when available.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '422': {
+            description: 'INVALID_DELIVERY_ADDRESS: choose an owned saved address with country IN.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '500': {
+            description:
+              'Safe generic failure with correlation ID. Retry uncertain placement using the same key and exact request.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/customer/orders': {
+      post: {
+        tags: ['Customer Orders'],
+        summary: 'Place one atomic marketplace order',
+        description:
+          'Active customer. Identity comes from session; saved address must be owned and IN. Same user/key/fingerprint returns existing order even with empty cart. Different request with same key conflicts. No payment collected.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'Idempotency-Key',
+            in: 'header',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/PlaceCustomerOrder',
+              },
+              example: {
+                addressId: '11111111-1111-4111-8111-111111111111',
+                lines: [
+                  {
+                    productId: '22222222-2222-4222-8222-222222222222',
+                    quantity: 1,
+                    expectedUnitPrice: '199.00',
+                  },
+                ],
+              },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description:
+              'One customer-safe marketplace order. Never includes vendor-order IDs, request fingerprint, or security metadata.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CustomerOrder',
+                },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Invalid path, query, body, duplicate product, or missing/invalid Idempotency-Key.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Sign in required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Inactive account or customer role missing. Review requires an active signed-in account.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Order not found or not owned by authenticated customer.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '409': {
+            description:
+              'CHECKOUT_CONFLICT, CART_CHANGED, IDEMPOTENCY_CONFLICT, or ORDER_CANNOT_CANCEL. No partial writes. Conflict details include affected product IDs and current prices/stock when available.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '422': {
+            description: 'INVALID_DELIVERY_ADDRESS: choose an owned saved address with country IN.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '500': {
+            description:
+              'Safe generic failure with correlation ID. Retry uncertain placement using the same key and exact request.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+        },
+      },
+      get: {
+        tags: ['Customer Orders'],
+        summary: 'List authenticated customer orders',
+        description:
+          'Active customer. Results always scoped to session user, newest first. Status and inclusive order-date filters apply before pagination. Dates use India Standard Time (Asia/Kolkata). Invalid dates, reversed ranges, or unknown statuses return 400.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100000,
+              default: 1,
+            },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 20,
+            },
+          },
+          {
+            name: 'status',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: [
+                'Order placed',
+                'In progress',
+                'Partially cancelled',
+                'Partially fulfilled',
+                'Completed',
+                'Cancelled',
+              ],
+            },
+            description: 'Customer-visible aggregate status across vendor portions.',
+          },
+          {
+            name: 'orderedFrom',
+            in: 'query',
+            schema: {
+              type: 'string',
+              format: 'date',
+              example: '2026-11-01',
+            },
+            description: 'Inclusive start date in India Standard Time.',
+          },
+          {
+            name: 'orderedTo',
+            in: 'query',
+            schema: {
+              type: 'string',
+              format: 'date',
+              example: '2026-11-30',
+            },
+            description: 'Inclusive end date in India Standard Time. Must not precede orderedFrom.',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated order history.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CustomerOrderList',
+                },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Invalid path, query, body, duplicate product, or missing/invalid Idempotency-Key.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Sign in required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Inactive account or customer role missing. Review requires an active signed-in account.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Order not found or not owned by authenticated customer.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '409': {
+            description:
+              'CHECKOUT_CONFLICT, CART_CHANGED, IDEMPOTENCY_CONFLICT, or ORDER_CANNOT_CANCEL. No partial writes. Conflict details include affected product IDs and current prices/stock when available.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '422': {
+            description: 'INVALID_DELIVERY_ADDRESS: choose an owned saved address with country IN.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '500': {
+            description:
+              'Safe generic failure with correlation ID. Retry uncertain placement using the same key and exact request.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/customer/orders/{orderId}': {
+      get: {
+        tags: ['Customer Orders'],
+        summary: 'Read one owned order',
+        description: 'Active customer. Returns 404 for another customer’s order.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'orderId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description:
+              'One customer-safe marketplace order. Never includes vendor-order IDs, request fingerprint, or security metadata.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CustomerOrder',
+                },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Invalid path, query, body, duplicate product, or missing/invalid Idempotency-Key.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Sign in required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Inactive account or customer role missing. Review requires an active signed-in account.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Order not found or not owned by authenticated customer.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '409': {
+            description:
+              'CHECKOUT_CONFLICT, CART_CHANGED, IDEMPOTENCY_CONFLICT, or ORDER_CANNOT_CANCEL. No partial writes. Conflict details include affected product IDs and current prices/stock when available.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '422': {
+            description: 'INVALID_DELIVERY_ADDRESS: choose an owned saved address with country IN.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '500': {
+            description:
+              'Safe generic failure with correlation ID. Retry uncertain placement using the same key and exact request.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/customer/orders/{orderId}/cancel': {
+      post: {
+        tags: ['Customer Orders'],
+        summary: 'Cancel entire owned order',
+        description:
+          'Active customer. Parent-first transaction cancels pending/processing portions only if none completed. Already cancelled retry succeeds without restoring stock twice.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'orderId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+              },
+              example: {},
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description:
+              'One customer-safe marketplace order. Never includes vendor-order IDs, request fingerprint, or security metadata.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CustomerOrder',
+                },
+              },
+            },
+          },
+          '400': {
+            description:
+              'Invalid path, query, body, duplicate product, or missing/invalid Idempotency-Key.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Sign in required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '403': {
+            description:
+              'Inactive account or customer role missing. Review requires an active signed-in account.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Order not found or not owned by authenticated customer.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '409': {
+            description:
+              'CHECKOUT_CONFLICT, CART_CHANGED, IDEMPOTENCY_CONFLICT, or ORDER_CANNOT_CANCEL. No partial writes. Conflict details include affected product IDs and current prices/stock when available.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '422': {
+            description: 'INVALID_DELIVERY_ADDRESS: choose an owned saved address with country IN.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+          '500': {
+            description:
+              'Safe generic failure with correlation ID. Retry uncertain placement using the same key and exact request.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CheckoutError',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/orders': {
+      get: {
+        tags: ['Vendor Orders'],
+        summary: 'List vendor-owned fulfillment portions',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              default: 1,
+            },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 20,
+            },
+          },
+          {
+            name: 'status',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: ['all', 'pending', 'processing', 'completed', 'cancelled'],
+              default: 'all',
+            },
+          },
+          {
+            name: 'search',
+            in: 'query',
+            schema: {
+              type: 'string',
+            },
+          },
+          {
+            name: 'dateFrom',
+            in: 'query',
+            schema: {
+              type: 'string',
+              description: 'ISO date or datetime with offset',
+            },
+          },
+          {
+            name: 'dateTo',
+            in: 'query',
+            schema: {
+              type: 'string',
+              description: 'ISO date or datetime with offset',
+            },
+          },
+          {
+            name: 'sort',
+            in: 'query',
+            schema: {
+              type: 'string',
+              enum: ['newest', 'oldest', 'total_desc', 'total_asc'],
+              default: 'newest',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated vendor orders and status counts.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['success', 'data'],
+                  properties: {
+                    success: {
+                      const: true,
+                    },
+                    data: {
+                      type: 'object',
+                      required: ['items', 'pagination', 'statusCounts'],
+                      properties: {
+                        items: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            required: [
+                              'vendorOrderId',
+                              'orderNumber',
+                              'customer',
+                              'itemCount',
+                              'total',
+                              'placedAt',
+                              'status',
+                            ],
+                            properties: {
+                              vendorOrderId: {
+                                type: 'string',
+                                format: 'uuid',
+                              },
+                              orderNumber: {
+                                type: 'string',
+                              },
+                              customer: {
+                                type: 'object',
+                                required: ['name', 'email'],
+                                properties: {
+                                  name: {
+                                    type: 'string',
+                                  },
+                                  email: {
+                                    type: 'string',
+                                  },
+                                  phone: {
+                                    type: ['string', 'null'],
+                                  },
+                                },
+                              },
+                              itemCount: {
+                                type: 'integer',
+                              },
+                              total: {
+                                type: 'string',
+                                example: '199.00',
+                              },
+                              placedAt: {
+                                type: 'string',
+                                format: 'date-time',
+                              },
+                              status: {
+                                type: 'string',
+                                enum: ['pending', 'processing', 'completed', 'cancelled'],
+                              },
+                            },
+                          },
+                        },
+                        pagination: {
+                          type: 'object',
+                          required: ['page', 'limit', 'total', 'totalPages'],
+                          properties: {
+                            page: {
+                              type: 'integer',
+                            },
+                            limit: {
+                              type: 'integer',
+                            },
+                            total: {
+                              type: 'integer',
+                            },
+                            totalPages: {
+                              type: 'integer',
+                            },
+                          },
+                        },
+                        statusCounts: {
+                          type: 'object',
+                          properties: {
+                            all: {
+                              type: 'integer',
+                            },
+                            pending: {
+                              type: 'integer',
+                            },
+                            processing: {
+                              type: 'integer',
+                            },
+                            completed: {
+                              type: 'integer',
+                            },
+                            cancelled: {
+                              type: 'integer',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid input or state transition. Processing can only complete.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '403': {
+            description: 'Active vendor role and owned vendor profile required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Vendor order not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '500': {
+            description: 'Safe generic server error.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/orders/{vendorOrderId}': {
+      get: {
+        tags: ['Vendor Orders'],
+        summary: 'Read vendor-owned portion',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'vendorOrderId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Only authenticated vendor’s portion, with current allowed actions.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['success', 'data'],
+                  properties: {
+                    success: {
+                      const: true,
+                    },
+                    data: {
+                      type: 'object',
+                      required: [
+                        'order',
+                        'fulfillment',
+                        'customer',
+                        'deliveryAddress',
+                        'items',
+                        'summary',
+                      ],
+                      properties: {
+                        order: {
+                          type: 'object',
+                          required: ['orderNumber', 'placedAt', 'overallStatus'],
+                          properties: {
+                            orderNumber: {
+                              type: 'string',
+                            },
+                            placedAt: {
+                              type: 'string',
+                              format: 'date-time',
+                            },
+                            overallStatus: {
+                              type: 'string',
+                              enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+                            },
+                          },
+                        },
+                        fulfillment: {
+                          type: 'object',
+                          required: [
+                            'vendorOrderId',
+                            'status',
+                            'updatedAt',
+                            'completedAt',
+                            'cancellationReason',
+                            'allowedActions',
+                          ],
+                          properties: {
+                            vendorOrderId: {
+                              type: 'string',
+                              format: 'uuid',
+                            },
+                            status: {
+                              type: 'string',
+                              enum: ['pending', 'processing', 'completed', 'cancelled'],
+                            },
+                            updatedAt: {
+                              type: 'string',
+                              format: 'date-time',
+                            },
+                            completedAt: {
+                              type: ['string', 'null'],
+                              format: 'date-time',
+                            },
+                            cancellationReason: {
+                              type: ['string', 'null'],
+                            },
+                            allowedActions: {
+                              type: 'array',
+                              description:
+                                'pending: process/cancel; processing: complete; terminal: none.',
+                              items: {
+                                type: 'string',
+                                enum: ['process', 'complete', 'cancel'],
+                              },
+                            },
+                          },
+                        },
+                        customer: {
+                          type: 'object',
+                          required: ['name', 'email'],
+                          properties: {
+                            name: {
+                              type: 'string',
+                            },
+                            email: {
+                              type: 'string',
+                            },
+                            phone: {
+                              type: ['string', 'null'],
+                            },
+                          },
+                        },
+                        deliveryAddress: {
+                          oneOf: [
+                            {
+                              $ref: '#/components/schemas/CustomerOrderDeliveryAddress',
+                            },
+                            {
+                              type: 'null',
+                            },
+                          ],
+                        },
+                        items: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            required: [
+                              'orderItemId',
+                              'productId',
+                              'productName',
+                              'productImageUrl',
+                              'unitPrice',
+                              'quantity',
+                              'subtotal',
+                            ],
+                            properties: {
+                              orderItemId: {
+                                type: 'string',
+                                format: 'uuid',
+                              },
+                              productId: {
+                                type: 'string',
+                                format: 'uuid',
+                              },
+                              productName: {
+                                type: 'string',
+                              },
+                              productImageUrl: {
+                                type: ['string', 'null'],
+                              },
+                              unitPrice: {
+                                type: 'string',
+                                example: '199.00',
+                              },
+                              quantity: {
+                                type: 'integer',
+                              },
+                              subtotal: {
+                                type: 'string',
+                                example: '199.00',
+                              },
+                            },
+                          },
+                        },
+                        summary: {
+                          type: 'object',
+                          required: ['itemCount', 'total'],
+                          properties: {
+                            itemCount: {
+                              type: 'integer',
+                            },
+                            total: {
+                              type: 'string',
+                              example: '199.00',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid input or state transition. Processing can only complete.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '403': {
+            description: 'Active vendor role and owned vendor profile required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Vendor order not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '500': {
+            description: 'Safe generic server error.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/vendor/orders/{vendorOrderId}/status': {
+      post: {
+        tags: ['Vendor Orders'],
+        summary: 'Transition vendor-owned portion',
+        description:
+          'Parent-first transaction. pending → processing or cancelled; processing → completed only. Cancellation restores stock exactly once. Invalid/repeated terminal transitions return 400.',
+        security: [
+          {
+            cookieAuth: [],
+          },
+        ],
+        parameters: [
+          {
+            name: 'vendorOrderId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid',
+            },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: {
+                    type: 'string',
+                    enum: ['processing', 'completed', 'cancelled'],
+                  },
+                  cancellationReason: {
+                    type: ['string', 'null'],
+                    minLength: 1,
+                    maxLength: 500,
+                  },
+                },
+              },
+              example: {
+                status: 'processing',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Only authenticated vendor’s portion, with current allowed actions.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['success', 'data'],
+                  properties: {
+                    success: {
+                      const: true,
+                    },
+                    data: {
+                      type: 'object',
+                      required: [
+                        'order',
+                        'fulfillment',
+                        'customer',
+                        'deliveryAddress',
+                        'items',
+                        'summary',
+                      ],
+                      properties: {
+                        order: {
+                          type: 'object',
+                          required: ['orderNumber', 'placedAt', 'overallStatus'],
+                          properties: {
+                            orderNumber: {
+                              type: 'string',
+                            },
+                            placedAt: {
+                              type: 'string',
+                              format: 'date-time',
+                            },
+                            overallStatus: {
+                              type: 'string',
+                              enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+                            },
+                          },
+                        },
+                        fulfillment: {
+                          type: 'object',
+                          required: [
+                            'vendorOrderId',
+                            'status',
+                            'updatedAt',
+                            'completedAt',
+                            'cancellationReason',
+                            'allowedActions',
+                          ],
+                          properties: {
+                            vendorOrderId: {
+                              type: 'string',
+                              format: 'uuid',
+                            },
+                            status: {
+                              type: 'string',
+                              enum: ['pending', 'processing', 'completed', 'cancelled'],
+                            },
+                            updatedAt: {
+                              type: 'string',
+                              format: 'date-time',
+                            },
+                            completedAt: {
+                              type: ['string', 'null'],
+                              format: 'date-time',
+                            },
+                            cancellationReason: {
+                              type: ['string', 'null'],
+                            },
+                            allowedActions: {
+                              type: 'array',
+                              description:
+                                'pending: process/cancel; processing: complete; terminal: none.',
+                              items: {
+                                type: 'string',
+                                enum: ['process', 'complete', 'cancel'],
+                              },
+                            },
+                          },
+                        },
+                        customer: {
+                          type: 'object',
+                          required: ['name', 'email'],
+                          properties: {
+                            name: {
+                              type: 'string',
+                            },
+                            email: {
+                              type: 'string',
+                            },
+                            phone: {
+                              type: ['string', 'null'],
+                            },
+                          },
+                        },
+                        deliveryAddress: {
+                          oneOf: [
+                            {
+                              $ref: '#/components/schemas/CustomerOrderDeliveryAddress',
+                            },
+                            {
+                              type: 'null',
+                            },
+                          ],
+                        },
+                        items: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            required: [
+                              'orderItemId',
+                              'productId',
+                              'productName',
+                              'productImageUrl',
+                              'unitPrice',
+                              'quantity',
+                              'subtotal',
+                            ],
+                            properties: {
+                              orderItemId: {
+                                type: 'string',
+                                format: 'uuid',
+                              },
+                              productId: {
+                                type: 'string',
+                                format: 'uuid',
+                              },
+                              productName: {
+                                type: 'string',
+                              },
+                              productImageUrl: {
+                                type: ['string', 'null'],
+                              },
+                              unitPrice: {
+                                type: 'string',
+                                example: '199.00',
+                              },
+                              quantity: {
+                                type: 'integer',
+                              },
+                              subtotal: {
+                                type: 'string',
+                                example: '199.00',
+                              },
+                            },
+                          },
+                        },
+                        summary: {
+                          type: 'object',
+                          required: ['itemCount', 'total'],
+                          properties: {
+                            itemCount: {
+                              type: 'integer',
+                            },
+                            total: {
+                              type: 'string',
+                              example: '199.00',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid input or state transition. Processing can only complete.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Authentication required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '403': {
+            description: 'Active vendor role and owned vendor profile required.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Vendor order not found or belongs to another vendor.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+          '500': {
+            description: 'Safe generic server error.',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ErrorResponse',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/brands': {
       get: {
         tags: ['Catalog'],
@@ -1765,7 +3582,7 @@ export const openapiSpec = {
                           amount: { type: 'number' },
                           status: {
                             type: 'string',
-                            enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+                            enum: ['pending', 'processing', 'completed', 'cancelled'],
                           },
                           thumbnailUrl: { type: ['string', 'null'] },
                           createdAt: { type: 'string', format: 'date-time' },

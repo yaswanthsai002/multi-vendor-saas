@@ -47,7 +47,7 @@ async function activeProduct(
         eq(users.status, 'active'),
       ),
     )
-    .for('update')
+    .for('update', { of: products })
     .limit(1);
   if (!product) throw new AppError(404, 'PRODUCT_UNAVAILABLE', 'Product is unavailable.');
   return product;

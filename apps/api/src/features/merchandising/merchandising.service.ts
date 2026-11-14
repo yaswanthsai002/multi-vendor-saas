@@ -149,6 +149,22 @@ async function saveCampaignProducts(
   campaignId?: string,
 ) {
   const productIds = input.products.map((item) => item.productId);
+  const previous = campaignId
+    ? await tx
+        .select({ productId: campaignProducts.productId })
+        .from(campaignProducts)
+        .where(eq(campaignProducts.campaignId, campaignId))
+    : [];
+  const affectedIds = [
+    ...new Set([...productIds, ...previous.map((item) => item.productId)]),
+  ].sort();
+  await tx
+    .select({ productId: products.productId })
+    .from(products)
+    .where(inArray(products.productId, affectedIds))
+    .orderBy(asc(products.productId))
+    .for('update');
+
   const publicProducts = await tx
     .select({ productId: products.productId, price: products.price })
     .from(products)
@@ -165,7 +181,7 @@ async function saveCampaignProducts(
       ),
     )
     .orderBy(asc(products.productId))
-    .for('update');
+    .for('update', { of: products });
 
   if (publicProducts.length !== productIds.length) {
     throw new AppError(400, 'CAMPAIGN_PRODUCT_UNAVAILABLE', 'Select only available products.');

@@ -3,6 +3,8 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import app from '../../app.js';
+import { calculateParentOrderStatus } from '../../shared/orders/order-lifecycle.js';
+import * as lifecycle from '../../shared/orders/order-lifecycle.js';
 
 import * as orderService from './order.service.js';
 
@@ -96,7 +98,21 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
   }
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    vi.spyOn(lifecycle, 'lockOrder').mockImplementation(async () => ({
+      order: {
+        orderId,
+        userId,
+        orderNumber: 'ORD-10042',
+        status: 'pending',
+        requestKey: crypto.randomUUID(),
+        requestFingerprint: 'test',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      portions: [await db.query.vendorOrders.findFirst()],
+    }));
     process.env.JWT_SECRET = 'test-jwt-secret-key-32-chars-long!';
 
     // Default mock: valid user with vendor role
@@ -120,23 +136,23 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
 
   describe('Parent Order Status Aggregation Unit Tests', () => {
     it('returns cancelled if all vendor orders are cancelled', () => {
-      expect(orderService.calculateParentOrderStatus(['cancelled', 'cancelled'])).toBe('cancelled');
+      expect(calculateParentOrderStatus(['cancelled', 'cancelled'])).toBe('cancelled');
     });
 
     it('returns completed if all vendor orders are completed', () => {
-      expect(orderService.calculateParentOrderStatus(['completed', 'completed'])).toBe('completed');
+      expect(calculateParentOrderStatus(['completed', 'completed'])).toBe('completed');
     });
 
     it('returns completed if mix of completed and cancelled (at least 1 completed)', () => {
-      expect(orderService.calculateParentOrderStatus(['completed', 'cancelled'])).toBe('completed');
+      expect(calculateParentOrderStatus(['completed', 'cancelled'])).toBe('completed');
     });
 
     it('returns confirmed if any vendor order is processing', () => {
-      expect(orderService.calculateParentOrderStatus(['pending', 'processing'])).toBe('confirmed');
+      expect(calculateParentOrderStatus(['pending', 'processing'])).toBe('confirmed');
     });
 
     it('returns pending if all vendor orders are pending', () => {
-      expect(orderService.calculateParentOrderStatus(['pending', 'pending'])).toBe('pending');
+      expect(calculateParentOrderStatus(['pending', 'pending'])).toBe('pending');
     });
   });
 
@@ -145,8 +161,8 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
       expect(orderService.getAllowedOrderActions('pending')).toEqual(['process', 'cancel']);
     });
 
-    it('returns complete and cancel for processing orders', () => {
-      expect(orderService.getAllowedOrderActions('processing')).toEqual(['complete', 'cancel']);
+    it('returns complete only for processing orders', () => {
+      expect(orderService.getAllowedOrderActions('processing')).toEqual(['complete']);
     });
 
     it('returns empty array for completed and cancelled terminal orders', () => {
@@ -345,7 +361,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
           updatedAt: new Date().toISOString(),
           completedAt: null,
           cancellationReason: null,
-          allowedActions: ['complete', 'cancel'],
+          allowedActions: ['complete'],
         },
         customer: {
           name: 'Jane Customer',

@@ -4,6 +4,53 @@ import { describe, expect, it } from 'vitest';
 import app from '../app.js';
 
 describe('Swagger Documentation Endpoints (/api/docs)', () => {
+  it('documents customer checkout headers, safe order contracts and vendor transitions', async () => {
+    const { body } = await request(app).get('/api/docs.json');
+    const paths = body.paths;
+    for (const path of [
+      '/api/customer/checkout/review',
+      '/api/customer/orders',
+      '/api/customer/orders/{orderId}',
+      '/api/customer/orders/{orderId}/cancel',
+      '/api/vendor/orders',
+      '/api/vendor/orders/{vendorOrderId}',
+      '/api/vendor/orders/{vendorOrderId}/status',
+    ])
+      expect(paths).toHaveProperty(path);
+    expect(paths['/api/customer/orders'].post.parameters).toContainEqual(
+      expect.objectContaining({ name: 'Idempotency-Key', in: 'header', required: true }),
+    );
+    expect(paths['/api/customer/orders'].post.responses['409']).toBeDefined();
+    expect(paths['/api/customer/orders'].get.parameters).toContainEqual(
+      expect.objectContaining({ name: 'limit', schema: expect.objectContaining({ maximum: 100 }) }),
+    );
+    for (const name of ['status', 'orderedFrom', 'orderedTo']) {
+      expect(paths['/api/customer/orders'].get.parameters).toContainEqual(
+        expect.objectContaining({ name, in: 'query' }),
+      );
+    }
+    expect(paths['/api/vendor/orders/{vendorOrderId}/status'].post.description).toContain(
+      'processing → completed only',
+    );
+    const schema = body.components.schemas.CustomerOrder;
+    expect(JSON.stringify(schema)).not.toMatch(/vendorOrderId|requestFingerprint|passwordHash/);
+    // Resolve every local reference so schema changes cannot silently break Swagger.
+    function references(value: unknown): void {
+      if (!value || typeof value !== 'object') return;
+      if ('$ref' in value && typeof value.$ref === 'string' && value.$ref.startsWith('#/')) {
+        const target = value.$ref
+          .slice(2)
+          .split('/')
+          .reduce((node: Record<string, unknown>, key: string) => {
+            expect(node).toHaveProperty(key);
+            return node[key] as Record<string, unknown>;
+          }, body);
+        expect(target).toBeDefined();
+      }
+      for (const nested of Object.values(value)) references(nested);
+    }
+    references(body);
+  });
   it('should serve raw OpenAPI 3.1 JSON specification at GET /api/docs.json', async () => {
     const res = await request(app).get('/api/docs.json');
 

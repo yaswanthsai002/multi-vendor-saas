@@ -11,6 +11,11 @@ import {
 import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import {
+  lockOrder,
+  restoreOrderStock,
+  refreshParentStatus,
+} from '../../shared/orders/order-lifecycle.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import type { ListVendorOrdersQuery, UpdateVendorOrderStatusInput } from './order.schema.js';
@@ -82,36 +87,12 @@ export function getAllowedOrderActions(
     case 'pending':
       return ['process', 'cancel'];
     case 'processing':
-      return ['complete', 'cancel'];
+      return ['complete'];
     case 'completed':
     case 'cancelled':
     default:
       return [];
   }
-}
-
-/**
- * ponytail: Calculates aggregated parent order status from all sister vendor orders.
- */
-export function calculateParentOrderStatus(
-  statuses: ('pending' | 'processing' | 'completed' | 'cancelled')[],
-): 'pending' | 'confirmed' | 'completed' | 'cancelled' {
-  if (statuses.length === 0) return 'pending';
-
-  const allCancelled = statuses.every((s) => s === 'cancelled');
-  if (allCancelled) return 'cancelled';
-
-  const allDone = statuses.every((s) => s === 'completed' || s === 'cancelled');
-  const hasCompleted = statuses.some((s) => s === 'completed');
-  if (allDone && hasCompleted) return 'completed';
-
-  const anyProcessing = statuses.some((s) => s === 'processing');
-  if (anyProcessing) return 'confirmed';
-
-  const allPending = statuses.every((s) => s === 'pending');
-  if (allPending) return 'pending';
-
-  return 'confirmed';
 }
 
 /**
@@ -378,54 +359,33 @@ export async function updateVendorOrderStatus(
   const db = getDb();
   const { status: targetStatus, cancellationReason } = input;
 
-  // 1. Retrieve current vendor order and verify ownership
   const vo = await db.query.vendorOrders.findFirst({
     where: and(eq(vendorOrders.vendorOrderId, vendorOrderId), eq(vendorOrders.vendorId, vendorId)),
   });
-
-  if (!vo) {
-    throw new AppError(404, 'ORDER_NOT_FOUND', 'Vendor order not found.');
-  }
-
-  // 2. Validate state machine transition
-  const currentStatus = vo.status;
-
-  if (currentStatus === 'completed' || currentStatus === 'cancelled') {
-    throw new AppError(
-      400,
-      'INVALID_ORDER_STATUS_TRANSITION',
-      `Order is in terminal state '${currentStatus}' and cannot be modified.`,
-    );
-  }
-
-  if (
-    currentStatus === 'pending' &&
-    targetStatus !== 'processing' &&
-    targetStatus !== 'cancelled'
-  ) {
-    throw new AppError(
-      400,
-      'INVALID_ORDER_STATUS_TRANSITION',
-      `Cannot transition from 'pending' directly to '${targetStatus}'. Allowed: 'processing' or 'cancelled'.`,
-    );
-  }
-
-  if (
-    currentStatus === 'processing' &&
-    targetStatus !== 'completed' &&
-    targetStatus !== 'cancelled'
-  ) {
-    throw new AppError(
-      400,
-      'INVALID_ORDER_STATUS_TRANSITION',
-      `Cannot transition from 'processing' to '${targetStatus}'. Allowed: 'completed' or 'cancelled'.`,
-    );
-  }
-
-  // 3. Execute update and parent aggregation inside single transaction
+  if (!vo) throw new AppError(404, 'ORDER_NOT_FOUND', 'Vendor order not found.');
   await db.transaction(async (tx) => {
+    const { portions } = await lockOrder(tx, vo.orderId);
+    const current = portions.find(
+      (portion) => portion.vendorOrderId === vendorOrderId && portion.vendorId === vendorId,
+    );
+    if (!current) throw new AppError(404, 'ORDER_NOT_FOUND', 'Vendor order not found.');
+    if (
+      !getAllowedOrderActions(current.status).includes(
+        targetStatus === 'processing'
+          ? 'process'
+          : targetStatus === 'completed'
+            ? 'complete'
+            : 'cancel',
+      )
+    ) {
+      throw new AppError(
+        400,
+        'INVALID_ORDER_STATUS_TRANSITION',
+        'Order state changed or transition is unavailable. Refresh the order.',
+      );
+    }
     const now = new Date();
-    await tx
+    const changed = await tx
       .update(vendorOrders)
       .set({
         status: targetStatus,
@@ -434,25 +394,20 @@ export async function updateVendorOrderStatus(
         completedAt: targetStatus === 'completed' ? now : null,
         updatedAt: now,
       })
-      .where(eq(vendorOrders.vendorOrderId, vendorOrderId));
-
-    // Fetch all sister vendor orders for parent aggregation
-    const allSisterVendorOrders = await tx
-      .select({ status: vendorOrders.status })
-      .from(vendorOrders)
-      .where(eq(vendorOrders.orderId, vo.orderId));
-
-    const allStatuses = allSisterVendorOrders.map((s) => s.status);
-    const newParentStatus = calculateParentOrderStatus(allStatuses);
-
-    await tx
-      .update(orders)
-      .set({
-        status: newParentStatus,
-        updatedAt: now,
-      })
-      .where(eq(orders.orderId, vo.orderId));
+      .where(
+        and(
+          eq(vendorOrders.vendorOrderId, vendorOrderId),
+          eq(vendorOrders.vendorId, vendorId),
+          eq(vendorOrders.status, current.status),
+        ),
+      )
+      .returning({ vendorOrderId: vendorOrders.vendorOrderId });
+    if (targetStatus === 'cancelled')
+      await restoreOrderStock(
+        tx,
+        changed.map((portion) => portion.vendorOrderId),
+      );
+    await refreshParentStatus(tx, vo.orderId);
   });
-
   return getVendorOrderDetail(vendorId, vendorOrderId);
 }
