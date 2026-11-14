@@ -8,8 +8,9 @@ import app from '../../app.js';
 
 // ponytail: mock @repo/db using vi.hoisted to run cleanly in CI without live PostgreSQL
 const { db } = vi.hoisted(() => {
-  const createChain = (data: any = []) => {
-    const chain: any = {
+  const createChain = (data: unknown[] = []) => {
+    const chain = Promise.resolve(data);
+    return Object.assign(chain, {
       where: vi.fn(() => chain),
       orderBy: vi.fn(() => chain),
       limit: vi.fn(() => chain),
@@ -17,10 +18,7 @@ const { db } = vi.hoisted(() => {
       innerJoin: vi.fn(() => chain),
       leftJoin: vi.fn(() => chain),
       groupBy: vi.fn(() => chain),
-      then: (resolve: any, reject?: any) => Promise.resolve(data).then(resolve, reject),
-      catch: (reject: any) => Promise.resolve(data).catch(reject),
-    };
-    return chain;
+    });
   };
 
   const defaultRows = [
@@ -105,7 +103,7 @@ describe('Admin Feature Integration Tests', () => {
     targetProductId = randomUUID();
 
     // Default: requireAdmin middleware resolves an active admin user
-    db.query.users.findFirst.mockImplementation(async (query: any) => {
+    db.query.users.findFirst.mockImplementation(async () => {
       return {
         userId: adminUserId,
         fullName: 'Test Admin',
@@ -146,7 +144,7 @@ describe('Admin Feature Integration Tests', () => {
     });
 
     db.insert.mockImplementation(() => ({
-      values: vi.fn((vals: any) => ({
+      values: vi.fn((vals: Record<string, unknown> | Record<string, unknown>[]) => ({
         returning: vi.fn(() => {
           const row = Array.isArray(vals) ? vals[0] : vals;
           return Promise.resolve([
@@ -166,30 +164,19 @@ describe('Admin Feature Integration Tests', () => {
     }));
 
     db.update.mockImplementation(() => ({
-      set: vi.fn((vals: any) => {
-        const chain: any = {
+      set: vi.fn((vals: Record<string, unknown>) => {
+        const chain = Promise.resolve([
+          {
+            ...vals,
+            userId: targetUserId,
+            vendorId: targetVendorId,
+            productId: targetProductId,
+          },
+        ]);
+        return Object.assign(chain, {
           where: vi.fn(() => chain),
-          returning: vi.fn(() =>
-            Promise.resolve([
-              {
-                ...vals,
-                userId: targetUserId,
-                vendorId: targetVendorId,
-                productId: targetProductId,
-              },
-            ]),
-          ),
-          then: (resolve: any) =>
-            Promise.resolve([
-              {
-                ...vals,
-                userId: targetUserId,
-                vendorId: targetVendorId,
-                productId: targetProductId,
-              },
-            ]).then(resolve),
-        };
-        return chain;
+          returning: vi.fn(() => chain),
+        });
       }),
     }));
 

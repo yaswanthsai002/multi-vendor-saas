@@ -71,7 +71,7 @@ describe('Vendor Profile API Endpoints', () => {
       roles: ['customer', 'vendor'],
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    });
 
     vi.mocked(db.query.vendors.findFirst).mockResolvedValue({
       vendorId: validVendorId,
@@ -85,7 +85,7 @@ describe('Vendor Profile API Endpoints', () => {
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    });
   });
 
   describe('GET /api/vendor/profile', () => {
@@ -99,7 +99,7 @@ describe('Vendor Profile API Endpoints', () => {
         vendorId: validVendorId,
         userId: validUserId,
         status: 'suspended',
-      } as any);
+      });
 
       const res = await request(app).get('/api/vendor/profile').set('Cookie', validCookie);
 
@@ -108,7 +108,7 @@ describe('Vendor Profile API Endpoints', () => {
     });
 
     it('successfully returns vendor profile with user details', async () => {
-      const mockProfile = {
+      const mockProfile: Awaited<ReturnType<typeof vendorService.getVendorProfile>> = {
         vendorId: validVendorId,
         name: 'Acme Crafts',
         slug: 'acme-crafts',
@@ -117,23 +117,31 @@ describe('Vendor Profile API Endpoints', () => {
         logoUrl: 'https://example.com/logo.png',
         bannerUrl: 'https://example.com/banner.png',
         status: 'active',
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-02T00:00:00.000Z',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-02T00:00:00.000Z'),
         user: {
           userId: validUserId,
           fullName: 'Jane Doe',
           email: 'vendor@example.com',
           roles: ['vendor'],
-          emailVerifiedAt: '2026-01-01T00:00:00.000Z',
+          emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
       };
 
-      vi.mocked(vendorService.getVendorProfile).mockResolvedValueOnce(mockProfile as any);
+      vi.mocked(vendorService.getVendorProfile).mockResolvedValueOnce(mockProfile);
 
       const res = await request(app).get('/api/vendor/profile').set('Cookie', validCookie);
 
       expect(res.status).toBe(200);
-      expect(res.body.profile).toEqual(mockProfile);
+      expect(res.body.profile).toEqual({
+        ...mockProfile,
+        createdAt: mockProfile.createdAt.toISOString(),
+        updatedAt: mockProfile.updatedAt.toISOString(),
+        user: {
+          ...mockProfile.user,
+          emailVerifiedAt: mockProfile.user.emailVerifiedAt?.toISOString(),
+        },
+      });
       expect(vendorService.getVendorProfile).toHaveBeenCalledWith(validVendorId);
     });
   });
@@ -164,7 +172,7 @@ describe('Vendor Profile API Endpoints', () => {
     });
 
     it('successfully updates profile fields', async () => {
-      const updatedProfile = {
+      const updatedProfile: Awaited<ReturnType<typeof vendorService.updateVendorProfile>> = {
         vendorId: validVendorId,
         name: 'Acme Crafts Studio',
         slug: 'acme-crafts',
@@ -173,18 +181,18 @@ describe('Vendor Profile API Endpoints', () => {
         logoUrl: 'https://example.com/new-logo.png',
         bannerUrl: 'https://example.com/new-banner.png',
         status: 'active',
-        createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-03T00:00:00.000Z',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-03T00:00:00.000Z'),
         user: {
           userId: validUserId,
           fullName: 'Jane Smith',
           email: 'vendor@example.com',
           roles: ['vendor'],
-          emailVerifiedAt: '2026-01-01T00:00:00.000Z',
+          emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
         },
       };
 
-      vi.mocked(vendorService.updateVendorProfile).mockResolvedValueOnce(updatedProfile as any);
+      vi.mocked(vendorService.updateVendorProfile).mockResolvedValueOnce(updatedProfile);
 
       const res = await request(app).patch('/api/vendor/profile').set('Cookie', validCookie).send({
         name: 'Acme Crafts Studio',
@@ -197,7 +205,15 @@ describe('Vendor Profile API Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Profile updated successfully.');
-      expect(res.body.profile).toEqual(updatedProfile);
+      expect(res.body.profile).toEqual({
+        ...updatedProfile,
+        createdAt: updatedProfile.createdAt.toISOString(),
+        updatedAt: updatedProfile.updatedAt.toISOString(),
+        user: {
+          ...updatedProfile.user,
+          emailVerifiedAt: updatedProfile.user.emailVerifiedAt?.toISOString(),
+        },
+      });
       expect(vendorService.updateVendorProfile).toHaveBeenCalledWith(validVendorId, {
         name: 'Acme Crafts Studio',
         tagline: 'Quality goods',
