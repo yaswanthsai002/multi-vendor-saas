@@ -4,12 +4,12 @@ import { ArrowLeft, ArrowRight, Clock3 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { MarketingBanner } from '@/shared/components/marketing-banner';
+
 import { useHomepageCampaigns } from '../hooks/use-homepage-data';
 
 import type { HomepageCampaign } from '../services/home.service';
-
-import { Button } from '@/components/ui/button';
-import { MarketingBanner } from '@/shared/components/marketing-banner';
 
 export function CampaignCountdown({ target, label }: { target: string; label: string }) {
   const [now, setNow] = useState<number | null>(null);

@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import * as React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { QueryProvider } from '@/providers/query-provider';
+
 import { ProductBulkBar } from './product-bulk-bar';
 import { ProductEmptyState } from './product-empty-state';
 import { ProductFilters } from './product-filters';
@@ -11,8 +13,6 @@ import { ProductTable } from './product-table';
 import { ProductTabs } from './product-tabs';
 
 import type { ProductItem } from '../types/product.types';
-
-import { QueryProvider } from '@/providers/query-provider';
 
 describe('Product Listing Components', () => {
   afterEach(() => {

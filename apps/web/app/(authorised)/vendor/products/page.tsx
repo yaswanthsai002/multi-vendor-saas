@@ -3,13 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
-import type {
-  BulkProductAction,
-  ProductItem,
-  ProductListFilters,
-  ProductTab,
-} from '@/features/products/types/product.types';
-
 import { ProductBulkBar } from '@/features/products/components/product-bulk-bar';
 import { ProductDeleteDialog } from '@/features/products/components/product-delete-dialog';
 import { ProductEmptyState } from '@/features/products/components/product-empty-state';
@@ -26,6 +19,13 @@ import {
   useUpdateProduct,
   useVendorProducts,
 } from '@/features/products/hooks/use-products';
+
+import type {
+  BulkProductAction,
+  ProductItem,
+  ProductListFilters,
+  ProductTab,
+} from '@/features/products/types/product.types';
 
 function VendorProductsContent() {
   const router = useRouter();

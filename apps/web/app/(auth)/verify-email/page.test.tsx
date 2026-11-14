@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import VerifyEmailPage from './page';
-
 import * as verifyEmailService from '@/features/verify-email/services/verify-email.service';
 import { ApiError } from '@/lib/api-client';
+
+import VerifyEmailPage from './page';
 
 const mockPush = vi.fn();
 let mockSearchParams = new URLSearchParams('email=jane@example.com&purpose=email_verification');

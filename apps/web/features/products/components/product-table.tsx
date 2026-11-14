@@ -4,11 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { Pagination } from '@/shared/components/pagination/pagination';
+
 import { ProductTableActionsMenu } from './product-table-actions-menu';
 
 import type { ProductItem, ProductTab } from '../types/product.types';
-
-import { Pagination } from '@/shared/components/pagination/pagination';
 
 interface ProductTableProps {
   products: ProductItem[];

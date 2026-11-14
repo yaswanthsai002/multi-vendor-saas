@@ -2,9 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { lookupPostalCode } from '../services/account.service';
-
 import { queryKeys } from '@/lib/query-keys';
+
+import { lookupPostalCode } from '../services/account.service';
 
 export function usePostalCode(postalCode: string) {
   return useQuery({

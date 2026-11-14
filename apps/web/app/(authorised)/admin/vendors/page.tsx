@@ -20,8 +20,6 @@ import Image from 'next/image';
 import * as React from 'react';
 import { toast } from 'sonner';
 
-import type { AdminVendorItem } from '@/features/admin/services/admin.service';
-
 import { DataTable } from '@/components/ui/data-table';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { OnboardVendorDialog } from '@/features/admin/components/onboard-vendor-dialog';
@@ -31,6 +29,8 @@ import {
   useUpdateVendorStatus,
 } from '@/features/admin/hooks/use-admin';
 import { cn } from '@/lib/utils';
+
+import type { AdminVendorItem } from '@/features/admin/services/admin.service';
 
 export default function AdminVendorsPage() {
   const [searchInput, setSearchInput] = React.useState('');

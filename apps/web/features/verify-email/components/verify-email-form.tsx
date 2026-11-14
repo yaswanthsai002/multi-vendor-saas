@@ -4,11 +4,11 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
+
 import { useVerifyEmail } from '../hooks/use-verify-email';
 
 import { OtpInput } from './otp-input';
-
-import { Button } from '@/components/ui/button';
 
 export function VerifyEmailForm() {
   const {

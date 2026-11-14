@@ -3,12 +3,12 @@
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
-import { useResetPassword } from '../hooks/use-reset-password';
-
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+import { useResetPassword } from '../hooks/use-reset-password';
 
 export function ResetPasswordForm() {
   const {

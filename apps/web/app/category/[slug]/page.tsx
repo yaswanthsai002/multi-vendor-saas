@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { CatalogView } from '@/features/catalog/components/catalog-view';
+
+import type { Metadata } from 'next';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;

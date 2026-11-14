@@ -4,14 +4,14 @@ const { makeApiRequest } = vi.hoisted(() => ({ makeApiRequest: vi.fn() }));
 
 vi.mock('@/lib/api-client', () => ({ makeApiRequest }));
 
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
 import {
   fetchFeaturedBrands,
   fetchHomeCategories,
   fetchHomeProducts,
   fetchHomepageCampaigns,
 } from './home.service';
-
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 describe('fetchFeaturedBrands', () => {
   beforeEach(() => vi.clearAllMocks());

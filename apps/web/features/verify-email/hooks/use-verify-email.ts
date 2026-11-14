@@ -4,13 +4,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { toast } from 'sonner';
 
+import { ApiError } from '@/lib/api-client';
+
 import {
   useSendOtpMutation,
   useVerifyOtpMutation,
   useVerificationStatusQuery,
 } from './use-verify-email-mutation';
-
-import { ApiError } from '@/lib/api-client';
 
 export function maskEmail(email: string): string {
   if (!email || !email.includes('@')) return email;

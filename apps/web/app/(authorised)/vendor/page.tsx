@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { VendorDashboardOverview } from '@/features/vendor/components/vendor-dashboard-overview';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Vendor Overview | Perigee',

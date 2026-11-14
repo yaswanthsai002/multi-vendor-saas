@@ -3,11 +3,11 @@
 import { Filter, RotateCcw, X } from 'lucide-react';
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
+
 import { CatalogCategoryTree } from './catalog-category-tree';
 
 import type { CatalogCategory, CatalogFilters as FilterValues } from '../types/catalog.types';
-
-import { Button } from '@/components/ui/button';
 
 interface CatalogFiltersProps {
   categories: CatalogCategory[];

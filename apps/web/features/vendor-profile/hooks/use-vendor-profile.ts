@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import { vendorProfileService } from '../services/vendor-profile.service';
 
 import type { UpdateVendorProfilePayload } from '../types/vendor-profile.types';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useVendorProfile() {
   return useQuery({

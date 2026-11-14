@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { ApiError } from '@/lib/api-client';
+
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormData,
 } from '../schema/forgot-password.schema';
 
 import { useForgotPasswordMutation } from './use-forgot-password-mutation';
-
-import { ApiError } from '@/lib/api-client';
 
 export function useForgotPassword() {
   const router = useRouter();

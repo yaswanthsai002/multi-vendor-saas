@@ -4,8 +4,6 @@ import { Package, Trophy } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 
-import type { TopProduct } from '../services/admin.service';
-
 import {
   Table,
   TableBody,
@@ -15,6 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs';
+
+import type { TopProduct } from '../services/admin.service';
 
 interface TopProductsTableProps {
   products: TopProduct[];

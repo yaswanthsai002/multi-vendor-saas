@@ -1,3 +1,6 @@
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
 import type {
   ChartDataPoint,
   RecentOrder,
@@ -6,9 +9,6 @@ import type {
   VendorDashboardData,
   VendorDashboardMetrics,
 } from '../types/vendor-dashboard.types';
-
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export interface FetchVendorDashboardParams {
   period?: TimeframePeriod;

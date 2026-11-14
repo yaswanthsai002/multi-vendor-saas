@@ -3,10 +3,10 @@
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-import { useHomeProducts } from '../hooks/use-homepage-data';
-
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/shared/components/product-card/product-card';
+
+import { useHomeProducts } from '../hooks/use-homepage-data';
 
 function formatPrice(value: string) {
   return `₹${Number(value).toLocaleString('en-IN')}`;

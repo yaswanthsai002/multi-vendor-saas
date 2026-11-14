@@ -3,13 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { QueryProvider } from '@/providers/query-provider';
+
 import * as productService from '../services/product.service';
 
 import { ProductForm } from './product-form';
 
 import type { ProductDetail } from '../types/product.types';
-
-import { QueryProvider } from '@/providers/query-provider';
 
 const mockPush = vi.fn();
 

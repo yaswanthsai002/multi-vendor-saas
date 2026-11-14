@@ -3,11 +3,11 @@
 import { Star, X } from 'lucide-react';
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
+
 import type { ReviewPage } from './product-review.types';
 import type { CatalogProductDetail } from '../../types/catalog.types';
 import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query';
-
-import { Button } from '@/components/ui/button';
 
 interface ProductDetailContentProps {
   product: CatalogProductDetail;

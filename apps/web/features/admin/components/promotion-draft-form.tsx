@@ -5,14 +5,6 @@ import { ImagePlus, Plus, Save, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
-import { PromotionSelectedProducts } from './promotion-editor-fields';
-import { MAX_PROMOTION_PRODUCTS, PromotionProductPicker } from './promotion-product-picker';
-
-import type { PromotionFormInput, PromotionFormValues } from './promotion-editor-schema';
-import type { PromotionProductSelection } from './promotion-product-picker';
-import type { MediaItem } from '@/features/media/types/media.types';
-import type { UseFormReturn } from 'react-hook-form';
-
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -20,6 +12,14 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
 import { MarketingBanner } from '@/shared/components/marketing-banner';
+
+import { PromotionSelectedProducts } from './promotion-editor-fields';
+import { MAX_PROMOTION_PRODUCTS, PromotionProductPicker } from './promotion-product-picker';
+
+import type { PromotionFormInput, PromotionFormValues } from './promotion-editor-schema';
+import type { PromotionProductSelection } from './promotion-product-picker';
+import type { MediaItem } from '@/features/media/types/media.types';
+import type { UseFormReturn } from 'react-hook-form';
 
 const destinations = [
   { value: '/products', label: 'All products' },

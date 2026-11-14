@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
+import { Pagination } from '@/shared/components/pagination/pagination';
+
 import { useCatalog, useCatalogFacets } from '../hooks/use-catalog';
 import { useWishlist } from '../hooks/use-wishlist';
 
@@ -14,8 +16,6 @@ import { CatalogSortBar } from './catalog-sort-bar';
 
 import type { CatalogFilters as FilterValues, CatalogSortBy } from '../types/catalog.types';
 import type { Product } from '@/shared/components/product-card/product-card.types';
-
-import { Pagination } from '@/shared/components/pagination/pagination';
 
 interface CatalogViewProps {
   initialCategory?: string;

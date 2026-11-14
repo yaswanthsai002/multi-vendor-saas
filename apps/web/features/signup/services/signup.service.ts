@@ -1,7 +1,7 @@
-import type { SignupFormData } from '../schema/signup.schema';
-
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
+import type { SignupFormData } from '../schema/signup.schema';
 
 export interface UserSummary {
   userId: string;

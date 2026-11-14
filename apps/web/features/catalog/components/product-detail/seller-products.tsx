@@ -6,13 +6,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import type { CatalogProduct, CatalogProductDetail } from '../../types/catalog.types';
-
 import { Button } from '@/components/ui/button';
 import { useWishlist } from '@/features/catalog/hooks/use-wishlist';
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { queryKeys } from '@/lib/query-keys';
+
+import type { CatalogProduct, CatalogProductDetail } from '../../types/catalog.types';
 
 export function SellerProducts({ product }: { product: CatalogProductDetail }) {
   const router = useRouter();

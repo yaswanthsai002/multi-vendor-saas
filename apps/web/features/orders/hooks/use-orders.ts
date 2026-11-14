@@ -3,6 +3,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   fetchVendorOrderDetail,
   fetchVendorOrders,
@@ -10,8 +12,6 @@ import {
 } from '../services/order.service';
 
 import type { UpdateOrderStatusInput, VendorOrdersFilters } from '../types/order.types';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useVendorOrders(filters: VendorOrdersFilters = {}) {
   return useQuery({

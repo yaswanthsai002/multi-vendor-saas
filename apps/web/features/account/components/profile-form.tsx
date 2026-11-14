@@ -8,6 +8,10 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { queryKeys } from '@/lib/query-keys';
+
 import { profileSchema, type ProfileFormValues } from '../schemas/account.schema';
 import {
   fetchCustomerAddresses,
@@ -17,10 +21,6 @@ import {
 } from '../services/account.service';
 
 import type { CurrentUserData } from '@/lib/auth/current-user';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { queryKeys } from '@/lib/query-keys';
 
 export function ProfileForm({ user }: { user: CurrentUserData }) {
   const queryClient = useQueryClient();

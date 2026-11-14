@@ -4,8 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import type { BulkImportEvent, BulkImportState } from '@/features/products/types/bulk-import.types';
-
 import { BulkUploadCompleted } from '@/features/products/components/bulk-upload/bulk-upload-completed';
 import { BulkUploadDropzone } from '@/features/products/components/bulk-upload/bulk-upload-dropzone';
 import { BulkUploadProgress } from '@/features/products/components/bulk-upload/bulk-upload-progress';
@@ -19,6 +17,8 @@ import {
   useStartBulkImport,
 } from '@/features/products/hooks/use-bulk-import';
 import { bulkImportService } from '@/features/products/services/bulk-import.service';
+
+import type { BulkImportEvent, BulkImportState } from '@/features/products/types/bulk-import.types';
 
 export default function BulkUploadPage() {
   const { data: activeImport, isLoading, refetch } = useActiveBulkImport();

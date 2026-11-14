@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { ResetPasswordForm } from '@/features/reset-password/components/reset-password-form';
 import { ResetPasswordHero } from '@/features/reset-password/components/reset-password-hero';
 import { ResetPasswordSkeleton } from '@/features/reset-password/components/reset-password-skeleton';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Reset Password | Perigee',

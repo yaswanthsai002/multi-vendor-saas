@@ -1,7 +1,7 @@
-import type { UpdateVendorProfilePayload, VendorProfile } from '../types/vendor-profile.types';
-
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
+import type { UpdateVendorProfilePayload, VendorProfile } from '../types/vendor-profile.types';
 
 export const vendorProfileService = {
   getProfile: async (): Promise<VendorProfile> => {

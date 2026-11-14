@@ -5,11 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { AddressBook } from './address-book';
-import { ProfileForm } from './profile-form';
-
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
+import { AddressBook } from './address-book';
+import { ProfileForm } from './profile-form';
 
 export function AccountView() {
   const router = useRouter();

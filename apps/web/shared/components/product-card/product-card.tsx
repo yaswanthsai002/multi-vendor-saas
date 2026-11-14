@@ -4,10 +4,10 @@ import { Heart, ShoppingBag, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { Button } from '@/components/ui/button';
+
 import type { ProductCardProps } from './product-card.types';
 import type { MouseEvent } from 'react';
-
-import { Button } from '@/components/ui/button';
 
 export function ProductCard({
   product,

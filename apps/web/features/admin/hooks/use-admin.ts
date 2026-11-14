@@ -3,13 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   adminService,
   type AdminPromotionDraftPayload,
   type OnboardVendorInput,
 } from '../services/admin.service';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useAdminDashboardMetrics() {
   return useQuery({

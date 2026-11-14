@@ -1,8 +1,6 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Suspense, type ReactNode } from 'react';
 
-import type { Metadata } from 'next';
-
 import { AuthToastListener } from '@/components/auth-toast-listener';
 import { Toaster } from '@/components/ui/toaster';
 import { DeliveryAddressPicker } from '@/features/account/components/delivery-address-picker';
@@ -11,6 +9,8 @@ import { QueryProvider } from '@/providers/query-provider';
 import { Footer } from '@/shared/components/layout/footer';
 import { Header } from '@/shared/components/layout/header';
 import { ThemeProvider } from '@/shared/components/layout/theme-provider';
+
+import type { Metadata } from 'next';
 
 import './globals.css';
 

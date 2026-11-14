@@ -4,11 +4,11 @@ import { Image as ImageIcon, Plus } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 
+import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
+
 import { ProductMediaActionsMenu } from './product-media-actions-menu';
 
 import type { MediaItem } from '@/features/media/types/media.types';
-
-import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
 
 interface ProductMediaCardProps {
   primaryImage: MediaItem | null;

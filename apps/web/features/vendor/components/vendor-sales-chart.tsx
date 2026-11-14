@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 
-import type { ChartDataPoint, TimeframePeriod } from '../types/vendor-dashboard.types';
-
 import {
   TimeSeriesChart,
   type TimeSeriesPeriod,
 } from '@/shared/components/charts/time-series-chart';
+
+import type { ChartDataPoint, TimeframePeriod } from '../types/vendor-dashboard.types';
 
 interface VendorSalesChartProps {
   data?: ChartDataPoint[];

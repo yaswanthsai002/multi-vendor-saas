@@ -5,14 +5,14 @@ import { Check, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+
 import { usePostalCode } from '../hooks/use-postal-code';
 import { addressFormSchema, type AddressFormValues } from '../schemas/account.schema';
 
 import type { CustomerAddress, CustomerAddressInput } from '../types/account.types';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 
 export function AddressForm({
   address,

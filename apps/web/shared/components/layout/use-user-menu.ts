@@ -2,9 +2,9 @@
 
 import { useCallback, useState, useEffect, useRef } from 'react';
 
-import type { CurrentUserData } from '@/lib/auth/current-user';
-
 import { useSignOut } from '@/shared/hooks/use-sign-out';
+
+import type { CurrentUserData } from '@/lib/auth/current-user';
 
 export function getPrimaryRoleBadge(roles?: string[]): 'Admin' | 'Vendor' | null {
   if (!roles || roles.length === 0) return null;

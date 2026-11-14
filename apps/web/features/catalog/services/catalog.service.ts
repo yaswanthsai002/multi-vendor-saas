@@ -1,12 +1,12 @@
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
 import type {
   CatalogFacetsResponse,
   CatalogFilters,
   CatalogProductDetail,
   CatalogResponse,
 } from '../types/catalog.types';
-
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export async function fetchCatalogProducts(filters: CatalogFilters = {}): Promise<CatalogResponse> {
   return makeApiRequest<CatalogResponse>({

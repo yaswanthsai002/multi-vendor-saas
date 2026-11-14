@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { VerifyEmailForm } from '@/features/verify-email/components/verify-email-form';
 import { VerifyEmailHero } from '@/features/verify-email/components/verify-email-hero';
 import { VerifyEmailSkeleton } from '@/features/verify-email/components/verify-email-skeleton';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Verify Your Email | Perigee',

@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import ResetPasswordPage from './page';
-
 import * as resetPasswordService from '@/features/reset-password/services/reset-password.service';
 import { ApiError } from '@/lib/api-client';
+
+import ResetPasswordPage from './page';
 
 const mockPush = vi.fn();
 

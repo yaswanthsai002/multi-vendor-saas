@@ -4,10 +4,10 @@ import { Camera, Image as ImageIcon, Store } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 
+import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
+
 import type { VendorProfile } from '../types/vendor-profile.types';
 import type { MediaItem } from '@/features/media/types/media.types';
-
-import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
 
 interface VendorProfileHeroProps {
   profile: VendorProfile;

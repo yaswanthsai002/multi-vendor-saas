@@ -4,6 +4,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import * as React from 'react';
 import { toast } from 'sonner';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   bulkMediaAction,
   deleteMediaAsset,
@@ -14,8 +16,6 @@ import {
 } from '../services/media.service';
 
 import type { ListMediaFilters } from '../types/media.types';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useMediaList(
   filters: ListMediaFilters = {},

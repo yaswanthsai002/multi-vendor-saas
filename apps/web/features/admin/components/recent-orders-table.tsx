@@ -4,8 +4,6 @@ import { ArrowRight, Eye, FileText } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import type { RecentOrder } from '../services/admin.service';
-
 import {
   Table,
   TableBody,
@@ -14,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+
+import type { RecentOrder } from '../services/admin.service';
 
 interface RecentOrdersTableProps {
   orders: RecentOrder[];

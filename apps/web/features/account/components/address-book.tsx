@@ -5,6 +5,9 @@ import { MapPin, Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   createCustomerAddress,
   deleteCustomerAddress,
@@ -15,9 +18,6 @@ import {
 import { AddressForm } from './address-form';
 
 import type { CustomerAddress, CustomerAddressInput } from '../types/account.types';
-
-import { Button } from '@/components/ui/button';
-import { queryKeys } from '@/lib/query-keys';
 
 export function AddressBook({ userId }: { userId: string | number }) {
   const queryClient = useQueryClient();

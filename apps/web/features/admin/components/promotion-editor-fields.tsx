@@ -4,12 +4,12 @@ import { ArrowLeft, ImagePlus, PackagePlus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import type { PromotionProductSelection } from './promotion-product-picker';
-
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+import type { PromotionProductSelection } from './promotion-product-picker';
 
 export function PromotionEditorHeading({ isEditing }: { isEditing: boolean }) {
   return (

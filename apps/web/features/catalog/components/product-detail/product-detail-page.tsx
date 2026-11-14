@@ -6,6 +6,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
+import { ApiError, makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { broadcastCartChange } from '@/lib/cart-sync';
+import { queryKeys } from '@/lib/query-keys';
+
 import { useCatalogProduct } from '../../hooks/use-catalog';
 import { useWishlist } from '../../hooks/use-wishlist';
 
@@ -16,12 +22,6 @@ import { SellerProducts } from './seller-products';
 
 import type { ReviewPage } from './product-review.types';
 import type { CatalogProductDetail } from '../../types/catalog.types';
-
-import { Button } from '@/components/ui/button';
-import { ApiError, makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
-import { broadcastCartChange } from '@/lib/cart-sync';
-import { queryKeys } from '@/lib/query-keys';
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();

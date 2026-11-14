@@ -1,8 +1,8 @@
-import type { CustomerAddress, CustomerAddressInput } from '../types/account.types';
-import type { CurrentUserData } from '@/lib/auth/current-user';
-
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
+import type { CustomerAddress, CustomerAddressInput } from '../types/account.types';
+import type { CurrentUserData } from '@/lib/auth/current-user';
 
 export async function fetchCustomerAddresses(signal?: AbortSignal) {
   return makeApiRequest<{ items: CustomerAddress[] }>({

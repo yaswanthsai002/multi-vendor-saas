@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 
-import type { PerformanceDay } from '../services/admin.service';
-
 import {
   TimeSeriesChart,
   type TimeSeriesPeriod,
 } from '@/shared/components/charts/time-series-chart';
+
+import type { PerformanceDay } from '../services/admin.service';
 
 interface PerformanceChartProps {
   data: PerformanceDay[];

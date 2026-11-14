@@ -1,11 +1,11 @@
 'use client';
 
+import { ProductCard } from '@/shared/components/product-card/product-card';
+
 import { CatalogEmptyState } from './catalog-empty-state';
 
 import type { CatalogProduct } from '../types/catalog.types';
 import type { Product } from '@/shared/components/product-card/product-card.types';
-
-import { ProductCard } from '@/shared/components/product-card/product-card';
 
 interface CatalogProductGridProps {
   products: CatalogProduct[];

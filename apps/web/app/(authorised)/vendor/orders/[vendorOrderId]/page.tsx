@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { VendorOrderDetailView } from '@/features/orders/components/vendor-order-detail-view';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Order Details | Vendor Portal | Perigee',

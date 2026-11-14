@@ -2,9 +2,9 @@
 
 import { BarChart2, Package, ShoppingCart, Wallet } from 'lucide-react';
 
-import type { VendorDashboardMetrics } from '../types/vendor-dashboard.types';
-
 import { KpiCard } from '@/shared/components/kpi-card';
+
+import type { VendorDashboardMetrics } from '../types/vendor-dashboard.types';
 
 interface VendorKpiCardsProps {
   metrics?: VendorDashboardMetrics;

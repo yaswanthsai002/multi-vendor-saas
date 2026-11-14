@@ -3,6 +3,8 @@
 import { UploadCloud, X } from 'lucide-react';
 import * as React from 'react';
 
+import { Pagination } from '@/shared/components/pagination/pagination';
+
 import { useMediaList } from '../hooks/use-media';
 
 import { MediaGrid } from './media-grid';
@@ -11,8 +13,6 @@ import { type MediaTab, MediaTabs } from './media-tabs';
 import { MediaUploadDialog } from './media-upload-dialog';
 
 import type { MediaItem } from '../types/media.types';
-
-import { Pagination } from '@/shared/components/pagination/pagination';
 
 export interface MediaPickerModalProps {
   open: boolean;

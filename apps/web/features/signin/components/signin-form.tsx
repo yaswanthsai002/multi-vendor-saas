@@ -3,13 +3,13 @@
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
-import { useSignin } from '../hooks/use-signin';
-
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useGoogleAuth } from '@/shared/hooks/use-google-auth';
+
+import { useSignin } from '../hooks/use-signin';
 
 function GoogleIcon() {
   return (

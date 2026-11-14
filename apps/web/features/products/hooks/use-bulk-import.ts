@@ -3,13 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 
-import { bulkImportService } from '../services/bulk-import.service';
-
-import type { BulkImportEvent } from '../types/bulk-import.types';
-
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { env } from '@/lib/env';
 import { queryKeys } from '@/lib/query-keys';
+
+import { bulkImportService } from '../services/bulk-import.service';
+
+import type { BulkImportEvent } from '../types/bulk-import.types';
 
 export function useActiveBulkImport() {
   return useQuery({

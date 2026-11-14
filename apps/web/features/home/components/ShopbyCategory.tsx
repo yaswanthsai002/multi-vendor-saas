@@ -4,9 +4,9 @@ import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { useHomeCategories } from '../hooks/use-homepage-data';
-
 import { Button } from '@/components/ui/button';
+
+import { useHomeCategories } from '../hooks/use-homepage-data';
 
 export default function ShopbyCategory() {
   const { data, isLoading, isError, refetch } = useHomeCategories();

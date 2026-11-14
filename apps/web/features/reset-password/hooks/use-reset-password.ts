@@ -6,11 +6,11 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { ApiError } from '@/lib/api-client';
+
 import { resetPasswordSchema, type ResetPasswordFormData } from '../schema/reset-password.schema';
 
 import { useResetPasswordMutation } from './use-reset-password-mutation';
-
-import { ApiError } from '@/lib/api-client';
 
 export function useResetPassword() {
   const router = useRouter();

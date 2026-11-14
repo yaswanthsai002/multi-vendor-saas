@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   fetchFeaturedBrands,
   fetchHomeCategories,
   fetchHomeProducts,
   fetchHomepageCampaigns,
 } from '../services/home.service';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useHomeCategories() {
   return useQuery({

@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
 import {
   useVendorDashboardMetrics,
   useVendorDashboardPerformance,
@@ -17,8 +19,6 @@ import { VendorSalesChart } from './vendor-sales-chart';
 import { VendorTopProducts } from './vendor-top-products';
 
 import type { TimeframePeriod } from '../types/vendor-dashboard.types';
-
-import { useCurrentUser } from '@/shared/hooks/use-current-user';
 
 export function VendorDashboardOverview() {
   const [period, setPeriod] = useState<TimeframePeriod>('7d');

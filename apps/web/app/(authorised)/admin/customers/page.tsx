@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
-import type { AdminUserItem } from '@/features/admin/services/admin.service';
-
 import { DataTable } from '@/components/ui/data-table';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { useAdminUsers, useUpdateUserStatus } from '@/features/admin/hooks/use-admin';
 import { cn } from '@/lib/utils';
+
+import type { AdminUserItem } from '@/features/admin/services/admin.service';
 
 export default function AdminCustomersPage() {
   const [searchInput, setSearchInput] = React.useState('');

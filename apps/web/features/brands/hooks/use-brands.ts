@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { fetchBrands } from '../services/brands.service';
-
 import { queryKeys } from '@/lib/query-keys';
+
+import { fetchBrands } from '../services/brands.service';
 
 export function useBrands(filters: {
   page: number;

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   fetchCatalogFacets,
   fetchCatalogProductBySlug,
@@ -7,8 +9,6 @@ import {
 } from '../services/catalog.service';
 
 import type { CatalogFilters } from '../types/catalog.types';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useCatalog(filters: CatalogFilters = {}) {
   return useQuery({

@@ -9,16 +9,16 @@ import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { queryKeys } from '@/lib/query-keys';
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
 import { usePostalCode } from '../hooks/use-postal-code';
 import { deliveryPinSchema, type DeliveryPinFormValues } from '../schemas/account.schema';
 import { fetchCustomerAddresses, updateCustomerAddress } from '../services/account.service';
 
 import type { CustomerAddress } from '../types/account.types';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { queryKeys } from '@/lib/query-keys';
-import { useCurrentUser } from '@/shared/hooks/use-current-user';
 
 const DELIVERY_PIN_KEY = 'perigee.delivery-pin';
 const DELIVERY_LOCATION_KEY = 'perigee.delivery-location';

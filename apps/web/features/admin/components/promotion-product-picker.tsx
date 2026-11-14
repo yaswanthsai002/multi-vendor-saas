@@ -4,16 +4,16 @@ import { Dialog } from '@base-ui-components/react/dialog';
 import { Check, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
 import { useAdminProducts } from '../hooks/use-admin';
 
 import { PromotionProductPickerResults } from './promotion-product-picker-results';
 
 import type { AdminProductItem } from '../services/admin.service';
-
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export const MAX_PROMOTION_PRODUCTS = 50;
 

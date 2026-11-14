@@ -18,13 +18,13 @@ import {
 import Image from 'next/image';
 import * as React from 'react';
 
-import type { AdminProductItem } from '@/features/admin/services/admin.service';
-
 import { DataTable } from '@/components/ui/data-table';
 import { AdminProductActionsMenu } from '@/features/admin/components/admin-product-actions-menu';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { useAdminProducts, useUpdateProductModeration } from '@/features/admin/hooks/use-admin';
 import { cn } from '@/lib/utils';
+
+import type { AdminProductItem } from '@/features/admin/services/admin.service';
 
 export default function AdminProductsPage() {
   const [searchInput, setSearchInput] = React.useState('');

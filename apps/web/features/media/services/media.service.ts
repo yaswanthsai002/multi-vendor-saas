@@ -1,8 +1,8 @@
-import type { ListMediaFilters, MediaItem, MediaListResponse } from '../types/media.types';
-
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { putFileToStorage } from '@/lib/direct-upload';
+
+import type { ListMediaFilters, MediaItem, MediaListResponse } from '../types/media.types';
 
 export async function fetchMediaList(
   filters: ListMediaFilters = {},

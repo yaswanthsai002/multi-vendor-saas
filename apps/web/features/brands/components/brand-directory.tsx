@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { useBrands } from '../hooks/use-brands';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/shared/components/pagination/pagination';
+
+import { useBrands } from '../hooks/use-brands';
 
 function BrandSkeleton() {
   return (

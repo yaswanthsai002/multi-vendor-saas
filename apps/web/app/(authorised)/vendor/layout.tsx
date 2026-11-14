@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-
 import { VendorSidebar } from '@/features/vendor/components/vendor-sidebar';
 import { VendorTopNav } from '@/features/vendor/components/vendor-top-nav';
+
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: 'Vendor Dashboard | Perigee',

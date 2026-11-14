@@ -24,8 +24,6 @@ import Image from 'next/image';
 import * as React from 'react';
 import { toast } from 'sonner';
 
-import type { CategoryTableRow } from '@/features/admin/types/category-table';
-
 import { DataTable } from '@/components/ui/data-table';
 import { AdminCategoryActionsMenu } from '@/features/admin/components/admin-category-actions-menu';
 import { KpiCard } from '@/features/admin/components/kpi-card';
@@ -33,6 +31,8 @@ import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
+
+import type { CategoryTableRow } from '@/features/admin/types/category-table';
 
 interface CategoryNode {
   categoryId: string;

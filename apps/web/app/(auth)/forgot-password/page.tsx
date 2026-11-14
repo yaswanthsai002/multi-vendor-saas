@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { ForgotPasswordForm } from '@/features/forgot-password/components/forgot-password-form';
 import { ForgotPasswordHero } from '@/features/forgot-password/components/forgot-password-hero';
 import { ForgotPasswordSkeleton } from '@/features/forgot-password/components/forgot-password-skeleton';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Forgot Password | Perigee',

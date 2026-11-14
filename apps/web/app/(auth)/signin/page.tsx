@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { SigninForm } from '@/features/signin/components/signin-form';
 import { SigninHero } from '@/features/signin/components/signin-hero';
 import { SigninSkeleton } from '@/features/signin/components/signin-skeleton';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Sign In | Perigee',

@@ -1,7 +1,7 @@
-import type { BulkImportState, InitiateBulkImportResponse } from '../types/bulk-import.types';
-
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
+import type { BulkImportState, InitiateBulkImportResponse } from '../types/bulk-import.types';
 
 export const bulkImportService = {
   /**

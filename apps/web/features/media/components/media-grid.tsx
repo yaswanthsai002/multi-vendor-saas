@@ -1,11 +1,11 @@
 import { Image as ImageIcon, Search, UploadCloud } from 'lucide-react';
 import * as React from 'react';
 
+import { Pagination } from '@/shared/components/pagination/pagination';
+
 import { MediaCard } from './media-card';
 
 import type { MediaItem } from '../types/media.types';
-
-import { Pagination } from '@/shared/components/pagination/pagination';
 
 interface MediaGridProps {
   items: MediaItem[];

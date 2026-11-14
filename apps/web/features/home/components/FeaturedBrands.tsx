@@ -4,9 +4,9 @@ import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { useFeaturedBrands } from '../hooks/use-homepage-data';
-
 import { Button } from '@/components/ui/button';
+
+import { useFeaturedBrands } from '../hooks/use-homepage-data';
 
 export default function FeaturedBrands() {
   const { data, isLoading, isError, refetch } = useFeaturedBrands();

@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { OrdersTableSkeleton } from '@/features/orders/components/orders-table-skeleton';
 import { VendorOrdersView } from '@/features/orders/components/vendor-orders-view';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Orders | Vendor Portal | Perigee',

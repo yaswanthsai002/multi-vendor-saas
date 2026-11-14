@@ -3,9 +3,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
 
-import type { CatalogProductDetail } from '../../types/catalog.types';
-
 import { Button } from '@/components/ui/button';
+
+import type { CatalogProductDetail } from '../../types/catalog.types';
 
 interface ProductDetailPurchaseProps {
   product: CatalogProductDetail;

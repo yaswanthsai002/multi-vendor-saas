@@ -1,8 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { getCurrentUserServer } from './lib/auth/current-user';
-import { verifyAuthToken } from './lib/auth/verify-token';
-
 import { ApiError } from '@/lib/api-client';
 import {
   AUTH_ROUTES,
@@ -10,6 +7,9 @@ import {
   DEFAULT_UNAUTHENTICATED_REDIRECT,
   PROTECTED_ROUTE_PREFIXES,
 } from '@/lib/routes.config';
+
+import { getCurrentUserServer } from './lib/auth/current-user';
+import { verifyAuthToken } from './lib/auth/verify-token';
 
 // Resolves a `?redirect=` param to a same-origin path only.
 // A plain startsWith('/') check lets `//evil.com` through — browsers treat

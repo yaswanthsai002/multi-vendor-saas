@@ -3,8 +3,6 @@
 import { Package } from 'lucide-react';
 import Image from 'next/image';
 
-import type { AdminProductItem } from '../services/admin.service';
-
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -14,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+
+import type { AdminProductItem } from '../services/admin.service';
 
 export function PromotionProductPickerResults({
   products,

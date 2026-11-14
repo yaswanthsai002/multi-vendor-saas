@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   sendOtp,
   verifyOtp,
@@ -14,8 +16,6 @@ import {
 } from '../services/verify-email.service';
 
 import type { ApiError } from '@/lib/api-client';
-
-import { queryKeys } from '@/lib/query-keys';
 
 export function useSendOtpMutation() {
   return useMutation<SendOtpResponse, ApiError, { data: SendOtpPayload; signal?: AbortSignal }>({

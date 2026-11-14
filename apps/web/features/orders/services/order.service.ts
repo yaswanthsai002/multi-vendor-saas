@@ -1,12 +1,12 @@
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
 import type {
   UpdateOrderStatusInput,
   VendorOrderDetail,
   VendorOrdersFilters,
   VendorOrdersListResponse,
 } from '../types/order.types';
-
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export async function fetchVendorOrders(
   filters: VendorOrdersFilters = {},

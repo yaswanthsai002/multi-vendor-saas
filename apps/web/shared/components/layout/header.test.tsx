@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as currentUserHook from '@/shared/hooks/use-current-user';
+
 import { Header } from './header';
 import { getDiceBearAvatarUrl, getPrimaryRoleBadge } from './use-user-menu';
-
-import * as currentUserHook from '@/shared/hooks/use-current-user';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();

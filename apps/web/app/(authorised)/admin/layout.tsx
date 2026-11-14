@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-
 import { AdminSidebar } from '@/features/admin/components/admin-sidebar';
 import { AdminTopNav } from '@/features/admin/components/admin-top-nav';
+
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: 'Admin Console | Perigee',

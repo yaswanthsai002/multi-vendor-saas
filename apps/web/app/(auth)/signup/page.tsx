@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 
-import type { Metadata } from 'next';
-
 import { SignupForm } from '@/features/signup/components/signup-form';
 import { SignupHero } from '@/features/signup/components/signup-hero';
 import { SignupSkeleton } from '@/features/signup/components/signup-skeleton';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Sign Up | Perigee',

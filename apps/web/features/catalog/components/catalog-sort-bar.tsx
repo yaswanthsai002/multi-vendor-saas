@@ -2,10 +2,10 @@
 
 import { ArrowUpDown, SlidersHorizontal, X } from 'lucide-react';
 
-import type { CatalogSortBy } from '../types/catalog.types';
-
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+
+import type { CatalogSortBy } from '../types/catalog.types';
 
 interface ActiveFilterChip {
   key: string;

@@ -3,12 +3,12 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-import { useForgotPassword } from '../hooks/use-forgot-password';
-
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+import { useForgotPassword } from '../hooks/use-forgot-password';
 
 export function ForgotPasswordForm() {
   const {

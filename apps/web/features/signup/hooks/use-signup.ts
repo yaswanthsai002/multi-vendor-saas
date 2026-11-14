@@ -6,11 +6,11 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { ApiError } from '@/lib/api-client';
+
 import { signupSchema, type SignupFormData } from '../schema/signup.schema';
 
 import { useSignupMutation } from './use-signup-mutation';
-
-import { ApiError } from '@/lib/api-client';
 
 export function useSignup() {
   const [showPassword, setShowPassword] = React.useState(false);
