@@ -10,6 +10,7 @@ import { ApiError } from '@/lib/api-client';
 import { QueryProvider } from '@/providers/query-provider';
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 let mockSearchParams = new URLSearchParams();
 
 vi.mock('next/navigation', () => ({
@@ -40,10 +41,16 @@ describe('Signin Page (/signin)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearchParams = new URLSearchParams();
+    vi.stubGlobal('location', {
+      href: 'http://localhost/',
+      origin: 'http://localhost',
+      replace: mockReplace,
+    });
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it('renders email, password inputs, submit button, and forgot password link', () => {
@@ -89,7 +96,7 @@ describe('Signin Page (/signin)', () => {
           description: 'Welcome back, Jane Doe!',
         }),
       );
-      expect(mockPush).toHaveBeenCalledWith('/');
+      expect(mockReplace).toHaveBeenCalledWith('http://localhost/');
     });
   });
 

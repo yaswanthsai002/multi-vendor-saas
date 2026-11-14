@@ -90,7 +90,7 @@ describe('Google OAuth API (/api/auth/google)', () => {
         .query({ code: 'valid-google-code', state: 'valid-redis-state' });
 
       expect(res.status).toBe(302);
-      expect(res.headers.location).toBe('http://localhost:3000/shop');
+      expect(res.headers.location).toBe('http://localhost:3000/shop?auth_session_changed=1');
 
       const cookies = res.headers['set-cookie'] as unknown as string[];
       expect(cookies).toBeDefined();
