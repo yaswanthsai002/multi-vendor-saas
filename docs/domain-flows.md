@@ -9,7 +9,7 @@ This guide separates behavior present in the code from follow-up work discussed 
 - **Account and delivery addresses:** customer account and address features exist. Address ownership is enforced by the API.
 - **Wishlist:** authenticated wishlist API and customer page exist.
 - **Cart:** cart API requires an authenticated session. Cart totals are calculated server-side; cart does not reserve stock.
-- **Checkout and customer order history:** database order tables exist, but customer checkout and customer-facing order history/detail routes are not registered in the current API/web route structure. These remain planned work.
+- **Checkout and customer order history:** authenticated checkout review, order placement with persisted idempotency keys, order history/detail, and whole-order cancellation are implemented by the customer API and `/checkout` and `/orders` pages. The design record documents the concurrency and retry rules.
 - **Review submission:** product review reading and aggregation exist. Customer review submission remains deferred.
 
 ### Public catalog visibility and effective price
@@ -79,6 +79,99 @@ sequenceDiagram
 
 Cart routes apply `verifyToken` in `apps/api/src/features/cart/cart.routes.ts`. The controller derives the user ID from the verified session; cart writes run in transactions in `cart.service.ts`.
 
+### Checkout placement and safe retry
+
+```mermaid
+sequenceDiagram
+  actor Customer
+  participant Web as Checkout page
+  participant API as Customer order API
+  participant DB as PostgreSQL
+
+  Customer->>Web: Review cart and select saved address
+  Web->>API: GET checkout review with address ID
+  API->>DB: Read owned IN address, cart, current prices, and stock
+  DB-->>API: Review data
+  API-->>Web: Lines, totals, stock, and expected prices
+
+  Customer->>Web: Place order
+  Web->>Web: Persist UUID key and exact request in localStorage
+  Web->>API: POST order with Idempotency-Key
+  API->>DB: Begin transaction; lock active user, then cart
+  API->>DB: Look up user + key before reading cart
+
+  alt Same key and same fingerprint already placed
+    DB-->>API: Existing order
+    API-->>Web: Return existing order; do not change stock or cart
+  else New key
+    API->>DB: Lock products by ID; recheck availability, price, stock, address
+    alt Any line changed or unavailable
+      API-->>Web: Conflict with affected lines and current values
+      Web-->>Customer: Keep cart; refresh review; ask for confirmation
+    else All lines valid
+      API->>DB: Create order, vendor portions, and snapshots
+      API->>DB: Decrement stock and remove submitted cart lines
+      API->>DB: Commit
+      API-->>Web: Order confirmation
+    end
+  else Same key, different fingerprint
+    API-->>Web: Conflict; do not create another order
+  end
+```
+
+On timeout or network failure, the web app keeps the exact request and key and offers an explicit retry. It does not create a new key until the customer reviews changed order details. The API computes the fingerprint; it does not accept one from the browser. Product locks coordinate checkout with campaign price changes. Database changes and cart cleanup commit together or roll back together.
+
+### Customer cancellation and vendor status aggregation
+
+```mermaid
+sequenceDiagram
+  actor Customer
+  participant CustomerWeb as Customer order page
+  participant API as Order API
+  participant DB as PostgreSQL
+  actor Vendor
+  participant VendorWeb as Vendor order page
+
+  Customer->>CustomerWeb: Cancel whole order
+  CustomerWeb->>API: POST customer order cancellation
+  API->>DB: Lock parent order; reread all vendor portions
+  alt Any portion is completed
+    API-->>CustomerWeb: Reject cancellation; show current order status
+  else No portion is completed
+    API->>DB: Cancel remaining pending/processing portions atomically
+    API->>DB: Restore stock for portions changed to cancelled
+    API->>DB: Recalculate parent status; commit
+    API-->>CustomerWeb: Return customer-safe order status
+  end
+
+  Vendor->>VendorWeb: Change vendor portion status
+  VendorWeb->>API: POST vendor status update
+  API->>DB: Lock parent order; reread vendor portions
+  API->>DB: Validate and conditionally apply transition
+  API->>DB: Restore stock only if pending portion changed to cancelled
+  API->>DB: Recalculate parent status; commit
+  API-->>VendorWeb: Return updated vendor order
+```
+
+The transaction lock order is parent order first, then vendor portions. Customer cancellation is all-or-nothing and becomes unavailable when any portion is `completed`. Vendors may cancel only `pending` portions; `processing` portions may only become `completed`. Stock restoration applies only to portions actually transitioned to `cancelled`, preventing duplicate restoration on retries.
+
+Customer-facing status is derived from all vendor portions; customers do not receive vendor order IDs or per-vendor actions:
+
+```mermaid
+flowchart TD
+  portions[Vendor portion statuses] --> allCancelled{All cancelled?}
+  allCancelled -- Yes --> cancelled[Cancelled]
+  allCancelled -- No --> allCompleted{All completed?}
+  allCompleted -- Yes --> completed[Completed]
+  allCompleted -- No --> anyCompleted{Any completed?}
+  anyCompleted -- Yes --> partlyFulfilled[Partially fulfilled]
+  anyCompleted -- No --> anyCancelled{Any cancelled?}
+  anyCancelled -- Yes --> partlyCancelled[Partially cancelled]
+  anyCancelled -- No --> anyProcessing{Any processing?}
+  anyProcessing -- Yes --> processing[In progress]
+  anyProcessing -- No --> pending[Order placed]
+```
+
 ### Indian PIN-code lookup for address forms
 
 ```mermaid
@@ -116,12 +209,11 @@ stateDiagram-v2
   pending --> processing: vendor accepts/processes
   pending --> cancelled: vendor cancels
   processing --> completed: vendor completes
-  processing --> cancelled: vendor cancels
   completed --> [*]
   cancelled --> [*]
 ```
 
-For each vendor status change, the API verifies that the order belongs to that vendor, validates the transition, updates the vendor order, and recalculates the parent order status in one transaction. The transition logic is in `getAllowedOrderActions` and `updateVendorOrderStatus` in `apps/api/src/features/vendor/order.service.ts`.
+Each vendor status change locks the parent order first, verifies vendor ownership, rereads the portion, and applies a conditional transition in one transaction. Vendor cancellation is pending-only; stock is restored exactly once. Existing transition logic is in `getAllowedOrderActions` and `updateVendorOrderStatus` in `apps/api/src/features/vendor/order.service.ts`.
 
 ### Vendor media-library upload
 
@@ -208,10 +300,8 @@ Drafts and published campaigns share `campaigns`; an edit draft points to its pu
 
 ## Follow-up sequence discussed
 
-1. Implement customer checkout and order creation against the existing order model.
-2. Add customer order history and order detail views.
-3. Complete vendor fulfillment needs such as shipment/tracking information after defining required statuses and ownership rules.
-4. Add customer review submission and decide purchase-verification rules.
-5. Extend admin media-library management if needed beyond current campaign media selection/upload.
+1. Define shipment/tracking information and customer delivery notifications before adding shipping statuses.
+2. Add customer review submission and decide purchase-verification rules.
+3. Extend admin media-library management if needed beyond current campaign media selection/upload.
 
 Treat this list as planning context, not an API contract. Update it when implementation scope changes.

@@ -20,6 +20,8 @@ export interface SimpleSelectProps<T extends string = string> {
   triggerClassName?: string;
   icon?: React.ReactNode;
   'aria-label'?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 }
 
 export function Select<T extends string = string>({
@@ -31,6 +33,8 @@ export function Select<T extends string = string>({
   triggerClassName,
   icon,
   'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }: SimpleSelectProps<T>) {
   return (
     <BaseSelect.Root
@@ -43,6 +47,8 @@ export function Select<T extends string = string>({
     >
       <BaseSelect.Trigger
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         className={cn(
           'inline-flex h-8.5 items-center justify-between gap-2 rounded-lg border border-border-control bg-surface-raised px-3 text-xs font-medium text-text-primary shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-focus cursor-pointer select-none',
           triggerClassName,

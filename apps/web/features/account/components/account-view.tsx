@@ -124,6 +124,12 @@ export function AccountView() {
             >
               <ShoppingBag className="h-4 w-4" aria-hidden="true" /> Shopping cart
             </Link>
+            <Link
+              href="/orders"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+            >
+              <ShoppingBag className="h-4 w-4" aria-hidden="true" /> Your orders
+            </Link>
           </div>
         </aside>
         <div className="min-w-0 space-y-6 lg:col-span-3">

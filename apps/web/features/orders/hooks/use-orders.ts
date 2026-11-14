@@ -52,6 +52,7 @@ export function useUpdateOrderStatus() {
       toast.success(actionLabel);
     },
     onError: (err: Error) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
       toast.error(err.message || 'Failed to update order status.');
     },
   });

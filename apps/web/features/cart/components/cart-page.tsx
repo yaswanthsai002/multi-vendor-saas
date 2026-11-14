@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Info, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -345,13 +345,18 @@ export function CartPage() {
             <Button
               type="button"
               size="lg"
+              disabled={
+                !cart.data?.items.length ||
+                cart.data.items.some((item) => !item.available) ||
+                pendingProductId !== null
+              }
+              onClick={() => router.push('/checkout')}
               className="mt-5 w-full bg-accent-active px-4 py-2 text-on-accent hover:bg-accent-hover"
             >
-              Buy Now
+              Proceed to checkout
             </Button>
             <p className="mt-3 text-center text-xs text-text-tertiary flex items-center gap-0.5">
-              <Info className="h-4 w-4 shrink-0" /> Checkout is not available yet. Your cart stays
-              saved.
+              Review your items and delivery address before placing your order.
             </p>
           </aside>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, ShieldCheck, Store, UserRound } from 'lucide-react';
+import { LogOut, Package, ShieldCheck, Store, UserRound } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -88,6 +88,18 @@ export function HeaderUserMenu({ user }: { user: CurrentUserData }) {
               <UserRound className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>My account</span>
             </Link>
+
+            {user.roles?.includes('customer') && (
+              <Link
+                href="/orders"
+                onClick={handleClose}
+                role="menuitem"
+                className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+              >
+                <Package className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>My orders</span>
+              </Link>
+            )}
 
             {/* Theme Toggle row */}
             <div className="flex items-center justify-between px-4 py-2 text-sm text-text-secondary">

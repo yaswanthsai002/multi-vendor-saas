@@ -113,6 +113,25 @@ describe('Header & User Menu Unit & Integration Tests', () => {
   });
 
   describe('Header User Menu (Authenticated)', () => {
+    it('omits customer orders for accounts without the customer role', async () => {
+      vi.spyOn(currentUserHook, 'useCurrentUser').mockReturnValue({
+        data: {
+          user: {
+            userId: 'vendor-only',
+            fullName: 'Vendor Only',
+            email: 'vendor@example.test',
+            roles: ['vendor'],
+          },
+        },
+        isLoading: false,
+      } as unknown as ReturnType<typeof currentUserHook.useCurrentUser>);
+      renderHeader();
+      await userEvent.click(
+        screen.getAllByRole('button', { name: 'User menu for Vendor Only' })[0],
+      );
+      expect(screen.queryByRole('menuitem', { name: 'My orders' })).toBeNull();
+    });
+
     it('renders avatar and dropdown with admin hierarchy badge for admin user', async () => {
       const user = userEvent.setup();
       vi.spyOn(currentUserHook, 'useCurrentUser').mockReturnValue({
@@ -138,6 +157,10 @@ describe('Header & User Menu Unit & Integration Tests', () => {
       expect(screen.getAllByText('Jane Doe').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('jane@perigee.com').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Admin').length).toBeGreaterThanOrEqual(1); // Admin priority badge
+      expect(screen.getAllByRole('menuitem', { name: 'My orders' })[0]).toHaveProperty(
+        'href',
+        'http://localhost:3000/orders',
+      );
       expect(
         screen.getAllByRole('menuitem', { name: /my account/i }).length,
       ).toBeGreaterThanOrEqual(1);
@@ -201,6 +224,10 @@ describe('Header & User Menu Unit & Integration Tests', () => {
       expect(screen.queryByText('Vendor')).toBeNull();
       expect(screen.queryByRole('menuitem', { name: /admin dashboard/i })).toBeNull();
       expect(screen.queryByRole('menuitem', { name: /vendor dashboard/i })).toBeNull();
+      const ordersLink = screen.getAllByRole('menuitem', { name: 'My orders' })[0];
+      expect(ordersLink).toHaveProperty('href', 'http://localhost:3000/orders');
+      await user.click(ordersLink);
+      expect(screen.queryByRole('menu', { name: 'User Account Menu' })).toBeNull();
     });
 
     it('triggers signout and redirects to /signin', async () => {

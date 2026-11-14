@@ -2,6 +2,12 @@
  * Centralized API endpoints registry.
  */
 export const API_ENDPOINTS = {
+  customerOrders: {
+    review: '/api/customer/checkout/review',
+    list: '/api/customer/orders',
+    detail: (orderId: string) => `/api/customer/orders/${orderId}`,
+    cancel: (orderId: string) => `/api/customer/orders/${orderId}/cancel`,
+  },
   auth: {
     signup: '/api/auth/signup',
     signin: '/api/auth/signin',
