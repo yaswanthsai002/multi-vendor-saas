@@ -1,6 +1,6 @@
 'use client';
 
-import { type ColumnDef, type PaginationState, type SortingState } from '@tanstack/react-table';
+import { Subscribe, type PaginationState, type SortingState } from '@tanstack/react-table';
 import {
   AlertTriangle,
   ArrowDown,
@@ -19,6 +19,7 @@ import Image from 'next/image';
 import * as React from 'react';
 
 import { DataTable } from '@/components/ui/data-table';
+import { type DataTableColumnDef as ColumnDef } from '@/components/ui/data-table-features';
 import { AdminProductActionsMenu } from '@/features/admin/components/admin-product-actions-menu';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { useAdminProducts, useUpdateProductModeration } from '@/features/admin/hooks/use-admin';
@@ -134,9 +135,9 @@ export default function AdminProductsPage() {
   const renderSortableHeader = (
     title: string,
     column: { getIsSorted: () => false | 'asc' | 'desc'; toggleSorting: (desc?: boolean) => void },
+    isSorted: false | 'asc' | 'desc',
     align: 'left' | 'right' = 'left',
   ) => {
-    const isSorted = column.getIsSorted();
     return (
       <div className={align === 'right' ? 'text-right' : 'text-left'}>
         <button
@@ -173,22 +174,30 @@ export default function AdminProductsPage() {
           cellClassName: 'w-12 pl-4 pr-2 text-center',
         },
         header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all"
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
-          />
+          <Subscribe source={table.store} selector={() => table.getIsAllPageRowsSelected()}>
+            {(allSelected) => (
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+                aria-label="Select all"
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
         cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label="Select row"
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
-          />
+          <Subscribe source={row.table.atoms.rowSelection} selector={(state) => !!state[row.id]}>
+            {(selected) => (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                aria-label="Select row"
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
       },
       {
@@ -199,7 +208,11 @@ export default function AdminProductsPage() {
           headerClassName: 'min-w-[280px]',
           cellClassName: 'min-w-[280px]',
         },
-        header: ({ column }) => renderSortableHeader('Name', column),
+        header: ({ column }) => (
+          <Subscribe source={column.table.atoms.sorting} selector={() => column.getIsSorted()}>
+            {(isSorted) => renderSortableHeader('Name', column, isSorted)}
+          </Subscribe>
+        ),
         cell: ({ row }) => {
           const product = row.original;
           return (
@@ -233,7 +246,11 @@ export default function AdminProductsPage() {
           cellClassName: 'min-w-[160px]',
         },
         accessorFn: (row) => row.vendor?.name ?? 'Direct Marketplace',
-        header: ({ column }) => renderSortableHeader('Vendor', column),
+        header: ({ column }) => (
+          <Subscribe source={column.table.atoms.sorting} selector={() => column.getIsSorted()}>
+            {(isSorted) => renderSortableHeader('Vendor', column, isSorted)}
+          </Subscribe>
+        ),
         cell: ({ row }) => (
           <span className="text-text-secondary text-xs truncate block max-w-xs">
             {row.original.vendor?.name ?? 'Direct Marketplace'}
@@ -248,7 +265,11 @@ export default function AdminProductsPage() {
           headerClassName: 'w-32 pr-6 text-right',
           cellClassName: 'w-32 pr-6 text-right',
         },
-        header: ({ column }) => renderSortableHeader('Price', column, 'right'),
+        header: ({ column }) => (
+          <Subscribe source={column.table.atoms.sorting} selector={() => column.getIsSorted()}>
+            {(isSorted) => renderSortableHeader('Price', column, isSorted, 'right')}
+          </Subscribe>
+        ),
         cell: ({ row }) => {
           const product = row.original;
           return (

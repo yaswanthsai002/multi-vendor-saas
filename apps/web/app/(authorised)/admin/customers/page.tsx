@@ -1,7 +1,7 @@
 'use client';
 
 import { Menu } from '@base-ui-components/react/menu';
-import { type ColumnDef, type PaginationState } from '@tanstack/react-table';
+import { type PaginationState } from '@tanstack/react-table';
 import {
   AlertTriangle,
   Check,
@@ -17,6 +17,7 @@ import {
 import * as React from 'react';
 
 import { DataTable } from '@/components/ui/data-table';
+import { type DataTableColumnDef as ColumnDef } from '@/components/ui/data-table-features';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { useAdminUsers, useUpdateUserStatus } from '@/features/admin/hooks/use-admin';
 import { cn } from '@/lib/utils';

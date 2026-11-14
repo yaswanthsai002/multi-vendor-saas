@@ -1,19 +1,15 @@
 'use client';
 
 import {
-  type ColumnDef,
   type ColumnResizeMode,
   type ExpandedState,
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
+  type RowData,
   type PaginationState,
   type RowSelectionState,
   type SortingState,
   type OnChangeFn,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import * as React from 'react';
@@ -28,8 +24,10 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface DataTableProps<TData, TValue = unknown> {
-  columns: ColumnDef<TData, TValue>[];
+import { DATA_TABLE_FEATURES, type DataTableColumnDef } from './data-table-features';
+
+interface DataTableProps<TData extends RowData> {
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   isLoading?: boolean;
   onRowClick?: (row: TData) => void;
@@ -56,7 +54,7 @@ interface DataTableProps<TData, TValue = unknown> {
   paginateExpandedRows?: boolean;
 }
 
-export function DataTable<TData, TValue = unknown>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   isLoading = false,
@@ -82,7 +80,7 @@ export function DataTable<TData, TValue = unknown>({
   expanded,
   onExpandedChange,
   paginateExpandedRows = false,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [internalSorting, setInternalSorting] = React.useState<SortingState>(initialSorting);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [internalPagination, setInternalPagination] = React.useState<PaginationState>({
@@ -98,7 +96,8 @@ export function DataTable<TData, TValue = unknown>({
   const handlePaginationChange = onPaginationChange ?? setInternalPagination;
   const handleExpandedChange = onExpandedChange ?? setInternalExpanded;
 
-  const table = useReactTable({
+  const table = useTable({
+    features: DATA_TABLE_FEATURES,
     data,
     columns,
     state: {
@@ -111,7 +110,7 @@ export function DataTable<TData, TValue = unknown>({
     enableRowSelection,
     enableColumnResizing,
     columnResizeMode,
-    manualSorting,
+    manualSorting: manualSorting || !enableSorting,
     manualPagination,
     pageCount,
     getSubRows,
@@ -120,10 +119,6 @@ export function DataTable<TData, TValue = unknown>({
     onRowSelectionChange: setRowSelection,
     onPaginationChange: handlePaginationChange,
     onExpandedChange: handleExpandedChange,
-    getCoreRowModel: getCoreRowModel(),
-    ...(getSubRows ? { getExpandedRowModel: getExpandedRowModel() } : {}),
-    ...(!manualSorting && enableSorting ? { getSortedRowModel: getSortedRowModel() } : {}),
-    ...(!manualPagination ? { getPaginationRowModel: getPaginationRowModel() } : {}),
   });
 
   // Notify parent of row selection changes
@@ -175,8 +170,7 @@ export function DataTable<TData, TValue = unknown>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    { headerClassName?: string; className?: string } | undefined;
+                  const meta = header.column.columnDef.meta;
                   const size = header.getSize();
                   const isDefaultSize = !header.column.columnDef.size && size === 150;
                   return (
@@ -234,8 +228,7 @@ export function DataTable<TData, TValue = unknown>({
                   className={cn('transition-colors', onRowClick && 'cursor-pointer')}
                 >
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
-                      { cellClassName?: string; className?: string } | undefined;
+                    const meta = cell.column.columnDef.meta;
                     const size = cell.column.getSize();
                     const isDefaultSize = !cell.column.columnDef.size && size === 150;
                     return (

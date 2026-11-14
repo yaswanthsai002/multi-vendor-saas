@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ColumnDef, type ExpandedState } from '@tanstack/react-table';
+import { Subscribe, type ExpandedState } from '@tanstack/react-table';
 import {
   AlertTriangle,
   ArrowDown,
@@ -25,6 +25,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 
 import { DataTable } from '@/components/ui/data-table';
+import { type DataTableColumnDef as ColumnDef } from '@/components/ui/data-table-features';
 import { AdminCategoryActionsMenu } from '@/features/admin/components/admin-category-actions-menu';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { makeApiRequest } from '@/lib/api-client';
@@ -288,22 +289,30 @@ export default function AdminCategoriesPage() {
       {
         id: 'select',
         header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all rows"
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
-          />
+          <Subscribe source={table.store} selector={() => table.getIsAllPageRowsSelected()}>
+            {(allSelected) => (
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+                aria-label="Select all rows"
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
         cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            aria-label={`Select category ${row.original.name}`}
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
-          />
+          <Subscribe source={row.table.atoms.rowSelection} selector={(state) => !!state[row.id]}>
+            {(selected) => (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                aria-label={`Select category ${row.original.name}`}
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
         enableSorting: false,
         size: 48,
@@ -311,119 +320,130 @@ export default function AdminCategoriesPage() {
       {
         accessorKey: 'name',
         header: ({ column }) => {
-          const isSorted = column.getIsSorted();
           return (
-            <button
-              type="button"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors cursor-pointer"
-            >
-              <span>Category</span>
-              {isSorted === 'asc' ? (
-                <ArrowUp className="h-3.5 w-3.5 text-accent" />
-              ) : isSorted === 'desc' ? (
-                <ArrowDown className="h-3.5 w-3.5 text-accent" />
-              ) : (
-                <ArrowUpDown className="h-3.5 w-3.5 text-text-disabled" />
+            <Subscribe source={column.table.atoms.sorting} selector={() => column.getIsSorted()}>
+              {(isSorted) => (
+                <button
+                  type="button"
+                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                  className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors cursor-pointer"
+                >
+                  <span>Category</span>
+                  {isSorted === 'asc' ? (
+                    <ArrowUp className="h-3.5 w-3.5 text-accent" />
+                  ) : isSorted === 'desc' ? (
+                    <ArrowDown className="h-3.5 w-3.5 text-accent" />
+                  ) : (
+                    <ArrowUpDown className="h-3.5 w-3.5 text-text-disabled" />
+                  )}
+                </button>
               )}
-            </button>
+            </Subscribe>
           );
         },
         cell: ({ row }) => {
           const item = row.original;
           const isChild = row.depth > 0;
           const canExpand = row.getCanExpand();
-          const isExpanded = row.getIsExpanded();
 
           return (
-            <div
-              className="flex items-center gap-2.5 min-w-0"
-              style={{
-                paddingLeft: isChild ? `${row.depth * 24}px` : undefined,
-              }}
-            >
-              {isChild && <CornerDownRight className="h-3.5 w-3.5 text-text-disabled shrink-0" />}
-              {canExpand ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    row.toggleExpanded();
+            <Subscribe source={row.table.atoms.expanded} selector={() => row.getIsExpanded()}>
+              {(isExpanded) => (
+                <div
+                  className="flex items-center gap-2.5 min-w-0"
+                  style={{
+                    paddingLeft: isChild ? `${row.depth * 24}px` : undefined,
                   }}
-                  aria-label={isExpanded ? `Collapse ${item.name}` : `Expand ${item.name}`}
-                  className="h-6 w-6 rounded-md hover:bg-surface-hover flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors cursor-pointer shrink-0"
                 >
-                  <ChevronRight
-                    className={cn(
-                      'h-4 w-4 transition-transform duration-150',
-                      isExpanded && 'rotate-90 text-accent',
-                    )}
-                  />
-                </button>
-              ) : (
-                <div className="w-6 shrink-0" />
-              )}
-
-              {item.imageUrl ? (
-                <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-border-default shrink-0 bg-surface-subtle">
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </div>
-              ) : row.depth === 0 ? (
-                <div className="h-8 w-8 rounded-lg bg-surface-subtle border border-border-default flex items-center justify-center text-accent shrink-0">
-                  <Layers className="h-4 w-4" />
-                </div>
-              ) : (
-                <div className="h-7 w-7 rounded-lg bg-surface-subtle border border-border-subtle flex items-center justify-center text-text-tertiary shrink-0">
-                  <Folder className="h-3.5 w-3.5" />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 min-w-0 truncate">
-                <span
-                  className={cn(
-                    'truncate',
-                    isChild
-                      ? 'font-medium text-text-secondary text-xs sm:text-sm'
-                      : 'font-semibold text-text-primary text-sm',
+                  {isChild && (
+                    <CornerDownRight className="h-3.5 w-3.5 text-text-disabled shrink-0" />
                   )}
-                >
-                  {item.name}
-                </span>
-                {item.childCount > 0 && (
-                  <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-surface-subtle text-text-secondary border border-border-default font-mono tabular-nums">
-                    {item.childCount} sub{item.childCount === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
-            </div>
+                  {canExpand ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        row.toggleExpanded();
+                      }}
+                      aria-label={isExpanded ? `Collapse ${item.name}` : `Expand ${item.name}`}
+                      className="h-6 w-6 rounded-md hover:bg-surface-hover flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors cursor-pointer shrink-0"
+                    >
+                      <ChevronRight
+                        className={cn(
+                          'h-4 w-4 transition-transform duration-150',
+                          isExpanded && 'rotate-90 text-accent',
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <div className="w-6 shrink-0" />
+                  )}
+
+                  {item.imageUrl ? (
+                    <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-border-default shrink-0 bg-surface-subtle">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : row.depth === 0 ? (
+                    <div className="h-8 w-8 rounded-lg bg-surface-subtle border border-border-default flex items-center justify-center text-accent shrink-0">
+                      <Layers className="h-4 w-4" />
+                    </div>
+                  ) : (
+                    <div className="h-7 w-7 rounded-lg bg-surface-subtle border border-border-subtle flex items-center justify-center text-text-tertiary shrink-0">
+                      <Folder className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 min-w-0 truncate">
+                    <span
+                      className={cn(
+                        'truncate',
+                        isChild
+                          ? 'font-medium text-text-secondary text-xs sm:text-sm'
+                          : 'font-semibold text-text-primary text-sm',
+                      )}
+                    >
+                      {item.name}
+                    </span>
+                    {item.childCount > 0 && (
+                      <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-surface-subtle text-text-secondary border border-border-default font-mono tabular-nums">
+                        {item.childCount} sub{item.childCount === 1 ? '' : 's'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Subscribe>
           );
         },
       },
       {
         accessorKey: 'slug',
         header: ({ column }) => {
-          const isSorted = column.getIsSorted();
           return (
-            <button
-              type="button"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors cursor-pointer"
-            >
-              <span>Slug Path</span>
-              {isSorted === 'asc' ? (
-                <ArrowUp className="h-3.5 w-3.5 text-accent" />
-              ) : isSorted === 'desc' ? (
-                <ArrowDown className="h-3.5 w-3.5 text-accent" />
-              ) : (
-                <ArrowUpDown className="h-3.5 w-3.5 text-text-disabled" />
+            <Subscribe source={column.table.atoms.sorting} selector={() => column.getIsSorted()}>
+              {(isSorted) => (
+                <button
+                  type="button"
+                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                  className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors cursor-pointer"
+                >
+                  <span>Slug Path</span>
+                  {isSorted === 'asc' ? (
+                    <ArrowUp className="h-3.5 w-3.5 text-accent" />
+                  ) : isSorted === 'desc' ? (
+                    <ArrowDown className="h-3.5 w-3.5 text-accent" />
+                  ) : (
+                    <ArrowUpDown className="h-3.5 w-3.5 text-text-disabled" />
+                  )}
+                </button>
               )}
-            </button>
+            </Subscribe>
           );
         },
         cell: ({ row }) => (
@@ -456,7 +476,6 @@ export default function AdminCategoriesPage() {
         header: () => <div className="text-right font-semibold text-text-primary">Actions</div>,
         cell: ({ row }) => {
           const item = row.original;
-          const isRoot = !item.parentCategoryId;
 
           return (
             <div className="flex items-center justify-end gap-1.5">

@@ -1,7 +1,7 @@
 'use client';
 
 import { Menu } from '@base-ui-components/react/menu';
-import { type ColumnDef, type PaginationState } from '@tanstack/react-table';
+import { Subscribe, type PaginationState } from '@tanstack/react-table';
 import {
   AlertTriangle,
   Check,
@@ -21,6 +21,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 
 import { DataTable } from '@/components/ui/data-table';
+import { type DataTableColumnDef as ColumnDef } from '@/components/ui/data-table-features';
 import { KpiCard } from '@/features/admin/components/kpi-card';
 import { OnboardVendorDialog } from '@/features/admin/components/onboard-vendor-dialog';
 import {
@@ -139,23 +140,31 @@ export default function AdminVendorsPage() {
           cellClassName: 'w-11 pl-4 pr-1 text-center',
         },
         header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-            aria-label="Select all vendors"
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
-          />
+          <Subscribe source={table.store} selector={() => table.getIsAllPageRowsSelected()}>
+            {(allSelected) => (
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+                aria-label="Select all vendors"
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
         cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => row.toggleSelected(!!e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Select ${row.original.name}`}
-            className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
-          />
+          <Subscribe source={row.table.atoms.rowSelection} selector={(state) => !!state[row.id]}>
+            {(selected) => (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Select ${row.original.name}`}
+                className="h-4 w-4 rounded border-border-control text-accent focus:ring-accent accent-accent cursor-pointer"
+              />
+            )}
+          </Subscribe>
         ),
       },
       {
