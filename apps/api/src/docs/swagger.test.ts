@@ -1,55 +1,192 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import request from 'supertest';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import app from '../app.js';
+import { signupSchema } from '../features/auth/auth.schema.js';
+import { createProductSchema, updateProductSchema } from '../features/vendor/vendor.schema.js';
+
+import { openapiSpec } from './openapi.js';
+
+const httpMethods = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head']);
+
+function mountedOperations(filename: string, routerName: string, prefix = ''): string[] {
+  const source = ts.createSourceFile(
+    filename,
+    readFileSync(filename, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const imports = new Map<string, { filename: string; routerName: string }>();
+  for (const statement of source.statements) {
+    if (ts.isExportAssignment(statement) && ts.isIdentifier(statement.expression)) {
+      if (routerName === 'default') routerName = statement.expression.text;
+    }
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    const specifier = statement.moduleSpecifier.text;
+    if (!specifier.startsWith('.')) continue;
+    const importedFile = resolve(dirname(filename), specifier.replace(/\.js$/, '.ts'));
+    const clause = statement.importClause;
+    if (clause.name) {
+      imports.set(clause.name.text, { filename: importedFile, routerName: 'default' });
+    }
+    if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const binding of clause.namedBindings.elements) {
+        imports.set(binding.name.text, {
+          filename: importedFile,
+          routerName: (binding.propertyName ?? binding.name).text,
+        });
+      }
+    }
+  }
+
+  const operations: string[] = [];
+  function rejectUnsupportedChains(node: ts.Node): void {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === routerName &&
+      node.expression.name.text === 'route'
+    ) {
+      throw new Error(`Add chained route support to this check: ${filename}`);
+    }
+    ts.forEachChild(node, rejectUnsupportedChains);
+  }
+  rejectUnsupportedChains(source);
+  for (const statement of source.statements) {
+    if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression))
+      continue;
+    const call = statement.expression;
+    if (!ts.isPropertyAccessExpression(call.expression)) continue;
+    const receiver = call.expression.expression;
+    if (!ts.isIdentifier(receiver) || receiver.text !== routerName) continue;
+    const method = call.expression.name.text;
+    if (method === 'route') throw new Error(`Add chained route support to this check: ${filename}`);
+    if (method !== 'use' && !httpMethods.has(method)) continue;
+    const first = call.arguments[0];
+    const routePath = first && ts.isStringLiteral(first) ? first.text : '';
+    const fullPath = `${prefix}/${routePath}`.replace(/\/+/g, '/').replace(/\/$/, '');
+    if (httpMethods.has(method)) {
+      if (!first || !ts.isStringLiteral(first)) {
+        throw new Error(`Add dynamic path support to this check: ${filename}`);
+      }
+      operations.push(`${method.toUpperCase()} ${fullPath.replace(/:(\w+)/g, '{$1}')}`);
+    } else {
+      for (const argument of call.arguments) {
+        if (!ts.isIdentifier(argument)) continue;
+        const imported = imports.get(argument.text);
+        if (!imported || !/(?:\.routes|[/\\]routes)\.ts$/.test(imported.filename)) continue;
+        operations.push(...mountedOperations(imported.filename, imported.routerName, fullPath));
+      }
+    }
+  }
+  return operations;
+}
 
 describe('Swagger Documentation Endpoints (/api/docs)', () => {
-  it('documents customer checkout headers, safe order contracts and vendor transitions', async () => {
-    const { body } = await request(app).get('/api/docs.json');
-    const paths = body.paths;
-    for (const path of [
-      '/api/customer/checkout/review',
-      '/api/customer/orders',
-      '/api/customer/orders/{orderId}',
-      '/api/customer/orders/{orderId}/cancel',
-      '/api/vendor/orders',
-      '/api/vendor/orders/{vendorOrderId}',
-      '/api/vendor/orders/{vendorOrderId}/status',
-    ])
-      expect(paths).toHaveProperty(path);
-    expect(paths['/api/customer/orders'].post.parameters).toContainEqual(
-      expect.objectContaining({ name: 'Idempotency-Key', in: 'header', required: true }),
-    );
-    expect(paths['/api/customer/orders'].post.responses['409']).toBeDefined();
-    expect(paths['/api/customer/orders'].get.parameters).toContainEqual(
-      expect.objectContaining({ name: 'limit', schema: expect.objectContaining({ maximum: 100 }) }),
-    );
-    for (const name of ['status', 'orderedFrom', 'orderedTo']) {
-      expect(paths['/api/customer/orders'].get.parameters).toContainEqual(
-        expect.objectContaining({ name, in: 'query' }),
-      );
+  it('keeps product and signup request constraints aligned with their runtime validators', () => {
+    for (const { runtime, documented } of [
+      {
+        runtime: createProductSchema,
+        documented: openapiSpec.components.schemas.CreateProductInput,
+      },
+      {
+        runtime: updateProductSchema,
+        documented: openapiSpec.components.schemas.UpdateProductInput,
+      },
+      { runtime: signupSchema, documented: openapiSpec.components.schemas.SignUpInput },
+    ]) {
+      const { $schema: _schema, ...expected } = z.toJSONSchema(runtime, { io: 'input' });
+      expect(documented).toMatchObject(expected);
     }
-    expect(paths['/api/vendor/orders/{vendorOrderId}/status'].post.description).toContain(
-      'processing → completed only',
+  });
+  it('documents every mounted business operation without stale paths or methods', () => {
+    const actual = mountedOperations(
+      fileURLToPath(new URL('../app.ts', import.meta.url)),
+      'app',
+    ).filter((operation) => !/^GET \/api\/docs(?:\.json)?$/.test(operation));
+    const documented = Object.entries(openapiSpec.paths).flatMap(([path, item]) =>
+      Object.keys(item)
+        .filter((method) => httpMethods.has(method))
+        .map((method) => `${method.toUpperCase()} ${path}`),
     );
-    const schema = body.components.schemas.CustomerOrder;
-    expect(JSON.stringify(schema)).not.toMatch(/vendorOrderId|requestFingerprint|passwordHash/);
-    // Resolve every local reference so schema changes cannot silently break Swagger.
-    function references(value: unknown): void {
+    expect(actual.length).toBeGreaterThan(0);
+    expect(new Set(actual).size).toBe(actual.length);
+    expect(documented.sort()).toEqual(actual.sort());
+  });
+  it('declares each path parameter and each successful response body', () => {
+    for (const [path, item] of Object.entries(openapiSpec.paths)) {
+      const inherited = 'parameters' in item ? item.parameters : [];
+      for (const [method, operation] of Object.entries(item)) {
+        if (!httpMethods.has(method)) continue;
+        expect(operation).toHaveProperty('responses');
+        if (!operation || typeof operation !== 'object' || !('responses' in operation)) continue;
+        const parameters = [
+          ...inherited,
+          ...('parameters' in operation ? operation.parameters : []),
+        ];
+        const names = [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1]);
+        for (const name of names) {
+          expect(parameters).toContainEqual(
+            expect.objectContaining({ name, in: 'path', required: true }),
+          );
+        }
+        for (const parameter of parameters) {
+          if (parameter.in === 'path') expect(names).toContain(parameter.name);
+        }
+        for (const [status, response] of Object.entries(operation.responses)) {
+          if (!status.startsWith('2') || status === '204') continue;
+          expect(response, `${method.toUpperCase()} ${path} ${status}`).toHaveProperty('content');
+        }
+      }
+    }
+  });
+  it('keeps composed routes, references and tags valid', async () => {
+    const { body } = await request(app).get('/api/docs.json');
+    expect(Object.keys(body).filter((key) => key.startsWith('/'))).toEqual([]);
+    for (const path of [
+      '/api/cart',
+      '/api/cart/items',
+      '/api/cart/items/{productId}',
+      '/api/locations/pincodes/{postalCode}',
+      '/api/customer/addresses',
+      '/api/customer/addresses/{addressId}',
+      '/api/wishlist',
+    ]) {
+      expect(body.paths).toHaveProperty(path);
+    }
+
+    function checkReferences(value: unknown): void {
       if (!value || typeof value !== 'object') return;
       if ('$ref' in value && typeof value.$ref === 'string' && value.$ref.startsWith('#/')) {
-        const target = value.$ref
-          .slice(2)
-          .split('/')
-          .reduce((node: Record<string, unknown>, key: string) => {
-            expect(node).toHaveProperty(key);
-            return node[key] as Record<string, unknown>;
-          }, body);
+        let target: unknown = body;
+        for (const segment of value.$ref.slice(2).split('/')) {
+          expect(target).toHaveProperty(segment);
+          target = Object.getOwnPropertyDescriptor(target, segment)?.value;
+        }
         expect(target).toBeDefined();
       }
-      for (const nested of Object.values(value)) references(nested);
+      for (const nested of Object.values(value)) checkReferences(nested);
     }
-    references(body);
+    checkReferences(body);
+    const tagNames = body.tags.map((tag: { name: string }) => tag.name);
+    expect(new Set(tagNames).size).toBe(tagNames.length);
+    for (const path of Object.values(body.paths)) {
+      if (!path || typeof path !== 'object') continue;
+      for (const operation of Object.values(path)) {
+        if (!operation || typeof operation !== 'object' || !('tags' in operation)) continue;
+        expect(Array.isArray(operation.tags)).toBe(true);
+        if (!Array.isArray(operation.tags)) continue;
+        for (const tag of operation.tags) expect(tagNames).toContain(tag);
+      }
+    }
   });
   it('should serve raw OpenAPI 3.1 JSON specification at GET /api/docs.json', async () => {
     const res = await request(app).get('/api/docs.json');
