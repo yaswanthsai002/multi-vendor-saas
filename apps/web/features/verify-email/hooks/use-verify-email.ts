@@ -28,8 +28,7 @@ export function useVerifyEmail() {
   const tokenParam = searchParams.get('token') || undefined;
   const queryEmail = searchParams.get('email') || '';
   const rawPurpose = searchParams.get('purpose');
-  const queryPurpose =
-    rawPurpose === 'password_reset' || rawPurpose === 'signin' ? rawPurpose : 'email_verification';
+  const queryPurpose = rawPurpose === 'password_reset' ? rawPurpose : 'email_verification';
 
   const sendOtpMutation = useSendOtpMutation();
   const verifyOtpMutation = useVerifyOtpMutation();

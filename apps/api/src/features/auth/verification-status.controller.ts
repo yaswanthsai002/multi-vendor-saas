@@ -1,3 +1,4 @@
+import { otpPurposeSchema } from './auth.schema.js';
 import * as otpService from './otp.service.js';
 
 import type { Request, Response, NextFunction } from 'express';
@@ -12,7 +13,7 @@ export async function getVerificationStatus(req: Request, res: Response, next: N
     const result = await otpService.getVerificationStatus(
       token,
       req.query.email as string | undefined,
-      req.query.purpose as string | undefined,
+      otpPurposeSchema.optional().parse(req.query.purpose),
     );
 
     if (result.sessionToken) {

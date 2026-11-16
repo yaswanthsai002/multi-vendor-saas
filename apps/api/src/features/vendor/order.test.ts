@@ -8,6 +8,10 @@ import * as lifecycle from '../../shared/orders/order-lifecycle.js';
 
 import * as orderService from './order.service.js';
 
+vi.mock('../../shared/orders/order-email.js', () => ({
+  sendOrderEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
 const { db } = vi.hoisted(() => ({
   db: {
     query: {

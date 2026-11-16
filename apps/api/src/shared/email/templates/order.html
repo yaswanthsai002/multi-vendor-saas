@@ -1,0 +1,76 @@
+<h1 class="title ink" style="margin: 0 0 16px; font-size: 28px; line-height: 36px; color: #1e232d">
+  {{title}}
+</h1>
+<p class="ink" style="margin: 0 0 24px; font-size: 16px; line-height: 24px; color: #1e232d">
+  {{intro}}
+</p>
+<table
+  role="presentation"
+  width="100%"
+  class="panel"
+  bgcolor="#FFFFFF"
+  style="width: 100%; table-layout: fixed; background-color: #ffffff; border: 1px solid #d5d9e0"
+>
+  <tr>
+    <td style="padding: 20px">
+      <p class="muted" style="margin: 0 0 8px; font-size: 12px; line-height: 20px; color: #5f6775">
+        ORDER NUMBER
+      </p>
+      <p
+        class="ink"
+        style="
+          margin: 0;
+          font-size: 16px;
+          font-weight: bold;
+          line-height: 24px;
+          word-wrap: break-word;
+          word-break: break-all;
+          color: #1e232d;
+        "
+      >
+        {{orderNumber}}
+      </p>
+    </td>
+  </tr>
+</table>
+{{items}}
+
+<p class="ink" style="margin: 24px 0; font-size: 16px; line-height: 24px; color: #1e232d">
+  {{next}}
+</p>
+<table role="presentation" style="margin-bottom: 24px">
+  <tr>
+    <td
+      class="button"
+      align="center"
+      bgcolor="#B9482A"
+      style="background-color: #b9482a; border: 1px solid #b9482a; mso-padding-alt: 14px 24px"
+    >
+      <a
+        class="button"
+        href="{{orderUrl}}"
+        style="
+          display: inline-block;
+          padding: 14px 24px;
+          font-size: 16px;
+          line-height: 24px;
+          font-weight: bold;
+          text-decoration: none;
+          background-color: #b9482a;
+          color: #ffffff;
+          mso-padding-alt: 0;
+        "
+        >View your order</a
+      >
+    </td>
+  </tr>
+</table>
+<p class="muted" style="margin: 0 0 12px; font-size: 14px; line-height: 24px; color: #5f6775">
+  Button not working?
+  <a class="accent" href="{{orderUrl}}" style="color: #b9482a; text-decoration: underline"
+    >Open your order page</a
+  >.
+</p>
+<p class="muted" style="margin: 0 0 32px; font-size: 14px; line-height: 24px; color: #5f6775">
+  Questions? Reply to this email. We are here to help.
+</p>

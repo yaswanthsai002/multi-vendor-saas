@@ -3,20 +3,19 @@ import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export interface SendOtpPayload {
   email: string;
-  purpose: 'email_verification' | 'password_reset' | 'signin';
+  purpose: 'email_verification' | 'password_reset';
 }
 
 export interface SendOtpResponse {
   message: string;
   expiresIn: number;
   resendCooldown: number;
-  otp?: string;
 }
 
 export interface VerifyOtpPayload {
   email?: string;
   otp: string;
-  purpose?: 'email_verification' | 'password_reset' | 'signin';
+  purpose?: 'email_verification' | 'password_reset';
 }
 
 export interface VerifyOtpResponse {
@@ -27,7 +26,7 @@ export interface VerifyOtpResponse {
 export interface VerificationStatusResponse {
   email: string;
   maskedEmail: string;
-  purpose: 'email_verification' | 'password_reset' | 'signin';
+  purpose: 'email_verification' | 'password_reset';
   remainingCooldown: number;
 }
 

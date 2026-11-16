@@ -585,7 +585,7 @@ export const vendorOrdersPaths = {
       tags: ['Vendor Orders'],
       summary: 'Update vendor order status',
       description:
-        'Requires an authenticated, active user with the vendor role and an owned vendor profile. The vendor storefront may be suspended; these endpoints do not require an active storefront. Vendor identity is derived from the session. Allowed transitions: pending to processing or cancelled; processing to completed. Completed and cancelled fulfillments are terminal. The server validates the transition and updates inventory and parent order state atomically.',
+        'Requires an authenticated, active user with the vendor role and an owned vendor profile. The vendor storefront may be suspended; these endpoints do not require an active storefront. Vendor identity is derived from the session. Allowed transitions: pending to processing or cancelled; processing to completed. Completed and cancelled fulfillments are terminal. The server validates the transition and updates inventory and parent order state atomically. After commit, a best-effort email notifies the customer of the vendor portion status change. Email failure does not fail the status update.',
       security: [
         {
           cookieAuth: [],

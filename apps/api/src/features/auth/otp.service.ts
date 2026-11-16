@@ -4,10 +4,17 @@ import { getDb } from '@repo/db';
 import { users } from '@repo/db/schema';
 import { eq } from 'drizzle-orm';
 
+import { sendEmail } from '../../shared/email/email.service.js';
+import { renderOtpEmail } from '../../shared/email/otp-email.js';
 import { AppError } from '../../shared/errors/AppError.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
-import { verifyOtpSchema, type SendOtpInput, type VerifyOtpInput } from './auth.schema.js';
+import {
+  pendingVerificationSchema,
+  verifyOtpSchema,
+  type SendOtpInput,
+  type VerifyOtpInput,
+} from './auth.schema.js';
 
 const CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const OTP_LENGTH = 6;
@@ -57,9 +64,10 @@ export async function sendOtp(input: SendOtpInput) {
   const email = input.email.trim().toLowerCase();
   const cooldownKey = getCooldownKey(input.purpose, email);
 
-  // Check 60-second resend cooldown
-  const remainingCooldown = await redis.ttl(cooldownKey);
-  if (remainingCooldown > 0) {
+  // Reserve before sending so concurrent requests cannot send conflicting codes.
+  const reserved = await redis.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS, 'NX');
+  if (!reserved) {
+    const remainingCooldown = Math.max(1, await redis.ttl(cooldownKey));
     throw new AppError(
       429,
       'RESEND_COOLDOWN',
@@ -68,31 +76,26 @@ export async function sendOtp(input: SendOtpInput) {
   }
 
   const otp = generateAlphanumericOtp();
-  const otpHash = hashOtp(otp);
   const otpKey = getOtpKey(input.purpose, email);
-
-  if (process.env.NODE_ENV !== 'production') {
-    console.info(`[DEV ONLY] OTP for ${email} (${input.purpose}): ${otp}`);
+  const verificationPendingToken = randomBytes(24).toString('hex');
+  const pendingKey = `email_verification_pending:${verificationPendingToken}`;
+  try {
+    await redis.set(
+      otpKey,
+      JSON.stringify({ otpHash: hashOtp(otp), attempts: 0 }),
+      'EX',
+      OTP_TTL_SECONDS,
+    );
+    await redis.set(pendingKey, JSON.stringify({ email, purpose: input.purpose }), 'EX', 900);
+    await sendEmail({
+      to: email,
+      ...renderOtpEmail({ purpose: input.purpose, otp }),
+    });
+  } catch (error) {
+    await redis.del(otpKey, cooldownKey, pendingKey);
+    throw error;
   }
 
-  // Store hashed OTP with TTL in seconds
-  const payload = JSON.stringify({ otpHash, attempts: 0 });
-  await redis.set(otpKey, payload, 'EX', OTP_TTL_SECONDS);
-
-  // Set cooldown key to prevent rapid re-sending
-  await redis.set(cooldownKey, '1', 'EX', COOLDOWN_SECONDS);
-
-  // Generate verification pending token to secure and state-manage the session across refreshes
-  const verificationPendingToken = randomBytes(24).toString('hex');
-  await redis.set(
-    `email_verification_pending:${verificationPendingToken}`,
-    JSON.stringify({ email, purpose: input.purpose }),
-    'EX',
-    900, // 15 minutes
-  );
-
-  // NOTE: For POC, the OTP is returned directly in the response payload.
-  // In production, dispatch an email or SMS task (e.g. via BullMQ or notification service).
   return {
     message: 'Verification code has been sent.',
     email,
@@ -100,7 +103,6 @@ export async function sendOtp(input: SendOtpInput) {
     verificationPendingToken,
     expiresIn: OTP_TTL_SECONDS,
     resendCooldown: COOLDOWN_SECONDS,
-    otp,
   };
 }
 
@@ -110,16 +112,16 @@ export async function sendOtp(input: SendOtpInput) {
 export async function getVerificationStatus(
   token?: string,
   fallbackEmail?: string,
-  fallbackPurpose?: string,
+  fallbackPurpose?: VerifyOtpInput['purpose'],
 ) {
   let email: string | undefined;
-  let purpose = 'email_verification';
+  let purpose: VerifyOtpInput['purpose'] = 'email_verification';
   const sessionToken = token;
 
   if (token) {
     const sessionData = await redis.get(`email_verification_pending:${token}`);
     if (sessionData) {
-      const parsed = JSON.parse(sessionData) as { email: string; purpose: string };
+      const parsed = pendingVerificationSchema.parse(JSON.parse(sessionData));
       email = parsed.email;
       purpose = parsed.purpose;
     }
@@ -159,10 +161,7 @@ export async function verifyOtp(input: Partial<VerifyOtpInput>, pendingToken?: s
   if ((!email || !purpose) && pendingToken) {
     const sessionData = await redis.get(`email_verification_pending:${pendingToken}`);
     if (sessionData) {
-      const parsed = JSON.parse(sessionData) as {
-        email: string;
-        purpose: VerifyOtpInput['purpose'];
-      };
+      const parsed = pendingVerificationSchema.parse(JSON.parse(sessionData));
       email = email || parsed.email;
       purpose = purpose || parsed.purpose;
     }

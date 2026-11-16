@@ -1,6 +1,8 @@
-import './shared/config/env.js';
-
+import { getEmailConfig } from './shared/config/env.js';
+// eslint-disable-next-line import/order -- Load environment before app modules initialize.
 import app from './app.js';
+
+getEmailConfig();
 
 const PORT = Number(process.env.PORT) || 4000;
 

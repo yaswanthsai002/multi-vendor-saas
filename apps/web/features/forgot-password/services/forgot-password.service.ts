@@ -9,7 +9,6 @@ export interface ForgotPasswordResponse {
   message: string;
   expiresIn: number;
   resendCooldown: number;
-  otp?: string;
 }
 
 export async function requestPasswordResetOtp(

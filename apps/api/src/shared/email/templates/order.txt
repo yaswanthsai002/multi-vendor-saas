@@ -1,0 +1,15 @@
+{{subject}}
+
+{{intro}}
+
+Order: {{orderNumber}}
+
+{{items}}
+
+{{next}}
+
+View order: {{orderUrl}}
+
+Questions? Reply to this email for support.
+
+Perigee
