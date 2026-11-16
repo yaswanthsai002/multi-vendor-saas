@@ -1,15 +1,18 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api-client';
 import {
   AUTH_ROUTES,
   DEFAULT_AUTHENTICATED_REDIRECT,
   DEFAULT_UNAUTHENTICATED_REDIRECT,
-  PROTECTED_ROUTE_PREFIXES,
+  AUTHENTICATED_ROUTE_PREFIXES,
+  AUTHORISED_ROUTE_PREFIXES,
 } from '@/lib/routes.config';
 
 import { getCurrentUserServer } from './lib/auth/current-user';
 import { verifyAuthToken } from './lib/auth/verify-token';
+
+import type { NextRequest } from 'next/server';
 
 // Resolves a `?redirect=` param to a same-origin path only.
 // A plain startsWith('/') check lets `//evil.com` through — browsers treat
@@ -59,7 +62,7 @@ export async function proxy(request: NextRequest) {
     request.headers.get('next-router-prefetch') === '1' ||
     request.headers.get('purpose') === 'prefetch';
 
-  const isProtectedRoute = PROTECTED_ROUTE_PREFIXES.some(
+  const isProtectedRoute = AUTHENTICATED_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
@@ -104,10 +107,13 @@ export async function proxy(request: NextRequest) {
       });
     }
 
+    const isRoleProtectedRoute = AUTHORISED_ROUTE_PREFIXES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
     const isAdmin = roles.includes('admin');
     const isVendor = roles.includes('vendor');
 
-    if (!isAdmin && !isVendor) {
+    if (isRoleProtectedRoute && !isAdmin && !isVendor) {
       const redirectUrl = new URL(DEFAULT_AUTHENTICATED_REDIRECT, request.url);
       redirectUrl.searchParams.set('error', 'unauthorized');
       return NextResponse.redirect(redirectUrl);
@@ -118,6 +124,8 @@ export async function proxy(request: NextRequest) {
       redirectUrl.searchParams.set('error', 'unauthorized');
       return NextResponse.redirect(redirectUrl);
     }
+
+    return NextResponse.next();
   }
 
   return NextResponse.next();
