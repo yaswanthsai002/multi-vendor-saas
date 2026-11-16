@@ -6,16 +6,16 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import { ApiError } from '@/lib/api-client';
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
 import { useCancelCustomerOrder, useCustomerOrder } from '../hooks/use-customer-orders';
 import { formatCheckoutPrice } from '../utils/checkout-price';
 
 import { CheckoutErrorPanel } from './checkout-error-panel';
 import { CustomerOrderItems } from './customer-order-items';
 import { CustomerOrderProgress } from './customer-order-progress';
-import { CustomerSession } from './customer-session';
-
-import { Button } from '@/components/ui/button';
-import { ApiError } from '@/lib/api-client';
 
 export function CustomerOrderDetail({
   orderId,
@@ -24,6 +24,9 @@ export function CustomerOrderDetail({
   orderId: string;
   confirmed?: boolean;
 }) {
+  const current = useCurrentUser();
+  const userId = current.data?.user?.userId;
+
   return (
     <div className="mx-auto w-full space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:max-w-11/12 lg:px-8">
       <Link
@@ -33,11 +36,18 @@ export function CustomerOrderDetail({
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
         Back to orders
       </Link>
-      <CustomerSession returnTo={`/orders/${orderId}`}>
-        {(userId) => (
-          <OrderDetail key={userId} userId={userId} orderId={orderId} confirmed={confirmed} />
-        )}
-      </CustomerSession>
+      {current.isLoading ? (
+        <p role="status">Loading your account...</p>
+      ) : current.isError ? (
+        <CheckoutErrorPanel
+          message="Could not load your account. Try again."
+          onRetry={() => void current.refetch()}
+          backHref={`/orders/${orderId}`}
+          backLabel="Return to this order"
+        />
+      ) : userId ? (
+        <OrderDetail key={userId} userId={userId} orderId={orderId} confirmed={confirmed} />
+      ) : null}
     </div>
   );
 }

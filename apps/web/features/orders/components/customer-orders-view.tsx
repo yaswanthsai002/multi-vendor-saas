@@ -3,6 +3,8 @@
 import { Package } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
 import { useCustomerOrders } from '../hooks/use-customer-orders';
 import { formatCheckoutPrice } from '../utils/checkout-price';
 import { customerOrdersHref } from '../utils/customer-orders-href';
@@ -12,21 +14,30 @@ import { CheckoutItemImage } from './checkout-item-image';
 import { CustomerOrderFilters } from './customer-order-filters';
 import { CustomerOrderStatusBadge } from './customer-order-status';
 import { CustomerOrdersPagination } from './customer-orders-pagination';
-import { CustomerSession } from './customer-session';
 
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
 import type { CustomerOrder } from '../types/customer-order.types';
 
 export function CustomerOrdersView({ query }: { query: CustomerOrderQuery }) {
+  const current = useCurrentUser();
+  const userId = current.data?.user?.userId;
+
   return (
     <div className="mx-auto flex w-full flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:max-w-11/12 lg:px-8">
       <header className="space-y-3">
         <h1 className="text-3xl font-semibold">Your orders</h1>
         <p className="text-sm text-text-secondary">Review your purchases and order status</p>
       </header>
-      <CustomerSession returnTo={customerOrdersHref(query)}>
-        {(userId) => <OrderHistory key={userId} userId={userId} query={query} />}
-      </CustomerSession>
+      {current.isLoading ? (
+        <p role="status">Loading your account...</p>
+      ) : current.isError ? (
+        <CheckoutErrorPanel
+          message="Could not load your account. Try again."
+          onRetry={() => void current.refetch()}
+        />
+      ) : userId ? (
+        <OrderHistory key={userId} userId={userId} query={query} />
+      ) : null}
     </div>
   );
 }

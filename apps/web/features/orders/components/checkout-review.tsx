@@ -4,22 +4,32 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Controller } from 'react-hook-form';
 
+import { Button } from '@/components/ui/button';
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+
 import { useCheckout } from '../hooks/use-checkout';
 import { formatCheckoutPrice } from '../utils/checkout-price';
 
 import { CheckoutAddress } from './checkout-address';
 import { CheckoutErrorPanel } from './checkout-error-panel';
 import { CheckoutItems } from './checkout-items';
-import { CustomerSession } from './customer-session';
-
-import { Button } from '@/components/ui/button';
 
 export function CheckoutReviewPage() {
+  const current = useCurrentUser();
+  const userId = current.data?.user?.userId;
+
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-text-primary sm:px-6 sm:py-10">
-      <CustomerSession returnTo="/checkout">
-        {(userId) => <CheckoutReviewForm key={userId} userId={userId} />}
-      </CustomerSession>
+      {current.isLoading ? (
+        <p role="status">Loading your account...</p>
+      ) : current.isError ? (
+        <CheckoutErrorPanel
+          message="Could not load your account. Try again."
+          onRetry={() => void current.refetch()}
+        />
+      ) : userId ? (
+        <CheckoutReviewForm key={userId} userId={userId} />
+      ) : null}
     </main>
   );
 }
