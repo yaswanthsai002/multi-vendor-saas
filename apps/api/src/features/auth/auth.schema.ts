@@ -27,9 +27,15 @@ export const signInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const otpPurposeSchema = z.enum(['password_reset', 'email_verification']);
+export const pendingVerificationSchema = z.object({
+  email: z.email(),
+  purpose: otpPurposeSchema,
+});
+
 export const sendOtpSchema = z.object({
   email: z.email('Enter a valid email address.').trim().toLowerCase(),
-  purpose: z.enum(['signin', 'password_reset', 'email_verification']).default('email_verification'),
+  purpose: otpPurposeSchema.default('email_verification'),
 });
 
 export const verifyOtpSchema = z.object({
@@ -40,7 +46,7 @@ export const verifyOtpSchema = z.object({
     .length(6, 'OTP must be exactly 6 characters.')
     .regex(/^[0-9A-Z]+$/, 'OTP must be alphanumeric.')
     .toUpperCase(),
-  purpose: z.enum(['signin', 'password_reset', 'email_verification']).default('email_verification'),
+  purpose: otpPurposeSchema.default('email_verification'),
 });
 
 export const resetPasswordSchema = z

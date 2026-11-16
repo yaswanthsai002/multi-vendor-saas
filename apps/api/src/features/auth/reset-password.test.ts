@@ -2,6 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import app from '../../app.js';
+import { sendEmail } from '../../shared/email/email.service.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
 const { db } = vi.hoisted(() => ({
@@ -17,6 +18,10 @@ const { db } = vi.hoisted(() => ({
       })),
     })),
   },
+}));
+
+vi.mock('../../shared/email/email.service.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@repo/db', () => ({
@@ -51,7 +56,10 @@ describe('Password Reset Flow (/api/auth)', () => {
         .send({ email: testEmail, purpose: 'password_reset' });
 
       expect(sendRes.status).toBe(200);
-      const otp = sendRes.body.otp;
+      const otp = vi
+        .mocked(sendEmail)
+        .mock.calls.at(-1)?.[0]
+        .text.match(/code is: ([0-9A-Z]{6})/)?.[1];
 
       // 3. Verify OTP to receive the 24-byte hex resetToken via HttpOnly cookie
       const verifyRes = await request(app)

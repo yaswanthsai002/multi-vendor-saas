@@ -57,6 +57,8 @@ services:
     environment:
       NODE_OPTIONS: --conditions=development
       NODE_ENV: ${NODE_ENV}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
       PORT: 4000
       WEB_ORIGIN: ${WEB_ORIGIN}
       DATABASE_URL: ${DATABASE_URL}

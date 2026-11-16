@@ -74,7 +74,7 @@ export const authSchemas = {
       purpose: {
         default: 'email_verification',
         type: 'string',
-        enum: ['signin', 'password_reset', 'email_verification'],
+        enum: ['password_reset', 'email_verification'],
         example: 'email_verification',
       },
     },
@@ -100,7 +100,7 @@ export const authSchemas = {
       purpose: {
         default: 'email_verification',
         type: 'string',
-        enum: ['signin', 'password_reset', 'email_verification'],
+        enum: ['password_reset', 'email_verification'],
         example: 'email_verification',
       },
     },
@@ -138,6 +138,7 @@ export const authSchemas = {
       },
       purpose: {
         type: 'string',
+        enum: ['password_reset', 'email_verification'],
       },
       remainingCooldown: {
         type: 'number',
@@ -388,12 +389,6 @@ export const authSchemas = {
   SendOtpResponse: {
     type: 'object',
     properties: {
-      otp: {
-        type: ['string'],
-        description:
-          'The current proof-of-concept implementation returns the generated OTP in JSON, including in production. This requires a security review before production use.',
-        example: 'ABC123',
-      },
       message: {
         type: 'string',
       },
@@ -733,7 +728,7 @@ export const authPaths = {
       tags: ['OTP & Verification'],
       summary: 'Send an OTP code to user email',
       description:
-        'Creates a six-character alphanumeric OTP, a pending-verification cookie valid for 15 minutes, and a 60-second resend cooldown. The current proof-of-concept implementation returns the OTP in JSON instead of delivering it out of band, including in production. Security review is required before production use.',
+        'Creates a six-character alphanumeric OTP, a pending-verification cookie valid for 15 minutes, and a 60-second resend cooldown. Delivers the code via Gmail SMTP. Delivery failure returns 500 EMAIL_DELIVERY_FAILED and clears pending verification state and resend cooldown.',
       requestBody: {
         required: true,
         content: {
@@ -745,6 +740,12 @@ export const authPaths = {
         },
       },
       responses: {
+        '500': {
+          description: 'Email delivery or persistence failed. Retry the request.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+          },
+        },
         '200': {
           description: 'OTP dispatched successfully.',
           content: {
@@ -928,7 +929,7 @@ export const authPaths = {
             default: 'email_verification',
           },
           description:
-            'Expected values: signin, password_reset, or email_verification. The current fallback handler accepts the supplied string without enum validation.',
+            'Allowed values: password_reset or email_verification. Defaults to email_verification.',
         },
       ],
       responses: {
@@ -943,7 +944,7 @@ export const authPaths = {
           },
         },
         '400': {
-          description: 'Missing email query param and pending token cookie.',
+          description: 'Missing email query param and pending token cookie, or invalid purpose.',
           content: {
             'application/json': {
               schema: {

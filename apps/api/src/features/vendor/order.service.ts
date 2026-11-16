@@ -11,6 +11,7 @@ import {
 import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { sendOrderEmail } from '../../shared/orders/order-email.js';
 import {
   lockOrder,
   restoreOrderStock,
@@ -409,5 +410,10 @@ export async function updateVendorOrderStatus(
       );
     await refreshParentStatus(tx, vo.orderId);
   });
+  await sendOrderEmail(
+    vo.orderId,
+    targetStatus === 'cancelled' ? 'vendor_cancelled' : targetStatus,
+    vendorOrderId,
+  );
   return getVendorOrderDetail(vendorId, vendorOrderId);
 }

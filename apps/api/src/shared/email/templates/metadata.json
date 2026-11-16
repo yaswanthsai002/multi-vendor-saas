@@ -1,0 +1,56 @@
+{
+  "email-verification": {
+    "subject": "Verify your Perigee email",
+    "preheader": "Your email verification code is ready. It expires in 5 minutes.",
+    "category": "ACCOUNT SECURITY",
+    "intro": "Verify your email address to finish setting up your Perigee account. Enter this code on the verification screen:",
+    "safety": "If you did not create a Perigee account, you can ignore this email."
+  },
+  "password-reset": {
+    "subject": "Reset your Perigee password",
+    "preheader": "Use your reset code to choose a new password. It expires in 5 minutes.",
+    "category": "ACCOUNT SECURITY",
+    "intro": "We received a request to reset your Perigee password. Enter this code on the password reset screen to continue:",
+    "safety": "If you did not request a password reset, ignore this email. Your password has not changed."
+  },
+  "order-placed": {
+    "subject": "Order placed | Perigee {{orderNumber}}",
+    "preheader": "Your order has been placed. We have saved the details and will email you when a vendor updates their part of your order.",
+    "category": "ORDER CONFIRMED",
+    "title": "Your order is in.",
+    "intro": "Your order has been placed. We have saved the details and will email you when a vendor updates their part of your order.",
+    "next": "You can review your items and the latest status from your order page."
+  },
+  "order-cancelled": {
+    "subject": "Order cancelled | Perigee {{orderNumber}}",
+    "preheader": "Your order has been cancelled. The pending and processing parts of this order will no longer be fulfilled.",
+    "category": "ORDER CANCELLED",
+    "title": "Your order was cancelled.",
+    "intro": "Your order has been cancelled. The pending and processing parts of this order will no longer be fulfilled.",
+    "next": "Open your order to review the cancellation. If you need help, reply to this email."
+  },
+  "order-processing": {
+    "subject": "Order update: processing | Perigee {{orderNumber}}",
+    "preheader": "A vendor has started processing their part of your order.",
+    "category": "VENDOR UPDATE",
+    "title": "Things are moving.",
+    "intro": "A vendor has started processing their part of your order.",
+    "next": "This update applies to one vendor's part. Open your order to see the status of every item."
+  },
+  "order-completed": {
+    "subject": "Order update: part completed | Perigee {{orderNumber}}",
+    "preheader": "A vendor has completed their part of your order.",
+    "category": "VENDOR UPDATE",
+    "title": "One part is complete.",
+    "intro": "A vendor has completed their part of your order.",
+    "next": "Other parts of your order may still be in progress. Open your order to check each item."
+  },
+  "order-vendor-cancelled": {
+    "subject": "Order update: part cancelled | Perigee {{orderNumber}}",
+    "preheader": "A vendor has cancelled their part of your order.",
+    "category": "VENDOR UPDATE",
+    "title": "A change to your order.",
+    "intro": "A vendor has cancelled their part of your order.",
+    "next": "Other parts of your order may continue. Open your order to see which items were affected, or reply to this email for help."
+  }
+}

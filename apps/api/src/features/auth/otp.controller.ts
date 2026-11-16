@@ -23,7 +23,6 @@ export async function sendOtp(req: Request, res: Response, next: NextFunction) {
       message: result.message,
       expiresIn: result.expiresIn,
       resendCooldown: result.resendCooldown,
-      ...(result.otp ? { otp: result.otp } : {}),
     });
   } catch (error) {
     return next(error);

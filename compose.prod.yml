@@ -55,6 +55,8 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
       PORT: 4000
       WEB_ORIGIN: ${WEB_ORIGIN}
       DATABASE_URL: ${DATABASE_URL}

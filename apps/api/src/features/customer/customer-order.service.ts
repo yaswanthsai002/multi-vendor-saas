@@ -17,6 +17,7 @@ import {
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { sendOrderEmail } from '../../shared/orders/order-email.js';
 import {
   customerOrderStatus,
   lockOrder,
@@ -273,7 +274,8 @@ export async function placeCustomerOrder(
   input: PlaceCustomerOrderInput,
 ) {
   const fingerprint = checkoutFingerprint(input);
-  return getDb().transaction(async (tx) => {
+  let created = false;
+  const result = await getDb().transaction(async (tx) => {
     await activeCustomer(tx, userId, true);
     const [cart] = await tx
       .select()
@@ -412,12 +414,16 @@ export async function placeCustomerOrder(
         ),
       ),
     );
+    created = true;
     return readCustomerOrder(userId, orderId, tx);
   });
+  if (created) await sendOrderEmail(result.orderId, 'placed');
+  return result;
 }
 
 export async function cancelCustomerOrder(userId: string, orderId: string) {
-  return getDb().transaction(async (tx) => {
+  let cancelled = false;
+  const result = await getDb().transaction(async (tx) => {
     await activeCustomer(tx, userId, true);
     const { portions } = await lockOrder(tx, orderId, userId);
     if (portions.some((portion) => portion.status === 'completed'))
@@ -436,6 +442,7 @@ export async function cancelCustomerOrder(userId: string, orderId: string) {
         ),
       )
       .returning({ vendorOrderId: vendorOrders.vendorOrderId });
+    cancelled = changed.length > 0;
     await restoreOrderStock(
       tx,
       changed.map((portion) => portion.vendorOrderId),
@@ -443,4 +450,6 @@ export async function cancelCustomerOrder(userId: string, orderId: string) {
     await refreshParentStatus(tx, orderId);
     return readCustomerOrder(userId, orderId, tx);
   });
+  if (cancelled) await sendOrderEmail(orderId, 'cancelled');
+  return result;
 }

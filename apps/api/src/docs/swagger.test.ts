@@ -211,6 +211,16 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
     expect(res.body.paths).toHaveProperty('/api/auth/signin');
     expect(res.body.paths).toHaveProperty('/api/auth/signout');
     expect(res.body.paths).toHaveProperty('/api/auth/me');
+    expect(res.body.components.schemas.SendOtpResponse.properties).not.toHaveProperty('otp');
+    expect(res.body.components.schemas.SendOtpInput.properties.purpose.enum).toEqual([
+      'password_reset',
+      'email_verification',
+    ]);
+    expect(res.body.components.schemas.VerifyOtpInput.properties.purpose.enum).toEqual([
+      'password_reset',
+      'email_verification',
+    ]);
+    expect(res.body.paths['/api/auth/send-otp'].post.responses['500']).toBeDefined();
     expect(res.body.paths).toHaveProperty('/api/auth/send-otp');
     expect(res.body.paths).toHaveProperty('/api/auth/verify-otp');
     expect(res.body.paths).toHaveProperty('/api/auth/verification-status');

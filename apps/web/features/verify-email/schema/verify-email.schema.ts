@@ -7,7 +7,7 @@ export const verifyEmailSchema = z.object({
     .trim()
     .length(6, 'Please enter all 6 characters.')
     .regex(/^[0-9A-Za-z]{6}$/, 'Code must be alphanumeric.'),
-  purpose: z.enum(['email_verification', 'password_reset', 'signin']).default('email_verification'),
+  purpose: z.enum(['email_verification', 'password_reset']).default('email_verification'),
 });
 
 export type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;

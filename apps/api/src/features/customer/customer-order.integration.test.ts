@@ -21,6 +21,8 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { checkoutTestDatabaseUrl } from '../../shared/config/test-database.js';
+import { sendEmail } from '../../shared/email/email.service.js';
+import { sendOrderEmail } from '../../shared/orders/order-email.js';
 import { addItem, setItem } from '../cart/cart.service.js';
 import { publishPromotionDraft } from '../merchandising/merchandising.service.js';
 import { updateVendorOrderStatus } from '../vendor/order.service.js';
@@ -32,6 +34,14 @@ import {
   placeCustomerOrder,
   reviewCheckout,
 } from './customer-order.service.js';
+
+vi.mock('../../shared/email/email.service.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../shared/orders/order-email.js', () => ({
+  sendOrderEmail: vi.fn().mockResolvedValue(undefined),
+}));
 
 const namespace = `checkout_test_${randomUUID().replaceAll('-', '')}`;
 const migrationRoot = new URL('../../../../../packages/db/drizzle/', import.meta.url);
@@ -176,6 +186,7 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
   }, 30000);
 
   beforeEach(async () => {
+    vi.mocked(sendOrderEmail).mockClear();
     await getDb().execute(sql`TRUNCATE TABLE ${sql.identifier(namespace)}."users" CASCADE`);
     f = await fixture();
   });
@@ -186,6 +197,80 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       await getDb().$client.end();
     }
     vi.unstubAllEnvs();
+  });
+
+  it('emails only the order owner with persisted item snapshots and exact totals', async () => {
+    const created = await placeCustomerOrder(f.customer.userId, randomUUID(), f.input);
+    const other = await fixture();
+    await getDb()
+      .update(products)
+      .set({ name: 'Other customer item' })
+      .where(eq(products.productId, other.product.productId));
+    await placeCustomerOrder(other.customer.userId, randomUUID(), other.input);
+    await getDb()
+      .update(products)
+      .set({ name: 'Changed product', price: '110.00' })
+      .where(eq(products.productId, f.product.productId));
+    vi.stubEnv('EMAIL_USER', 'test@example.com');
+    vi.stubEnv('EMAIL_PASS', 'test-app-password');
+    vi.stubEnv('WEB_ORIGIN', 'https://perigee.example');
+    const actual = await vi.importActual<{ sendOrderEmail: typeof sendOrderEmail }>(
+      '../../shared/orders/order-email.js',
+    );
+    await actual.sendOrderEmail(created.orderId, 'placed');
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const message = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(message.to).toBe(f.customer.email);
+    expect(message.text).toContain('Lamp');
+    expect(message.text).toContain('100.10');
+    expect(message.text).toContain('Original order total: \u20b9100.10');
+    expect(message.text).not.toContain('Changed product');
+    expect(message.text).not.toContain('Other customer item');
+    expect(message.html).toContain('100.10');
+  });
+
+  it('includes both vendor portions and marks only the affected items in an order update', async () => {
+    const other = await fixture();
+    await getDb()
+      .update(products)
+      .set({ name: 'Book' })
+      .where(eq(products.productId, other.product.productId));
+    await getDb()
+      .insert(cartItems)
+      .values({ cartId: f.cart.cartId, productId: other.product.productId, quantity: 2 });
+    const input = {
+      ...f.input,
+      lines: [
+        ...f.input.lines,
+        { productId: other.product.productId, quantity: 2, expectedUnitPrice: '100.10' },
+      ],
+    };
+    const created = await placeCustomerOrder(f.customer.userId, randomUUID(), input);
+    const portions = await getDb()
+      .select()
+      .from(vendorOrders)
+      .where(eq(vendorOrders.orderId, created.orderId));
+    const affected = portions.find((part) => part.vendorId === f.vendor.vendorId);
+    expect(affected).toBeDefined();
+    vi.stubEnv('EMAIL_USER', 'test@example.com');
+    vi.stubEnv('EMAIL_PASS', 'test-app-password');
+    vi.stubEnv('WEB_ORIGIN', 'https://perigee.example');
+    const actual = await vi.importActual<{ sendOrderEmail: typeof sendOrderEmail }>(
+      '../../shared/orders/order-email.js',
+    );
+    await actual.sendOrderEmail(created.orderId, 'processing', affected!.vendorOrderId);
+    const message = vi.mocked(sendEmail).mock.calls.at(-1)?.[0];
+    expect(message?.to).toBe(f.customer.email);
+    expect(message?.text).toContain(
+      'Lamp \u2014 1 \u00d7 \u20b9100.10 \u2014 Subtotal \u20b9100.10 \u2014 affected by this update',
+    );
+    expect(message?.text).toContain(
+      'Book \u2014 2 \u00d7 \u20b9100.10 \u2014 Subtotal \u20b9200.20',
+    );
+    expect(message?.text).toContain('Original order total: \u20b9300.30');
+    expect(message?.text).not.toContain(
+      'Book \u2014 2 \u00d7 \u20b9100.10 \u2014 Subtotal \u20b9200.20 \u2014 affected',
+    );
   });
 
   it('places snapshots with exact totals, empties cart, and replays same-key request after cart deletion', async () => {
@@ -209,6 +294,8 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     expect(await stock()).toBe(4);
     expect(await getDb().select().from(cartItems)).toHaveLength(0);
     expect((await placeCustomerOrder(f.customer.userId, key, f.input)).orderId).toBe(order.orderId);
+    expect(sendOrderEmail).toHaveBeenCalledTimes(1);
+    expect(sendOrderEmail).toHaveBeenCalledWith(order.orderId, 'placed');
     await expect(
       placeCustomerOrder(f.customer.userId, key, {
         ...f.input,
@@ -237,6 +324,7 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       details: { lines: [{ productId: f.product.productId, stock: 5, unitPrice: '100.10' }] },
     });
     await assertNoPlacement();
+    expect(sendOrderEmail).not.toHaveBeenCalled();
   });
 
   it('returns product thumbnails without exposing internal media fields', async () => {

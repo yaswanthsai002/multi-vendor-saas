@@ -2,6 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import app from '../../app.js';
+import { sendEmail } from '../../shared/email/email.service.js';
 import { redis } from '../../shared/redis/redis.client.js';
 
 const { db } = vi.hoisted(() => ({
@@ -17,6 +18,10 @@ const { db } = vi.hoisted(() => ({
       })),
     })),
   },
+}));
+
+vi.mock('../../shared/email/email.service.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@repo/db', () => ({
@@ -44,7 +49,7 @@ describe('OTP API (/api/auth)', () => {
   });
 
   describe('POST /api/auth/send-otp', () => {
-    it('should generate and return a 6-character alphanumeric OTP on success', async () => {
+    it('should email a 6-character OTP without exposing it in the API', async () => {
       const res = await request(app)
         .post('/api/auth/send-otp')
         .send({ email: testEmail, purpose: 'email_verification' });
@@ -60,10 +65,17 @@ describe('OTP API (/api/auth)', () => {
       ).toBe(true);
       expect(res.body.expiresIn).toBe(300);
       expect(res.body.resendCooldown).toBe(60);
-      expect(res.body.otp).toBeDefined();
-      expect(typeof res.body.otp).toBe('string');
-      expect(res.body.otp).toHaveLength(6);
-      expect(/^[0-9A-Z]{6}$/.test(res.body.otp)).toBe(true);
+      expect(res.body.otp).toBeUndefined();
+      expect(sendEmail).toHaveBeenCalledWith({
+        to: testEmail,
+        subject: 'Verify your Perigee email',
+        text: expect.stringMatching(/code is: [0-9A-Z]{6}/),
+        html: expect.stringContaining('YOUR VERIFICATION CODE'),
+      });
+      const stored = await redis.get(`otp:email_verification:${testEmail}`);
+      const otp = vi.mocked(sendEmail).mock.calls[0][0].text.match(/code is: ([0-9A-Z]{6})/)?.[1];
+      expect(otp).toBeDefined();
+      expect(stored).not.toContain(otp);
     });
 
     it('should reject requests with 429 when resend cooldown is active', async () => {
@@ -83,6 +95,49 @@ describe('OTP API (/api/auth)', () => {
       expect(secondRes.body.error).toMatch(/Please wait \d+ seconds/);
     });
 
+    it('clears OTP, cooldown and pending state on delivery failure, allowing retry', async () => {
+      const { AppError } = await import('../../shared/errors/AppError.js');
+      vi.mocked(sendEmail).mockRejectedValueOnce(
+        new AppError(500, 'EMAIL_DELIVERY_FAILED', 'Email could not be sent. Please try again.'),
+      );
+      const res = await request(app)
+        .post('/api/auth/send-otp')
+        .send({ email: testEmail, purpose: 'email_verification' });
+      expect(res.status).toBe(500);
+      expect(res.body.code).toBe('EMAIL_DELIVERY_FAILED');
+      expect(res.body.otp).toBeUndefined();
+      expect(res.headers['set-cookie']).toBeUndefined();
+      expect(await redis.keys('*')).toEqual([]);
+      const retry = await request(app)
+        .post('/api/auth/send-otp')
+        .send({ email: testEmail, purpose: 'email_verification' });
+      expect(retry.status).toBe(200);
+    });
+
+    it('sends only one OTP for simultaneous requests', async () => {
+      const results = await Promise.all(
+        [1, 2].map(() =>
+          request(app)
+            .post('/api/auth/send-otp')
+            .send({ email: testEmail, purpose: 'email_verification' }),
+        ),
+      );
+      expect(results.map((res) => res.status).sort()).toEqual([200, 429]);
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not send email if OTP persistence fails', async () => {
+      vi.spyOn(redis, 'set')
+        .mockImplementationOnce(async () => 'OK')
+        .mockRejectedValueOnce(new Error('Redis unavailable'));
+      const res = await request(app)
+        .post('/api/auth/send-otp')
+        .send({ email: testEmail, purpose: 'email_verification' });
+      expect(res.status).toBe(500);
+      expect(sendEmail).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+
     it('should return 400 if email is invalid', async () => {
       const res = await request(app)
         .post('/api/auth/send-otp')
@@ -91,16 +146,36 @@ describe('OTP API (/api/auth)', () => {
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation Error');
     });
+
+    it('should reject OTP sign-in purpose', async () => {
+      const res = await request(app)
+        .post('/api/auth/send-otp')
+        .send({ email: testEmail, purpose: 'signin' });
+
+      expect(res.status).toBe(400);
+      expect(sendEmail).not.toHaveBeenCalled();
+    });
   });
 
   describe('POST /api/auth/verify-otp', () => {
+    it('should reject OTP sign-in purpose', async () => {
+      const res = await request(app)
+        .post('/api/auth/verify-otp')
+        .send({ email: testEmail, otp: 'ABC123', purpose: 'signin' });
+
+      expect(res.status).toBe(400);
+    });
+
     it('should successfully verify a valid OTP', async () => {
       // 1. Send OTP
-      const sendRes = await request(app)
+      await request(app)
         .post('/api/auth/send-otp')
         .send({ email: testEmail, purpose: 'email_verification' });
 
-      const otp = sendRes.body.otp;
+      const otp = vi
+        .mocked(sendEmail)
+        .mock.calls.at(-1)?.[0]
+        .text.match(/code is: ([0-9A-Z]{6})/)?.[1];
 
       // 2. Verify OTP
       const verifyRes = await request(app)
@@ -122,11 +197,14 @@ describe('OTP API (/api/auth)', () => {
     });
 
     it('should prevent replay attacks by deleting the OTP upon successful verification', async () => {
-      const sendRes = await request(app)
+      await request(app)
         .post('/api/auth/send-otp')
         .send({ email: testEmail, purpose: 'email_verification' });
 
-      const otp = sendRes.body.otp;
+      const otp = vi
+        .mocked(sendEmail)
+        .mock.calls.at(-1)?.[0]
+        .text.match(/code is: ([0-9A-Z]{6})/)?.[1];
 
       // First verification succeeds
       const firstVerify = await request(app)
@@ -157,11 +235,14 @@ describe('OTP API (/api/auth)', () => {
     });
 
     it('should lock out and invalidate OTP after 3 failed attempts', async () => {
-      const sendRes = await request(app)
+      await request(app)
         .post('/api/auth/send-otp')
         .send({ email: testEmail, purpose: 'email_verification' });
 
-      const realOtp = sendRes.body.otp;
+      const realOtp = vi
+        .mocked(sendEmail)
+        .mock.calls.at(-1)?.[0]
+        .text.match(/code is: ([0-9A-Z]{6})/)?.[1];
 
       // Attempt 1: wrong
       const res1 = await request(app)
@@ -221,7 +302,10 @@ describe('OTP API (/api/auth)', () => {
         .post('/api/auth/send-otp')
         .send({ email: 'unknown@example.com', purpose: 'email_verification' });
       expect(sendRes.status).toBe(200);
-      const otp = sendRes.body.otp;
+      const otp = vi
+        .mocked(sendEmail)
+        .mock.calls.at(-1)?.[0]
+        .text.match(/code is: ([0-9A-Z]{6})/)?.[1];
 
       // Mock DB: user not found
       vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined);
@@ -237,6 +321,14 @@ describe('OTP API (/api/auth)', () => {
   });
 
   describe('GET /api/auth/verification-status', () => {
+    it('should reject OTP sign-in purpose', async () => {
+      const res = await request(app)
+        .get('/api/auth/verification-status')
+        .query({ email: testEmail, purpose: 'signin' });
+
+      expect(res.status).toBe(400);
+    });
+
     it('should return 401 when no token is provided', async () => {
       const res = await request(app).get('/api/auth/verification-status');
       expect(res.status).toBe(401);

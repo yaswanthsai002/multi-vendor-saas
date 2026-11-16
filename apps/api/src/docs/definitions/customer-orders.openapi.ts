@@ -518,7 +518,7 @@ export const customerOrdersPaths = {
       tags: ['Customer Orders'],
       summary: 'Place customer order',
       description:
-        'Requires an authenticated, active account with the customer role. Customer identity is derived from the session; order and address ownership are enforced server-side. Each product must occur once. Lines must match the current cart. The server checks expected prices and stock, creates order and vendor fulfillments, updates inventory, and clears the cart atomically. A repeated request with the same key and body returns the existing order with status 201.',
+        'New orders trigger a best-effort customer confirmation email after commit; same-key replays do not resend it. Email failure does not fail the order. Requires an authenticated, active account with the customer role. Customer identity is derived from the session; order and address ownership are enforced server-side. Each product must occur once. Lines must match the current cart. The server checks expected prices and stock, creates order and vendor fulfillments, updates inventory, and clears the cart atomically. A repeated request with the same key and body returns the existing order with status 201.',
       security: [
         {
           cookieAuth: [],
@@ -856,7 +856,7 @@ export const customerOrdersPaths = {
       tags: ['Customer Orders'],
       summary: 'Cancel customer order',
       description:
-        'Requires an authenticated, active account with the customer role. Customer identity is derived from the session; order and address ownership are enforced server-side. Cancels pending and processing vendor portions, restores stock, and recalculates parent status atomically. Cancellation is rejected if any vendor portion is completed. The body must be empty or an empty JSON object.',
+        'Requires an authenticated, active account with the customer role. Customer identity is derived from the session; order and address ownership are enforced server-side. Cancels pending and processing vendor portions, restores stock, and recalculates parent status atomically. Cancellation is rejected if any vendor portion is completed. The body must be empty or an empty JSON object. Changed orders trigger a best-effort customer cancellation email after commit; repeated cancellations do not resend it. Email failure does not fail cancellation.',
       security: [
         {
           cookieAuth: [],

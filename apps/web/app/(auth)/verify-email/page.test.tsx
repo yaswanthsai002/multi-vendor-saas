@@ -58,7 +58,6 @@ describe('Verify Email Page (/verify-email)', () => {
       message: 'OTP sent successfully',
       expiresIn: 300,
       resendCooldown: 60,
-      otp: '123456',
     });
   });
 
