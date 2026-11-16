@@ -6,13 +6,13 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
-    "build": "pnpm --filter web build && pnpm --filter api build",
+    "build": "pnpm --filter @repo/db build && pnpm --filter web build && pnpm --filter api build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "fix": "pnpm lint:fix && pnpm format",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm --filter @repo/db build && pnpm -r typecheck",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "test": "pnpm -r test",
     "prepare": "husky"
