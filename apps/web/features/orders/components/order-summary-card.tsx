@@ -1,30 +1,21 @@
-import * as React from 'react';
+import { formatCheckoutPrice } from '../utils/checkout-price';
 
-interface OrderSummaryCardProps {
-  itemCount: number;
-  total: string;
-}
-
-export function OrderSummaryCard({ itemCount, total }: OrderSummaryCardProps) {
+export function OrderSummaryCard({ itemCount, total }: { itemCount: number; total: string }) {
   return (
-    <div className="p-5 sm:p-6 rounded-2xl border border-border-default bg-surface-raised dark:bg-surface-raised shadow-xs">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Payment & Order Summary</h3>
-
-      <div className="space-y-2.5 text-xs sm:text-sm">
-        <div className="flex items-center justify-between text-text-secondary">
-          <span>
-            Items Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
-          </span>
-          <span className="font-medium text-text-primary">${total}</span>
+    <section className="border-t border-border-control pt-5">
+      <h2 className="text-base font-semibold">Order summary</h2>
+      <dl className="mt-4 space-y-4 text-sm">
+        <div className="flex justify-between gap-4 text-text-secondary">
+          <dt>
+            Items subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
+          </dt>
+          <dd className="tabular-nums">{formatCheckoutPrice(total)}</dd>
         </div>
-
-        <div className="h-[1px] bg-border-default/60 my-2" />
-
-        <div className="flex items-center justify-between font-bold text-sm sm:text-base text-text-primary">
-          <span>Vendor Order Total</span>
-          <span className="text-accent text-base sm:text-lg">${total}</span>
+        <div className="flex justify-between gap-4 border-t border-border-default pt-4 font-semibold">
+          <dt>Vendor order total</dt>
+          <dd className="text-lg tabular-nums">{formatCheckoutPrice(total)}</dd>
         </div>
-      </div>
-    </div>
+      </dl>
+    </section>
   );
 }

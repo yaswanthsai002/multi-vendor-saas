@@ -19,20 +19,9 @@ export default async function VendorOrderDetailPage({
   return (
     <Suspense
       fallback={
-        <div className="space-y-6 animate-pulse">
-          <div className="h-6 w-32 bg-surface-subtle rounded-md" />
-          <div className="h-10 w-64 bg-surface-subtle rounded-xl" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="h-40 bg-surface-subtle rounded-2xl" />
-              <div className="h-64 bg-surface-subtle rounded-2xl" />
-            </div>
-            <div className="space-y-6">
-              <div className="h-48 bg-surface-subtle rounded-2xl" />
-              <div className="h-48 bg-surface-subtle rounded-2xl" />
-            </div>
-          </div>
-        </div>
+        <p role="status" className="py-12 text-sm text-text-secondary">
+          Loading order...
+        </p>
       }
     >
       <VendorOrderDetailView vendorOrderId={vendorOrderId} />

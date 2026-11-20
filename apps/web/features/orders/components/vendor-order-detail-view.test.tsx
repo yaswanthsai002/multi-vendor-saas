@@ -21,7 +21,6 @@ vi.mock('../hooks/use-orders', () => ({
       items: [
         {
           orderItemId: 'item',
-          productId: 'product',
           productName: 'Desk lamp',
           quantity: 2,
           unitPrice: '100.00',

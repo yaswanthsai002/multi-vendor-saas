@@ -3,6 +3,7 @@
 import { HeaderUserMenu } from '@/shared/components/layout/header-user-menu';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 
+import { VendorMobileNavigation } from './vendor-mobile-navigation';
 import { VendorNotifications } from './vendor-notifications';
 
 export function VendorTopNav() {
@@ -11,6 +12,9 @@ export function VendorTopNav() {
 
   return (
     <header className="h-16 w-full px-6 lg:px-8 border-b border-border-default bg-surface dark:bg-surface-subtle flex items-center justify-end gap-4 transition-colors duration-200">
+      <div className="mr-auto lg:hidden">
+        <VendorMobileNavigation />
+      </div>
       <VendorNotifications />
 
       {/* User Profile Menu (reused from global header layout, includes theme toggle & vendor group) */}

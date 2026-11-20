@@ -1,63 +1,59 @@
 'use client';
 
-import * as React from 'react';
+import { Tabs } from '@base-ui-components/react/tabs';
 
 import type { OrderStatusFilter, VendorOrderStatusCounts } from '../types/order.types';
+import type { ReactNode } from 'react';
 
-interface OrdersTabsProps {
+const TABS: { id: OrderStatusFilter; label: string }[] = [
+  { id: 'all', label: 'All orders' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'processing', label: 'Processing' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'cancelled', label: 'Cancelled' },
+];
+
+export function OrdersTabs({
+  activeTab,
+  counts,
+  onTabChange,
+  children,
+}: {
   activeTab: OrderStatusFilter;
   counts?: VendorOrderStatusCounts;
   onTabChange: (tab: OrderStatusFilter) => void;
-}
-
-const TABS: Array<{
-  id: OrderStatusFilter;
-  label: string;
-  countKey: keyof VendorOrderStatusCounts;
-}> = [
-  { id: 'all', label: 'All Orders', countKey: 'all' },
-  { id: 'pending', label: 'Pending', countKey: 'pending' },
-  { id: 'processing', label: 'Processing', countKey: 'processing' },
-  { id: 'completed', label: 'Completed', countKey: 'completed' },
-  { id: 'cancelled', label: 'Cancelled', countKey: 'cancelled' },
-];
-
-export function OrdersTabs({ activeTab, counts, onTabChange }: OrdersTabsProps) {
+  children: ReactNode;
+}) {
   return (
-    <div
-      role="tablist"
-      className="inline-flex items-center gap-1 p-1 rounded-xl bg-surface-subtle dark:bg-surface border border-border-default/60 overflow-x-auto max-w-full"
+    <Tabs.Root
+      value={activeTab}
+      onValueChange={(value) => {
+        const tab = TABS.find((item) => item.id === value);
+        if (tab) onTabChange(tab.id);
+      }}
     >
-      {TABS.map((tab) => {
-        const isActive = activeTab === tab.id;
-        const count = counts ? counts[tab.countKey] : undefined;
-
-        return (
-          <button
+      <Tabs.List
+        aria-label="Order status"
+        className="mb-6 flex gap-6 overflow-x-auto border-b border-border-control"
+      >
+        {TABS.map((tab) => (
+          <Tabs.Tab
             key={tab.id}
-            role="tab"
-            aria-selected={isActive}
-            type="button"
-            onClick={() => onTabChange(tab.id)}
-            className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 whitespace-nowrap cursor-pointer ${
-              isActive
-                ? 'bg-surface-raised dark:bg-surface-raised text-text-primary font-semibold border border-border-default shadow-xs'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover/60 border border-transparent'
-            }`}
+            value={tab.id}
+            className="flex shrink-0 cursor-pointer items-center gap-2 border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-text-secondary outline-none transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus data-[active]:border-accent data-[active]:text-text-primary"
           >
-            <span>{tab.label}</span>
-            {count !== undefined && (
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[11px] font-semibold ${
-                  isActive ? 'bg-accent-subtle text-accent' : 'bg-surface-hover text-text-tertiary'
-                }`}
-              >
-                {count}
+            {tab.label}
+            {counts && (
+              <span className="rounded-md bg-surface-active px-2 py-0.5 text-xs tabular-nums text-text-secondary">
+                {counts[tab.id]}
               </span>
             )}
-          </button>
-        );
-      })}
-    </div>
+          </Tabs.Tab>
+        ))}
+      </Tabs.List>
+      <Tabs.Panel value={activeTab} className="flex min-h-128 flex-col gap-6 outline-none">
+        {children}
+      </Tabs.Panel>
+    </Tabs.Root>
   );
 }

@@ -79,7 +79,7 @@ export function Select<T extends string = string>({
           <BaseSelect.Popup
             style={{ width: 'var(--anchor-width)' }}
             className={cn(
-              'overflow-hidden rounded-xl border border-border-default bg-surface-raised p-1 shadow-xl outline-none backdrop-blur-xs transition-all animate-in fade-in-50 zoom-in-95',
+              'overflow-hidden rounded-xl border border-border-control bg-surface-raised p-1 shadow-lg outline-none',
               className,
             )}
           >
@@ -88,7 +88,7 @@ export function Select<T extends string = string>({
                 <BaseSelect.Item
                   key={opt.value}
                   value={opt.value}
-                  className="relative flex items-center justify-between whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover focus:bg-surface-hover focus:outline-none cursor-pointer data-[selected]:font-semibold"
+                  className="relative flex items-center justify-between whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-active data-[highlighted]:bg-surface-active data-[highlighted]:text-text-primary focus:outline-none cursor-pointer data-[selected]:bg-accent-subtle data-[selected]:text-accent data-[selected]:font-semibold"
                 >
                   <BaseSelect.ItemText>{opt.label}</BaseSelect.ItemText>
                   <BaseSelect.ItemIndicator>

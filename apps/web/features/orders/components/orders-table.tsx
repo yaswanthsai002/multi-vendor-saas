@@ -1,160 +1,113 @@
-'use client';
-
-import { ArrowRight, Inbox } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import Link from 'next/link';
-import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { formatCheckoutPrice } from '../utils/checkout-price';
 
 import { OrderStatusBadge } from './order-status-badge';
 
 import type { VendorOrderListItem } from '../types/order.types';
 
-interface OrdersTableProps {
+export function OrdersTable({
+  orders,
+  onResetFilters,
+  hasFilters,
+}: {
   orders: VendorOrderListItem[];
   onResetFilters?: () => void;
   hasFilters?: boolean;
-}
-
-export function OrdersTable({ orders, onResetFilters, hasFilters }: OrdersTableProps) {
-  if (orders.length === 0) {
+}) {
+  if (!orders.length)
     return (
-      <div className="w-full rounded-2xl border border-border-default bg-surface-raised dark:bg-surface-raised p-12 text-center shadow-xs">
-        <div className="inline-flex p-4 rounded-2xl bg-surface-subtle dark:bg-surface border border-border-default/60 mb-4 text-text-tertiary">
-          <Inbox className="h-8 w-8" />
-        </div>
-        <h3 className="text-base font-semibold text-text-primary">No orders found</h3>
-        <p className="text-sm text-text-secondary max-w-sm mx-auto mt-1">
+      <div className="border-y border-border-default py-16 text-center">
+        <Inbox className="mx-auto mb-4 h-6 w-6 text-text-tertiary" strokeWidth={1.5} />
+        <h2 className="text-base font-medium">No orders found</h2>
+        <p className="mt-2 text-sm text-text-secondary">
           {hasFilters
-            ? 'No orders match your current filter criteria. Try clearing filters or searching for something else.'
-            : 'You have not received any customer orders yet. They will appear here once placed.'}
+            ? 'Change your search or clear the filters to see more orders'
+            : 'Customer orders will appear here when checkout is complete'}
         </p>
-        {hasFilters && onResetFilters && (
-          <button
-            type="button"
-            onClick={onResetFilters}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-accent text-on-accent hover:bg-accent/90 shadow-xs transition-colors cursor-pointer"
-          >
-            <span>Reset filters</span>
-          </button>
+        {hasFilters && (
+          <Button variant="outline" onClick={onResetFilters} className="mt-5">
+            Reset filters
+          </Button>
         )}
       </div>
     );
-  }
-
   return (
-    <div className="w-full rounded-2xl border border-border-default bg-surface-raised dark:bg-surface-raised overflow-hidden shadow-xs">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-border-default bg-surface-subtle/40 dark:bg-surface-subtle/20">
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Order
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Customer
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Date
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Items
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Total
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider">
-                Status
-              </th>
-              <th className="py-3.5 px-4 font-semibold text-text-secondary text-xs uppercase tracking-wider text-right">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-default/40">
-            {orders.map((order) => {
-              const formattedDate = new Date(order.placedAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              });
-
-              const initials = order.customer.name
-                ? order.customer.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)
-                : 'CU';
-
-              return (
-                <tr
-                  key={order.vendorOrderId}
-                  className="hover:bg-surface-hover/60 transition-colors group"
-                >
-                  {/* Order Number */}
-                  <td className="py-3.5 px-4 font-medium text-text-primary whitespace-nowrap">
-                    <Link
-                      href={`/vendor/orders/${order.vendorOrderId}`}
-                      className="font-mono text-xs sm:text-sm font-semibold text-text-primary hover:text-accent transition-colors"
-                    >
-                      {order.orderNumber}
-                    </Link>
-                  </td>
-
-                  {/* Customer */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-full bg-surface-subtle dark:bg-surface border border-border-default/60 flex items-center justify-center text-xs font-bold text-text-secondary shrink-0">
-                        {initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-text-primary truncate text-xs sm:text-sm">
-                          {order.customer.name || 'Anonymous'}
-                        </p>
-                        <p className="text-[11px] text-text-tertiary truncate">
-                          {order.customer.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Date */}
-                  <td className="py-3.5 px-4 text-xs sm:text-sm text-text-secondary whitespace-nowrap">
-                    {formattedDate}
-                  </td>
-
-                  {/* Items count */}
-                  <td className="py-3.5 px-4 text-xs sm:text-sm text-text-secondary whitespace-nowrap">
-                    <span className="font-semibold text-text-primary">{order.itemCount}</span>{' '}
-                    {order.itemCount === 1 ? 'item' : 'items'}
-                  </td>
-
-                  {/* Total */}
-                  <td className="py-3.5 px-4 text-xs sm:text-sm font-semibold text-text-primary whitespace-nowrap">
-                    ${order.total}
-                  </td>
-
-                  {/* Status */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <OrderStatusBadge status={order.status} />
-                  </td>
-
-                  {/* Action Link */}
-                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                    <Link
-                      href={`/vendor/orders/${order.vendorOrderId}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border-default bg-surface hover:bg-surface-hover text-text-primary shadow-2xs transition-colors cursor-pointer group-hover:border-accent/40"
-                    >
-                      <span>View</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-text-tertiary group-hover:text-accent transition-colors" />
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <table className="w-full table-fixed text-left text-sm">
+      <caption className="sr-only">Vendor orders</caption>
+      <thead className="border-y border-border-control bg-surface-active text-text-secondary">
+        <tr>
+          <th scope="col" className="w-3/5 px-4 py-4 font-medium sm:w-2/5">
+            Order
+          </th>
+          <th scope="col" className="hidden px-4 py-4 font-medium lg:table-cell">
+            Customer
+          </th>
+          <th scope="col" className="hidden px-4 py-4 font-medium sm:table-cell">
+            Placed
+          </th>
+          <th scope="col" className="hidden px-4 py-4 font-medium sm:table-cell">
+            Status
+          </th>
+          <th scope="col" className="px-4 py-4 text-right font-medium">
+            Total
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border-default">
+        {orders.map((order) => (
+          <tr
+            key={order.vendorOrderId}
+            className="group relative transition-colors hover:bg-surface-active focus-within:bg-surface-active"
+          >
+            <td className="px-4 py-4 align-top">
+              <Link
+                href={`/vendor/orders/${order.vendorOrderId}`}
+                className="font-medium text-text-primary outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-border-focus"
+                aria-label={`View order ${order.orderNumber}`}
+              >
+                <span className="line-clamp-2 break-words">
+                  {order.summary.items.map((item) => item.name).join(', ') || 'Order items'}
+                </span>
+              </Link>
+              <p className="mt-1 text-xs text-text-secondary">
+                {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
+                {order.summary.productCount > 2
+                  ? ` / +${order.summary.productCount - 2} more products`
+                  : ''}
+              </p>
+              <p className="mt-2 font-mono text-xs text-text-tertiary" title={order.orderNumber}>
+                #{order.orderNumber.replace(/^PG-/, '').slice(0, 8).toUpperCase()}
+              </p>
+              <div className="mt-2 sm:hidden">
+                <OrderStatusBadge status={order.status} />
+              </div>
+            </td>
+            <td className="hidden px-4 py-4 align-top lg:table-cell">
+              <p className="truncate font-medium">{order.customer.name || 'Customer'}</p>
+              <p className="mt-1 truncate text-xs text-text-secondary">{order.customer.email}</p>
+            </td>
+            <td className="hidden px-4 py-4 align-top text-text-secondary sm:table-cell">
+              <time dateTime={order.placedAt}>
+                {new Date(order.placedAt).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </time>
+            </td>
+            <td className="hidden px-4 py-4 align-top sm:table-cell">
+              <OrderStatusBadge status={order.status} />
+            </td>
+            <td className="break-words px-4 py-4 text-right align-top font-medium tabular-nums">
+              {formatCheckoutPrice(order.total)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

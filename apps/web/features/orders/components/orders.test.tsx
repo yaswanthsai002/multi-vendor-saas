@@ -12,8 +12,6 @@ import { OrderStatusBadge } from './order-status-badge';
 import { OrderStepper } from './order-stepper';
 import { OrderSummaryCard } from './order-summary-card';
 import { OrdersFilters } from './orders-filters';
-import { OrdersHeader } from './orders-header';
-import { OrdersStatCards } from './orders-stat-cards';
 import { OrdersTable } from './orders-table';
 
 import type { OrderItemDetail, VendorOrderListItem } from '../types/order.types';
@@ -21,37 +19,6 @@ import type { OrderItemDetail, VendorOrderListItem } from '../types/order.types'
 describe('Vendor Orders Components', () => {
   afterEach(() => {
     cleanup();
-  });
-
-  describe('OrdersHeader', () => {
-    it('renders heading and description', () => {
-      render(<OrdersHeader />);
-      expect(screen.getByRole('heading', { name: /^orders$/i })).toBeDefined();
-      expect(screen.getByText(/review, manage, and fulfill orders/i)).toBeDefined();
-    });
-  });
-
-  describe('OrdersStatCards', () => {
-    it('renders 4 summary cards with count values', () => {
-      const counts = {
-        all: 42,
-        pending: 5,
-        processing: 12,
-        completed: 23,
-        cancelled: 2,
-      };
-
-      render(<OrdersStatCards counts={counts} />);
-
-      expect(screen.getByText('Total Orders')).toBeDefined();
-      expect(screen.getByText('42')).toBeDefined();
-      expect(screen.getByText('Pending Review')).toBeDefined();
-      expect(screen.getByText('5')).toBeDefined();
-      expect(screen.getByText('In Processing')).toBeDefined();
-      expect(screen.getByText('12')).toBeDefined();
-      expect(screen.getByText('Completed')).toBeDefined();
-      expect(screen.getByText('23')).toBeDefined();
-    });
   });
 
   describe('OrderStatusBadge', () => {
@@ -93,7 +60,8 @@ describe('Vendor Orders Components', () => {
       expect(handleSearch).toHaveBeenCalled();
 
       const sortSelect = screen.getByRole('combobox');
-      await userEvent.selectOptions(sortSelect, 'total_desc');
+      await userEvent.click(sortSelect);
+      await userEvent.click(await screen.findByRole('option', { name: 'Highest total' }));
       expect(handleSort).toHaveBeenCalledWith('total_desc');
 
       const resetBtn = screen.getByRole('button', { name: /reset/i });
@@ -107,8 +75,8 @@ describe('Vendor Orders Components', () => {
       {
         vendorOrderId: 'vo-1',
         orderNumber: 'ORD-10001',
+        summary: { items: [{ name: 'Desk lamp', quantity: 3 }], itemCount: 3, productCount: 1 },
         customer: { name: 'John Doe', email: 'john@example.com' },
-        summary: { items: [{ name: 'Item', quantity: 3 }], itemCount: 3, productCount: 1 },
         itemCount: 3,
         total: '129.99',
         placedAt: '2026-10-09T08:00:00.000Z',
@@ -123,11 +91,11 @@ describe('Vendor Orders Components', () => {
 
     it('renders order rows with links to detail page', () => {
       render(<OrdersTable orders={mockOrders} hasFilters={false} />);
-      expect(screen.getByText('ORD-10001')).toBeDefined();
+      expect(screen.getByText('Desk lamp')).toBeDefined();
       expect(screen.getByText('John Doe')).toBeDefined();
       expect(screen.getByText('john@example.com')).toBeDefined();
-      expect(screen.getByText('$129.99')).toBeDefined();
-      expect(screen.getByText('3')).toBeDefined();
+      expect(screen.getByText('₹129.99')).toBeDefined();
+      expect(screen.getByText('3 items')).toBeDefined();
 
       const detailLink = screen.getByRole('link', { name: /view/i });
       expect(detailLink.getAttribute('href')).toBe('/vendor/orders/vo-1');
@@ -145,7 +113,7 @@ describe('Vendor Orders Components', () => {
       );
 
       expect(screen.getByText(/showing/i)).toBeDefined();
-      expect(screen.getByText('Page 2 of 4')).toBeDefined();
+      expect(screen.getByText('2 / 4')).toBeDefined();
 
       const prevBtn = screen.getByLabelText('Previous Page');
       const nextBtn = screen.getByLabelText('Next Page');
@@ -161,15 +129,15 @@ describe('Vendor Orders Components', () => {
   describe('OrderStepper', () => {
     it('renders active progress steps for processing state', () => {
       render(<OrderStepper status="processing" />);
-      expect(screen.getByText('Fulfillment Progress')).toBeDefined();
-      expect(screen.getByText('Pending Review')).toBeDefined();
-      expect(screen.getByText('In Processing')).toBeDefined();
+      expect(screen.getByText('Fulfillment progress')).toBeDefined();
+      expect(screen.getByText('Received')).toBeDefined();
+      expect(screen.getByText('Processing')).toBeDefined();
       expect(screen.getByText('Completed')).toBeDefined();
     });
 
     it('renders cancelled alert state when order is cancelled', () => {
       render(<OrderStepper status="cancelled" cancellationReason="Item damaged" />);
-      expect(screen.getByText('Order Cancelled')).toBeDefined();
+      expect(screen.getByText('Order cancelled')).toBeDefined();
       expect(screen.getByText(/reason: item damaged/i)).toBeDefined();
     });
   });
@@ -178,10 +146,10 @@ describe('Vendor Orders Components', () => {
     const mockItems: OrderItemDetail[] = [
       {
         orderItemId: 'item-1',
-        cancellationQuantities: null,
         productId: 'prod-1',
         productName: 'Mechanical Gaming Keyboard',
         productImageUrl: null,
+        cancellationQuantities: null,
         unitPrice: '89.99',
         quantity: 2,
         subtotal: '179.98',
@@ -191,15 +159,15 @@ describe('Vendor Orders Components', () => {
     it('renders order items with pricing and quantities', () => {
       render(<OrderItemsTable items={mockItems} />);
       expect(screen.getByText('Mechanical Gaming Keyboard')).toBeDefined();
-      expect(screen.getByText('$89.99')).toBeDefined();
-      expect(screen.getByText('2')).toBeDefined();
-      expect(screen.getByText('$179.98')).toBeDefined();
+      expect(screen.getByText('₹89.99 each')).toBeDefined();
+      expect(screen.getByText('Quantity: 2')).toBeDefined();
+      expect(screen.getByText('₹179.98')).toBeDefined();
     });
 
     it('renders financial summary totals', () => {
       render(<OrderSummaryCard itemCount={2} total="179.98" />);
-      expect(screen.getByText('Vendor Order Total')).toBeDefined();
-      expect(screen.getAllByText('$179.98')).toHaveLength(2);
+      expect(screen.getByText('Vendor order total')).toBeDefined();
+      expect(screen.getAllByText('₹179.98')).toHaveLength(2);
     });
   });
 

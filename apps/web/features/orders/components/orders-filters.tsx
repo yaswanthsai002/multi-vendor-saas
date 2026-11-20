@@ -1,29 +1,19 @@
 'use client';
 
-import { ArrowUpDown, RotateCcw, Search, X } from 'lucide-react';
-import * as React from 'react';
+import { Search } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 import type { OrderSortOption } from '../types/order.types';
 
-interface OrdersFiltersProps {
-  search: string;
-  onSearchChange: (search: string) => void;
-  dateFrom?: string;
-  dateTo?: string;
-  onDateChange: (dates: { dateFrom?: string; dateTo?: string }) => void;
-  sort: OrderSortOption;
-  onSortChange: (sort: OrderSortOption) => void;
-  onReset: () => void;
-  hasActiveFilters: boolean;
-}
-
-const SORT_OPTIONS: Array<{ value: OrderSortOption; label: string }> = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'total_desc', label: 'Highest Amount' },
-  { value: 'total_asc', label: 'Lowest Amount' },
+const SORT_OPTIONS: { value: OrderSortOption; label: string }[] = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'total_desc', label: 'Highest total' },
+  { value: 'total_asc', label: 'Lowest total' },
 ];
-
 export function OrdersFilters({
   search,
   onSearchChange,
@@ -34,83 +24,91 @@ export function OrdersFilters({
   onSortChange,
   onReset,
   hasActiveFilters,
-}: OrdersFiltersProps) {
+}: {
+  search: string;
+  onSearchChange: (value: string) => void;
+  dateFrom?: string;
+  dateTo?: string;
+  onDateChange: (value: { dateFrom?: string; dateTo?: string }) => void;
+  sort: OrderSortOption;
+  onSortChange: (value: OrderSortOption) => void;
+  onReset: () => void;
+  hasActiveFilters: boolean;
+}) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-      {/* Search Input */}
-      <div className="relative flex-1 min-w-[240px] max-w-md">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search by order #, customer, email..."
-          className="w-full pl-9.5 pr-9 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary p-0.5 rounded-md cursor-pointer"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* Date & Sort Filters */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        {/* Date From */}
+    <div className="flex flex-wrap items-end gap-4">
+      <div className="min-w-48 flex-1">
+        <label
+          htmlFor="vendor-order-search"
+          className="mb-2 block text-xs font-medium text-text-secondary"
+        >
+          Search orders
+        </label>
         <div className="relative">
-          <input
+          <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-text-tertiary" />
+          <Input
+            id="vendor-order-search"
+            type="search"
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search by order or customer"
+            className="pl-9"
+          />
+        </div>
+      </div>
+      <div className="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto">
+        <div>
+          <label
+            htmlFor="vendor-date-from"
+            className="mb-2 block text-xs font-medium text-text-secondary"
+          >
+            From
+          </label>
+          <Input
+            id="vendor-date-from"
+            aria-label="From Date"
             type="date"
             value={dateFrom || ''}
-            onChange={(e) => onDateChange({ dateFrom: e.target.value || undefined, dateTo })}
-            aria-label="From Date"
-            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
+            max={dateTo}
+            onChange={(event) =>
+              onDateChange({ dateFrom: event.target.value || undefined, dateTo })
+            }
+            className="min-w-0 cursor-pointer"
           />
         </div>
-
-        <span className="text-text-tertiary text-xs">to</span>
-
-        {/* Date To */}
-        <div className="relative">
-          <input
+        <div>
+          <label
+            htmlFor="vendor-date-to"
+            className="mb-2 block text-xs font-medium text-text-secondary"
+          >
+            To
+          </label>
+          <Input
+            id="vendor-date-to"
+            aria-label="To Date"
             type="date"
             value={dateTo || ''}
-            onChange={(e) => onDateChange({ dateFrom, dateTo: e.target.value || undefined })}
-            aria-label="To Date"
-            className="pl-3 pr-2 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
+            min={dateFrom}
+            onChange={(event) =>
+              onDateChange({ dateFrom, dateTo: event.target.value || undefined })
+            }
+            className="min-w-0 cursor-pointer"
           />
         </div>
-
-        {/* Sort selector */}
-        <div className="relative">
-          <select
-            value={sort}
-            onChange={(e) => onSortChange(e.target.value as OrderSortOption)}
+        <div>
+          <p className="mb-2 text-xs font-medium text-text-secondary">Sort</p>
+          <Select
             aria-label="Sort orders"
-            className="appearance-none pl-3.5 pr-8 py-2 rounded-xl text-xs sm:text-sm bg-surface-raised dark:bg-surface-raised border border-border-control text-text-primary focus:outline-hidden focus:ring-2 focus:ring-accent/20 focus:border-accent cursor-pointer"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <ArrowUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
+            value={sort}
+            options={SORT_OPTIONS}
+            onValueChange={onSortChange}
+            triggerClassName="h-10 min-w-36 text-sm"
+          />
         </div>
-
-        {/* Reset button */}
         {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={onReset}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset</span>
-          </button>
+          <Button variant="ghost" onClick={onReset}>
+            Reset
+          </Button>
         )}
       </div>
     </div>

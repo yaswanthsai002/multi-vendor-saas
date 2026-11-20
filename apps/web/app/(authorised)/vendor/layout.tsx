@@ -13,7 +13,9 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 flex w-full min-h-screen bg-background text-text-primary">
       {/* Desktop Persistent Sidebar */}
-      <VendorSidebar />
+      <div className="hidden lg:flex">
+        <VendorSidebar />
+      </div>
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
