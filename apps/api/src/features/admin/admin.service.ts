@@ -30,6 +30,12 @@ import { AppError } from '../../shared/errors/AppError.js';
 import { publicCancellation } from '../../shared/orders/order-lifecycle.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
+import {
+  adminOrderSummarySql,
+  orderProductImage,
+  orderSummaryResponse,
+} from './admin-order-summary.js';
+
 import type {
   CreateVendorByAdminInput,
   ListAdminOrdersQuery,
@@ -1151,6 +1157,7 @@ export class AdminService {
         orderNumber: orders.orderNumber,
         status: orders.status,
         createdAt: orders.createdAt,
+        summary: adminOrderSummarySql(),
         customerName: users.fullName,
         customerEmail: users.email,
       })
@@ -1170,6 +1177,7 @@ export class AdminService {
         email: o.customerEmail,
       },
       createdAt: o.createdAt.toISOString(),
+      summary: orderSummaryResponse(o.summary),
     }));
 
     return {
@@ -1189,9 +1197,18 @@ export class AdminService {
   async getOrderDetail(orderId: string) {
     const db = getDb();
 
-    const order = await db.query.orders.findFirst({
-      where: eq(orders.orderId, orderId),
-    });
+    const [order] = await db
+      .select({
+        orderId: orders.orderId,
+        userId: orders.userId,
+        orderNumber: orders.orderNumber,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        summary: adminOrderSummarySql(),
+      })
+      .from(orders)
+      .where(eq(orders.orderId, orderId))
+      .limit(1);
 
     if (!order) {
       throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found.');
@@ -1208,6 +1225,7 @@ export class AdminService {
     const fulfillments = await db
       .select({
         vendorOrderId: vendorOrders.vendorOrderId,
+        total: sql<string>`(SELECT COALESCE(SUM("productPriceSnapshot" * "productQuantity"), 0)::text FROM "orderItems" WHERE "vendorOrderId" = ${vendorOrders}.${sql.identifier(vendorOrders.vendorOrderId.name)})`,
         status: vendorOrders.status,
         cancellationSource: vendorOrders.cancellationSource,
         cancellationReasonCode: vendorOrders.cancellationReasonCode,
@@ -1231,11 +1249,17 @@ export class AdminService {
         cancellationReturnedQuantity: orderItems.cancellationReturnedQuantity,
         cancellationDamagedQuantity: orderItems.cancellationDamagedQuantity,
         cancellationMissingQuantity: orderItems.cancellationMissingQuantity,
+        mediaId: mediaLibrary.mediaId,
+        mediaVendorId: mediaLibrary.vendorId,
+        storageKey: mediaLibrary.originalStorageKey,
+        subtotal: sql<string>`(${orderItems.productPriceSnapshot} * ${orderItems.productQuantity})::text`,
         productName: orderItems.productNameSnapshot,
         unitPrice: orderItems.productPriceSnapshot,
         quantity: orderItems.productQuantity,
       })
       .from(orderItems)
+      .leftJoin(products, eq(products.productId, orderItems.productId))
+      .leftJoin(mediaLibrary, eq(mediaLibrary.mediaId, products.productImageId))
       .where(
         inArray(
           orderItems.vendorOrderId,
@@ -1248,6 +1272,7 @@ export class AdminService {
       orderNumber: order.orderNumber,
       status: order.status,
       createdAt: order.createdAt.toISOString(),
+      summary: orderSummaryResponse(order.summary),
       customer: customer
         ? {
             userId: customer.userId,
@@ -1255,11 +1280,16 @@ export class AdminService {
             email: customer.email,
           }
         : null,
-      deliveryAddress,
+      deliveryAddress: deliveryAddress ?? null,
       fulfillments: fulfillments.map((f) => ({
         ...f,
         cancellation: publicCancellation(f),
-        items: items.filter((i) => i.vendorOrderId === f.vendorOrderId),
+        items: items
+          .filter((i) => i.vendorOrderId === f.vendorOrderId)
+          .map(({ mediaId, mediaVendorId, storageKey, ...item }) => ({
+            ...item,
+            imageUrl: orderProductImage({ mediaId, mediaVendorId, storageKey }),
+          })),
       })),
     };
   }

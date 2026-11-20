@@ -32,6 +32,21 @@ const { db } = vi.hoisted(() => {
       grossVolume: '5000',
       orderId: '00000000-0000-0000-0000-000000000001',
       orderNumber: 'ORD-1001',
+      summary: {
+        total: '99.99',
+        itemCount: 1,
+        vendorCount: 1,
+        cancelledVendorCount: 0,
+        previews: [
+          {
+            name: 'Test Product',
+            quantity: 1,
+            mediaId: null,
+            mediaVendorId: null,
+            storageKey: null,
+          },
+        ],
+      },
       status: 'completed',
       createdAt: new Date(),
       customerName: 'Test Customer',
@@ -520,6 +535,14 @@ describe('Admin Feature Integration Tests', () => {
       expect(res.body.counts.total).toBeGreaterThanOrEqual(1);
       expect(res.body.counts.approved).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  it('rejects an invalid order UUID before querying the order', async () => {
+    const res = await request(app)
+      .get('/api/admin/orders/not-a-uuid')
+      .set('Cookie', [`auth_token=${adminToken}`]);
+    expect(res.status).toBe(400);
+    expect(db.query.orders.findFirst).not.toHaveBeenCalled();
   });
 
   describe('Dashboard Analytics & Performance Timeframes', () => {

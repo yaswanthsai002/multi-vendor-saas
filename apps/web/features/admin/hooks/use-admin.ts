@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { queryKeys } from '@/lib/query-keys';
@@ -216,6 +216,7 @@ export function useAdminOrders(params?: {
   return useQuery({
     queryKey: queryKeys.admin.orders.list(params),
     queryFn: ({ signal }) => adminService.getOrders(params, signal),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -290,5 +291,12 @@ export function usePublishAdminPromotionDraft() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.merchandising.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.merchandising.homepage() });
     },
+  });
+}
+
+export function useAdminOrderDetail(orderId: string) {
+  return useQuery({
+    queryKey: queryKeys.admin.orders.detail(orderId),
+    queryFn: ({ signal }) => adminService.getOrderDetail(orderId, signal),
   });
 }

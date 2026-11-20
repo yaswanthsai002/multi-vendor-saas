@@ -6,12 +6,17 @@ import * as React from 'react';
 import { HeaderUserMenu } from '@/shared/components/layout/header-user-menu';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 
+import { AdminMobileNavigation } from './admin-mobile-navigation';
+
 export function AdminTopNav() {
   const { data, isLoading } = useCurrentUser();
   const user = data?.user;
 
   return (
     <header className="h-16 w-full px-6 lg:px-8 border-b border-border-default bg-surface flex items-center justify-end gap-4 transition-colors duration-150 sticky top-0 z-20">
+      <div className="mr-auto lg:hidden">
+        <AdminMobileNavigation />
+      </div>
       {/* Right Utility Area */}
       <div className="flex items-center gap-4 shrink-0">
         {/* Notification Bell with Badge */}

@@ -1,6 +1,8 @@
-import { makeApiRequest } from '@/lib/api-client';
+import { ApiError, makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { putFileToStorage } from '@/lib/direct-upload';
+
+import { adminOrderDetailSchema, adminOrdersSchema } from '../schemas/admin-order.schema';
 
 export interface DashboardMetrics {
   kpi: {
@@ -229,26 +231,7 @@ export interface AdminProductsResponse {
   };
 }
 
-export interface AdminOrderItem {
-  orderId: string;
-  orderNumber: string;
-  status: string;
-  customer: {
-    name: string;
-    email: string;
-  };
-  createdAt: string;
-}
-
-export interface AdminOrdersResponse {
-  orders: AdminOrderItem[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+export type { AdminOrderItem, AdminOrdersResponse } from '../schemas/admin-order.schema';
 
 export interface MerchandisingOverview {
   counts: {
@@ -404,23 +387,33 @@ export const adminService = {
       data: { isFeatured },
     }),
 
-  getOrders: (
+  getOrders: async (
     params?: { page?: number; limit?: number; search?: string; status?: string },
     signal?: AbortSignal,
-  ) =>
-    makeApiRequest<AdminOrdersResponse>({
+  ) => {
+    const body = await makeApiRequest<unknown>({
       url: API_ENDPOINTS.admin.orders.list,
       method: 'GET',
       params,
       signal,
-    }),
+    });
+    const result = adminOrdersSchema.safeParse(body);
+    if (!result.success)
+      throw new ApiError(502, 'INVALID_RESPONSE', 'Could not read the orders. Please try again.');
+    return result.data;
+  },
 
-  getOrderDetail: (orderId: string, signal?: AbortSignal) =>
-    makeApiRequest<Record<string, unknown>>({
+  getOrderDetail: async (orderId: string, signal?: AbortSignal) => {
+    const body = await makeApiRequest<unknown>({
       url: API_ENDPOINTS.admin.orders.detail(orderId),
       method: 'GET',
       signal,
-    }),
+    });
+    const result = adminOrderDetailSchema.safeParse(body);
+    if (!result.success)
+      throw new ApiError(502, 'INVALID_RESPONSE', 'Could not read this order. Please try again.');
+    return result.data;
+  },
 
   getMerchandisingOverview: (signal?: AbortSignal) =>
     makeApiRequest<MerchandisingOverview>({

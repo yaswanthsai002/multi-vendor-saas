@@ -6,6 +6,32 @@ export const adminOrdersTags = [
 ];
 
 export const adminOrdersSchemas = {
+  AdminOrderSummary: {
+    type: 'object',
+    properties: {
+      total: {
+        type: 'string',
+        description: 'Exact original item total in INR, including cancelled items.',
+      },
+      itemCount: { type: 'integer', minimum: 0 },
+      vendorCount: { type: 'integer', minimum: 0 },
+      cancelledVendorCount: { type: 'integer', minimum: 0 },
+      previews: {
+        type: 'array',
+        maxItems: 2,
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            quantity: { type: 'integer', minimum: 0 },
+            imageUrl: { type: ['string', 'null'] },
+          },
+          required: ['name', 'quantity', 'imageUrl'],
+        },
+      },
+    },
+    required: ['total', 'itemCount', 'vendorCount', 'cancelledVendorCount', 'previews'],
+  },
   ListAdminOrdersResponse: {
     type: 'object',
     properties: {
@@ -18,6 +44,7 @@ export const adminOrdersSchemas = {
               type: 'string',
               format: 'uuid',
             },
+            summary: { $ref: '#/components/schemas/AdminOrderSummary' },
             orderNumber: {
               type: 'string',
             },
@@ -41,7 +68,7 @@ export const adminOrdersSchemas = {
               type: 'string',
             },
           },
-          required: ['orderId', 'orderNumber', 'status', 'customer', 'createdAt'],
+          required: ['orderId', 'orderNumber', 'status', 'customer', 'createdAt', 'summary'],
         },
       },
       pagination: {
@@ -68,6 +95,7 @@ export const adminOrdersSchemas = {
   GetAdminOrderDetailResponse: {
     type: 'object',
     properties: {
+      summary: { $ref: '#/components/schemas/AdminOrderSummary' },
       orderId: {
         type: 'string',
         format: 'uuid',
@@ -181,18 +209,30 @@ export const adminOrdersSchemas = {
                     type: 'string',
                     format: 'uuid',
                   },
+                  imageUrl: { type: ['string', 'null'] },
+                  subtotal: { type: 'string' },
                   productName: {
                     type: 'string',
                   },
                   unitPrice: {
                     type: 'string',
                   },
-                  quantity: { type: 'number' },
                   cancellationReturnedQuantity: { type: ['integer', 'null'], minimum: 0 },
                   cancellationDamagedQuantity: { type: ['integer', 'null'], minimum: 0 },
                   cancellationMissingQuantity: { type: ['integer', 'null'], minimum: 0 },
+                  quantity: {
+                    type: 'number',
+                  },
                 },
-                required: ['orderItemId', 'vendorOrderId', 'productName', 'unitPrice', 'quantity'],
+                required: [
+                  'orderItemId',
+                  'vendorOrderId',
+                  'productName',
+                  'unitPrice',
+                  'quantity',
+                  'imageUrl',
+                  'subtotal',
+                ],
               },
             },
             vendorOrderId: {
@@ -206,7 +246,7 @@ export const adminOrdersSchemas = {
             cancellation: { $ref: '#/components/schemas/OrderCancellation' },
             cancellationDetails: {
               type: ['string', 'null'],
-              description: 'Administrator-only cancellation text.',
+              description: 'Administrator-only saved cancellation text.',
             },
             cancelledByUserId: { type: ['string', 'null'], format: 'uuid' },
             completedAt: { type: ['string', 'null'], format: 'date-time' },
@@ -214,6 +254,7 @@ export const adminOrdersSchemas = {
               type: 'string',
               format: 'uuid',
             },
+            total: { type: 'string' },
             vendorName: {
               type: 'string',
             },
@@ -230,8 +271,12 @@ export const adminOrdersSchemas = {
             'vendorOrderId',
             'status',
             'cancellation',
+            'cancellationDetails',
+            'cancelledByUserId',
+            'completedAt',
             'vendorId',
             'vendorName',
+            'total',
             'vendorSlug',
             'vendorStatus',
           ],
@@ -313,6 +358,13 @@ export const adminOrdersPaths = {
                   {
                     orderId: '11111111-1111-4111-8111-111111111111',
                     orderNumber: 'Example',
+                    summary: {
+                      total: '99.00',
+                      itemCount: 1,
+                      vendorCount: 1,
+                      cancelledVendorCount: 0,
+                      previews: [{ name: 'Example', quantity: 1, imageUrl: null }],
+                    },
                     status: 'pending',
                     customer: {
                       name: 'Example',
@@ -380,6 +432,13 @@ export const adminOrdersPaths = {
               example: {
                 orderId: '11111111-1111-4111-8111-111111111111',
                 orderNumber: 'Example',
+                summary: {
+                  total: '99.00',
+                  itemCount: 1,
+                  vendorCount: 1,
+                  cancelledVendorCount: 0,
+                  previews: [{ name: 'Example', quantity: 1, imageUrl: null }],
+                },
                 status: 'pending',
                 createdAt: 'Example',
                 customer: {
@@ -406,6 +465,8 @@ export const adminOrdersPaths = {
                       {
                         orderItemId: '11111111-1111-4111-8111-111111111111',
                         vendorOrderId: '11111111-1111-4111-8111-111111111111',
+                        imageUrl: null,
+                        subtotal: '99.00',
                         productName: 'Example',
                         unitPrice: '99.00',
                         quantity: 1,
@@ -413,8 +474,12 @@ export const adminOrdersPaths = {
                     ],
                     vendorOrderId: '11111111-1111-4111-8111-111111111111',
                     status: 'pending',
-                    cancellationReason: 'Example',
+                    cancellation: null,
+                    cancellationDetails: null,
+                    cancelledByUserId: null,
+                    completedAt: null,
                     vendorId: '11111111-1111-4111-8111-111111111111',
+                    total: '99.00',
                     vendorName: 'Example',
                     vendorSlug: 'Example',
                     vendorStatus: 'active',

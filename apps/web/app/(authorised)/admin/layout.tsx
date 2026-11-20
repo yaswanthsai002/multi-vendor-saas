@@ -13,7 +13,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 flex w-full min-h-screen bg-background text-text-primary">
       {/* Persistent Desktop Sidebar */}
-      <AdminSidebar />
+      <div className="hidden lg:flex">
+        <AdminSidebar />
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">

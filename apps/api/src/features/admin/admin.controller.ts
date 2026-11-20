@@ -1,5 +1,6 @@
 import {
   createVendorByAdminSchema,
+  adminOrderParamsSchema,
   getDashboardPerformanceQuerySchema,
   listAdminOrdersQuerySchema,
   listAdminProductsQuerySchema,
@@ -205,7 +206,7 @@ export async function listAdminOrders(req: Request, res: Response, next: NextFun
 
 export async function getAdminOrderDetail(req: Request, res: Response, next: NextFunction) {
   try {
-    const orderId = req.params.orderId as string;
+    const { orderId } = adminOrderParamsSchema.parse(req.params);
     const data = await adminService.getOrderDetail(orderId);
     return res.status(200).json(data);
   } catch (error) {

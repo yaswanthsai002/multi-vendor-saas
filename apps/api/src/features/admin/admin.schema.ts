@@ -137,3 +137,5 @@ export type ListAdminProductsQuery = z.infer<typeof listAdminProductsQuerySchema
 export type UpdateProductModerationInput = z.infer<typeof updateProductModerationSchema>;
 export type ListAdminOrdersQuery = z.infer<typeof listAdminOrdersQuerySchema>;
 export type CreateVendorByAdminInput = z.infer<typeof createVendorByAdminSchema>;
+
+export const adminOrderParamsSchema = z.object({ orderId: z.uuid() }).strict();
