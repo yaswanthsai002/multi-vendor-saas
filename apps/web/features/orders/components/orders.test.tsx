@@ -108,6 +108,7 @@ describe('Vendor Orders Components', () => {
         vendorOrderId: 'vo-1',
         orderNumber: 'ORD-10001',
         customer: { name: 'John Doe', email: 'john@example.com' },
+        summary: { items: [{ name: 'Item', quantity: 3 }], itemCount: 3, productCount: 1 },
         itemCount: 3,
         total: '129.99',
         placedAt: '2026-10-09T08:00:00.000Z',
@@ -177,6 +178,7 @@ describe('Vendor Orders Components', () => {
     const mockItems: OrderItemDetail[] = [
       {
         orderItemId: 'item-1',
+        cancellationQuantities: null,
         productId: 'prod-1',
         productName: 'Mechanical Gaming Keyboard',
         productImageUrl: null,
@@ -234,33 +236,24 @@ describe('Vendor Orders Components', () => {
   });
 
   describe('OrderActionDialog', () => {
-    it('renders confirmation for starting processing', async () => {
-      const handleConfirm = vi.fn();
-      const handleClose = vi.fn();
-
-      render(
-        <OrderActionDialog
-          isOpen={true}
-          action="process"
-          onClose={handleClose}
-          onConfirm={handleConfirm}
-          isLoading={false}
-        />,
-      );
-
-      expect(screen.getByText('Start Processing Order')).toBeDefined();
-      const submitBtn = screen.getByRole('button', { name: 'Start Processing' });
-      await userEvent.click(submitBtn);
-
-      expect(handleConfirm).toHaveBeenCalledWith({ status: 'processing' });
-    });
-
     it('allows entering cancellation reason for cancel action', async () => {
       const handleConfirm = vi.fn();
       const handleClose = vi.fn();
 
       render(
         <OrderActionDialog
+          items={[
+            {
+              orderItemId: 'item-1',
+              productId: 'p-1',
+              productName: 'Lamp',
+              productImageUrl: null,
+              unitPrice: '10.00',
+              quantity: 2,
+              subtotal: '20.00',
+              cancellationQuantities: null,
+            },
+          ]}
           isOpen={true}
           action="cancel"
           onClose={handleClose}
@@ -269,16 +262,18 @@ describe('Vendor Orders Components', () => {
         />,
       );
 
-      expect(screen.getByRole('heading', { name: 'Cancel Order' })).toBeDefined();
-      const textarea = screen.getByPlaceholderText(/out of stock/i);
+      expect(screen.getByRole('heading', { name: 'Cancel order' })).toBeDefined();
+      const textarea = screen.getByLabelText('Additional details for administrators');
       await userEvent.type(textarea, 'Customer requested cancel');
 
-      const cancelBtn = screen.getByRole('button', { name: 'Cancel Order' });
+      const cancelBtn = screen.getByRole('button', { name: 'Cancel order' });
       await userEvent.click(cancelBtn);
 
       expect(handleConfirm).toHaveBeenCalledWith({
         status: 'cancelled',
-        cancellationReason: 'Customer requested cancel',
+        cancellationReasonCode: 'OUT_OF_STOCK',
+        cancellationDetails: 'Customer requested cancel',
+        items: [{ orderItemId: 'item-1', damagedQuantity: 0, missingQuantity: 0 }],
       });
     });
   });

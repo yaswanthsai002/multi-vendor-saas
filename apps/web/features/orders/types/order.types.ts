@@ -1,3 +1,13 @@
+import { type z } from 'zod';
+
+import {
+  type orderItemDetailSchema,
+  type deliveryAddressDetailSchema,
+  type vendorOrderDetailSchema,
+} from '../schemas/vendor-order.schema';
+
+import type { VendorOrderAction } from '../schemas/vendor-order-action.schema';
+
 export type VendorOrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
 export type OrderStatusFilter = 'all' | VendorOrderStatus;
 export type OrderSortOption = 'newest' | 'oldest' | 'total_desc' | 'total_asc';
@@ -9,6 +19,7 @@ export interface VendorOrderListItem {
     name: string;
     email: string;
   };
+  summary: { items: { name: string; quantity: number }[]; itemCount: number; productCount: number };
   itemCount: number;
   total: string;
   placedAt: string;
@@ -46,55 +57,7 @@ export interface VendorOrdersFilters {
   sort?: OrderSortOption;
 }
 
-export interface OrderItemDetail {
-  orderItemId: string;
-  productId: string;
-  productName: string;
-  productImageUrl: string | null;
-  unitPrice: string;
-  quantity: number;
-  subtotal: string;
-}
-
-export interface DeliveryAddressDetail {
-  recipientName: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-}
-
-export interface VendorOrderDetail {
-  order: {
-    orderNumber: string;
-    placedAt: string;
-    overallStatus: string;
-  };
-  fulfillment: {
-    vendorOrderId: string;
-    status: VendorOrderStatus;
-    updatedAt: string;
-    completedAt: string | null;
-    cancellationReason: string | null;
-    allowedActions: ('process' | 'complete' | 'cancel')[];
-  };
-  customer: {
-    name: string;
-    email: string;
-    phone: string | null;
-  };
-  deliveryAddress: DeliveryAddressDetail | null;
-  items: OrderItemDetail[];
-  summary: {
-    itemCount: number;
-    total: string;
-  };
-}
-
-export interface UpdateOrderStatusInput {
-  status: 'processing' | 'completed' | 'cancelled';
-  cancellationReason?: string | null;
-}
+export type OrderItemDetail = z.infer<typeof orderItemDetailSchema>;
+export type DeliveryAddressDetail = z.infer<typeof deliveryAddressDetailSchema>;
+export type VendorOrderDetail = z.infer<typeof vendorOrderDetailSchema>;
+export type UpdateOrderStatusInput = VendorOrderAction;

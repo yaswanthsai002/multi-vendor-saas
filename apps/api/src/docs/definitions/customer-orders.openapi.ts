@@ -212,6 +212,29 @@ export const customerOrdersSchemas = {
       total: {
         type: 'string',
       },
+      fulfillments: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            vendorName: { type: 'string' },
+            status: { type: 'string', enum: ['pending', 'processing', 'completed', 'cancelled'] },
+            orderItemIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+            completedAt: { type: ['string', 'null'], format: 'date-time' },
+            completionSource: { enum: ['seller', null] },
+            cancellation: { $ref: '#/components/schemas/OrderCancellation' },
+          },
+          required: [
+            'vendorName',
+            'status',
+            'orderItemIds',
+            'completedAt',
+            'completionSource',
+            'cancellation',
+          ],
+        },
+      },
       canCancel: {
         type: 'boolean',
       },
@@ -233,6 +256,7 @@ export const customerOrdersSchemas = {
       'address',
       'total',
       'canCancel',
+      'fulfillments',
       'orderId',
       'orderNumber',
       'placedAt',
@@ -380,6 +404,32 @@ export const customerOrdersSchemas = {
             total: {
               type: 'string',
             },
+            fulfillments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  vendorName: { type: 'string' },
+                  status: {
+                    type: 'string',
+                    enum: ['pending', 'processing', 'completed', 'cancelled'],
+                  },
+                  orderItemIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+                  completedAt: { type: ['string', 'null'], format: 'date-time' },
+                  completionSource: { enum: ['seller', null] },
+                  cancellation: { $ref: '#/components/schemas/OrderCancellation' },
+                },
+                required: [
+                  'vendorName',
+                  'status',
+                  'orderItemIds',
+                  'completedAt',
+                  'completionSource',
+                  'cancellation',
+                ],
+              },
+            },
             canCancel: {
               type: 'boolean',
             },
@@ -401,6 +451,7 @@ export const customerOrdersSchemas = {
             'address',
             'total',
             'canCancel',
+            'fulfillments',
             'orderId',
             'orderNumber',
             'placedAt',

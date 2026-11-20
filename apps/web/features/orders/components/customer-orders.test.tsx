@@ -81,6 +81,7 @@ const order: CustomerOrder = {
   status: 'Order placed',
   total: '200.20',
   canCancel: true,
+  fulfillments: [],
   address: review.addresses[0],
   items: [
     {
@@ -632,7 +633,7 @@ describe('customer order views', () => {
     expect(await screen.findByRole('heading', { name: 'Order details' })).toBeDefined();
     expect(screen.getAllByText('Cancelled')).toHaveLength(2);
     expect(screen.queryByText('Your order is confirmed')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Cancel whole order' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).toBeNull();
   });
   it('shows history, customer status and detail links', async () => {
     mount(<CustomerOrdersView query={{ page: 1 }} />);
@@ -663,7 +664,7 @@ describe('customer order views', () => {
       .mockResolvedValue({ ...order, status: 'Cancelled', canCancel: false });
     mount(<CustomerOrderDetail orderId={orderId} confirmed />);
     expect(await screen.findByText('Your order is confirmed')).toBeDefined();
-    await userEvent.click(await screen.findByRole('button', { name: 'Cancel whole order' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel order' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirm cancellation' }));
     expect(await screen.findByText('Vendor completed this order. Refresh details.')).toBeDefined();
     expect(screen.getByRole('dialog')).toBeDefined();
@@ -678,6 +679,6 @@ describe('customer order views', () => {
     expect(await screen.findByText(/Could not load this order/)).toBeDefined();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Completed')).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Cancel whole order' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cancel order' })).toBeNull();
   });
 });

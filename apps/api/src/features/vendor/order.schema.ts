@@ -26,9 +26,48 @@ export const vendorOrderIdParamSchema = z.object({
 
 export type VendorOrderIdParam = z.infer<typeof vendorOrderIdParamSchema>;
 
-export const updateVendorOrderStatusSchema = z.object({
-  status: z.enum(['processing', 'completed', 'cancelled']),
-  cancellationReason: z.string().trim().min(1).max(500).optional().nullable(),
-});
+export const cancellationReasonCodeSchema = z.enum([
+  'OUT_OF_STOCK',
+  'QUALITY_ISSUE',
+  'LISTING_ERROR',
+  'OPERATIONAL_ISSUE',
+  'OTHER',
+]);
+export const updateVendorOrderStatusSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('processing') }).strict(),
+  z.object({ status: z.literal('completed') }).strict(),
+  z
+    .object({
+      status: z.literal('cancelled'),
+      cancellationReasonCode: cancellationReasonCodeSchema,
+      cancellationDetails: z.string().trim().max(500).optional(),
+      items: z
+        .array(
+          z
+            .object({
+              orderItemId: z.uuid(),
+              damagedQuantity: z.number().int().min(0).max(2147483647),
+              missingQuantity: z.number().int().min(0).max(2147483647),
+            })
+            .strict(),
+        )
+        .min(1),
+    })
+    .strict()
+    .superRefine((value, ctx) => {
+      if (value.cancellationReasonCode === 'OTHER' && !value.cancellationDetails)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cancellationDetails'],
+          message: 'Explain the other reason for administrators.',
+        });
+      if (new Set(value.items.map((item) => item.orderItemId)).size !== value.items.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['items'],
+          message: 'Each order item must appear once.',
+        });
+    }),
+]);
 
 export type UpdateVendorOrderStatusInput = z.infer<typeof updateVendorOrderStatusSchema>;

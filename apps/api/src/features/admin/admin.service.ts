@@ -27,6 +27,7 @@ import {
 } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { publicCancellation } from '../../shared/orders/order-lifecycle.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import type {
@@ -1208,7 +1209,12 @@ export class AdminService {
       .select({
         vendorOrderId: vendorOrders.vendorOrderId,
         status: vendorOrders.status,
-        cancellationReason: vendorOrders.cancellationReason,
+        cancellationSource: vendorOrders.cancellationSource,
+        cancellationReasonCode: vendorOrders.cancellationReasonCode,
+        cancellationDetails: vendorOrders.cancellationDetails,
+        cancelledByUserId: vendorOrders.cancelledByUserId,
+        cancelledAt: vendorOrders.cancelledAt,
+        completedAt: vendorOrders.completedAt,
         vendorId: vendors.vendorId,
         vendorName: vendors.name,
         vendorSlug: vendors.slug,
@@ -1222,6 +1228,9 @@ export class AdminService {
       .select({
         orderItemId: orderItems.orderItemId,
         vendorOrderId: orderItems.vendorOrderId,
+        cancellationReturnedQuantity: orderItems.cancellationReturnedQuantity,
+        cancellationDamagedQuantity: orderItems.cancellationDamagedQuantity,
+        cancellationMissingQuantity: orderItems.cancellationMissingQuantity,
         productName: orderItems.productNameSnapshot,
         unitPrice: orderItems.productPriceSnapshot,
         quantity: orderItems.productQuantity,
@@ -1249,6 +1258,7 @@ export class AdminService {
       deliveryAddress,
       fulfillments: fulfillments.map((f) => ({
         ...f,
+        cancellation: publicCancellation(f),
         items: items.filter((i) => i.vendorOrderId === f.vendorOrderId),
       })),
     };

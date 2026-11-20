@@ -12,8 +12,11 @@ import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { sendOrderEmail } from '../../shared/orders/order-email.js';
+import { orderItemSummarySql } from '../../shared/orders/order-item-summary.js';
 import {
   lockOrder,
+  publicCancellation,
+  cancellationQuantities,
   restoreOrderStock,
   refreshParentStatus,
 } from '../../shared/orders/order-lifecycle.js';
@@ -29,54 +32,13 @@ export interface VendorOrderListItem {
     email: string;
   };
   itemCount: number;
+  summary: { items: { name: string; quantity: number }[]; itemCount: number; productCount: number };
   total: string;
   placedAt: string;
   status: string;
 }
 
-export interface VendorOrderDetail {
-  order: {
-    orderNumber: string;
-    placedAt: string;
-    overallStatus: string;
-  };
-  fulfillment: {
-    vendorOrderId: string;
-    status: string;
-    updatedAt: string;
-    completedAt: string | null;
-    cancellationReason: string | null;
-    allowedActions: ('process' | 'complete' | 'cancel')[];
-  };
-  customer: {
-    name: string;
-    email: string;
-    phone: string | null;
-  };
-  deliveryAddress: {
-    recipientName: string;
-    phone: string;
-    addressLine1: string;
-    addressLine2: string | null;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-  } | null;
-  items: {
-    orderItemId: string;
-    productId: string;
-    productName: string;
-    productImageUrl: string | null;
-    unitPrice: string;
-    quantity: number;
-    subtotal: string;
-  }[];
-  summary: {
-    itemCount: number;
-    total: string;
-  };
-}
+export type VendorOrderDetail = Awaited<ReturnType<typeof getVendorOrderDetail>>;
 
 /**
  * ponytail: Resolves allowed next fulfillment actions from current vendor order status.
@@ -88,7 +50,7 @@ export function getAllowedOrderActions(
     case 'pending':
       return ['process', 'cancel'];
     case 'processing':
-      return ['complete'];
+      return ['complete', 'cancel'];
     case 'completed':
     case 'cancelled':
     default:
@@ -182,6 +144,7 @@ export async function listVendorOrders(vendorId: string, query: ListVendorOrders
     .select({
       vendorOrderId: vendorOrders.vendorOrderId,
       orderNumber: orders.orderNumber,
+      summary: orderItemSummarySql(),
       customerName: users.fullName,
       customerEmail: users.email,
       status: vendorOrders.status,
@@ -206,6 +169,7 @@ export async function listVendorOrders(vendorId: string, query: ListVendorOrders
       name: r.customerName,
       email: r.customerEmail,
     },
+    summary: r.summary,
     itemCount: Number(r.itemCount),
     total: Number(r.total).toFixed(2),
     placedAt: r.placedAt.toISOString(),
@@ -233,10 +197,7 @@ export async function listVendorOrders(vendorId: string, query: ListVendorOrders
 /**
  * Retrieves full vendor order details including customer, delivery address snapshot, and order items.
  */
-export async function getVendorOrderDetail(
-  vendorId: string,
-  vendorOrderId: string,
-): Promise<VendorOrderDetail> {
+export async function getVendorOrderDetail(vendorId: string, vendorOrderId: string) {
   const db = getDb();
 
   // 1. Retrieve the vendor order record
@@ -274,6 +235,9 @@ export async function getVendorOrderDetail(
       productName: orderItems.productNameSnapshot,
       unitPrice: orderItems.productPriceSnapshot,
       quantity: orderItems.productQuantity,
+      cancellationReturnedQuantity: orderItems.cancellationReturnedQuantity,
+      cancellationDamagedQuantity: orderItems.cancellationDamagedQuantity,
+      cancellationMissingQuantity: orderItems.cancellationMissingQuantity,
       mediaStorageKey: mediaLibrary.originalStorageKey,
       mediaId: mediaLibrary.mediaId,
       mediaVendorId: mediaLibrary.vendorId,
@@ -307,6 +271,7 @@ export async function getVendorOrderDetail(
       unitPrice: unitPriceNum.toFixed(2),
       quantity: item.quantity,
       subtotal: subtotalNum.toFixed(2),
+      cancellationQuantities: cancellationQuantities(item),
     };
   });
 
@@ -321,7 +286,7 @@ export async function getVendorOrderDetail(
       status: vo.status,
       updatedAt: vo.updatedAt.toISOString(),
       completedAt: vo.completedAt ? vo.completedAt.toISOString() : null,
-      cancellationReason: vo.cancellationReason,
+      cancellation: publicCancellation(vo),
       allowedActions: getAllowedOrderActions(vo.status),
     },
     customer: {
@@ -352,24 +317,59 @@ export async function getVendorOrderDetail(
 /**
  * Updates vendor order status and recalculates parent order status atomically.
  */
-export async function updateVendorOrderStatus(
-  vendorId: string,
-  vendorOrderId: string,
-  input: UpdateVendorOrderStatusInput,
-): Promise<VendorOrderDetail> {
+export async function updateVendorOrderStatus({
+  vendorId,
+  actorUserId,
+  vendorOrderId,
+  input,
+}: {
+  vendorId: string;
+  actorUserId: string;
+  vendorOrderId: string;
+  input: UpdateVendorOrderStatusInput;
+}) {
   const db = getDb();
-  const { status: targetStatus, cancellationReason } = input;
-
+  const targetStatus = input.status;
   const vo = await db.query.vendorOrders.findFirst({
     where: and(eq(vendorOrders.vendorOrderId, vendorOrderId), eq(vendorOrders.vendorId, vendorId)),
   });
   if (!vo) throw new AppError(404, 'ORDER_NOT_FOUND', 'Vendor order not found.');
+  let transitioned = false;
   await db.transaction(async (tx) => {
     const { portions } = await lockOrder(tx, vo.orderId);
     const current = portions.find(
       (portion) => portion.vendorOrderId === vendorOrderId && portion.vendorId === vendorId,
     );
     if (!current) throw new AppError(404, 'ORDER_NOT_FOUND', 'Vendor order not found.');
+    const items = await tx
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.vendorOrderId, vendorOrderId));
+    const details = input.status === 'cancelled' ? input.cancellationDetails || null : null;
+    if (
+      current.status === 'cancelled' &&
+      current.cancellationSource === 'vendor' &&
+      input.status === 'cancelled'
+    ) {
+      const identical =
+        current.cancellationReasonCode === input.cancellationReasonCode &&
+        current.cancellationDetails === details &&
+        input.items.length === items.length &&
+        items.every((saved) =>
+          input.items.some(
+            (item) =>
+              item.orderItemId === saved.orderItemId &&
+              item.damagedQuantity === saved.cancellationDamagedQuantity &&
+              item.missingQuantity === saved.cancellationMissingQuantity,
+          ),
+        );
+      if (identical) return;
+      throw new AppError(
+        409,
+        'CANCELLATION_ALREADY_RECORDED',
+        'Cancellation is already recorded with different details.',
+      );
+    }
     if (
       !getAllowedOrderActions(current.status).includes(
         targetStatus === 'processing'
@@ -378,42 +378,83 @@ export async function updateVendorOrderStatus(
             ? 'complete'
             : 'cancel',
       )
-    ) {
+    )
       throw new AppError(
-        400,
+        409,
         'INVALID_ORDER_STATUS_TRANSITION',
-        'Order state changed or transition is unavailable. Refresh the order.',
+        'Order state changed. Refresh the order.',
       );
-    }
     const now = new Date();
-    const changed = await tx
-      .update(vendorOrders)
-      .set({
-        status: targetStatus,
-        cancellationReason:
-          targetStatus === 'cancelled' ? (cancellationReason ?? 'Cancelled by vendor') : null,
-        completedAt: targetStatus === 'completed' ? now : null,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(vendorOrders.vendorOrderId, vendorOrderId),
-          eq(vendorOrders.vendorId, vendorId),
-          eq(vendorOrders.status, current.status),
-        ),
+    if (input.status === 'cancelled') {
+      if (
+        input.items.length !== items.length ||
+        new Set(input.items.map((item) => item.orderItemId)).size !== items.length ||
+        input.items.some((item) => !items.some((saved) => saved.orderItemId === item.orderItemId))
       )
-      .returning({ vendorOrderId: vendorOrders.vendorOrderId });
-    if (targetStatus === 'cancelled')
-      await restoreOrderStock(
-        tx,
-        changed.map((portion) => portion.vendorOrderId),
-      );
+        throw new AppError(
+          400,
+          'CANCELLATION_ITEMS_INVALID',
+          'Review the quantities for every item in this order.',
+        );
+      const allocations: { productId: string; quantity: number }[] = [];
+      for (const item of input.items) {
+        const saved = items.find((row) => row.orderItemId === item.orderItemId);
+        if (!saved) throw new AppError(400, 'CANCELLATION_ITEMS_INVALID', 'Order item not found.');
+        const returned = saved.productQuantity - item.damagedQuantity - item.missingQuantity;
+        if (
+          !Number.isInteger(item.damagedQuantity) ||
+          !Number.isInteger(item.missingQuantity) ||
+          item.damagedQuantity < 0 ||
+          item.missingQuantity < 0 ||
+          returned < 0
+        )
+          throw new AppError(
+            400,
+            'CANCELLATION_QUANTITY_INVALID',
+            'Damaged and missing units cannot exceed the ordered quantity.',
+          );
+        await tx
+          .update(orderItems)
+          .set({
+            cancellationReturnedQuantity: returned,
+            cancellationDamagedQuantity: item.damagedQuantity,
+            cancellationMissingQuantity: item.missingQuantity,
+            updatedAt: now,
+          })
+          .where(eq(orderItems.orderItemId, saved.orderItemId));
+        allocations.push({ productId: saved.productId, quantity: returned });
+      }
+      await tx
+        .update(vendorOrders)
+        .set({
+          status: 'cancelled',
+          cancellationSource: 'vendor',
+          cancellationReasonCode: input.cancellationReasonCode,
+          cancellationDetails: details,
+          cancelledByUserId: actorUserId,
+          cancelledAt: now,
+          updatedAt: now,
+        })
+        .where(eq(vendorOrders.vendorOrderId, vendorOrderId));
+      await restoreOrderStock(tx, allocations);
+    } else {
+      await tx
+        .update(vendorOrders)
+        .set({
+          status: targetStatus,
+          completedAt: targetStatus === 'completed' ? now : null,
+          updatedAt: now,
+        })
+        .where(eq(vendorOrders.vendorOrderId, vendorOrderId));
+    }
     await refreshParentStatus(tx, vo.orderId);
+    transitioned = true;
   });
-  await sendOrderEmail(
-    vo.orderId,
-    targetStatus === 'cancelled' ? 'vendor_cancelled' : targetStatus,
-    vendorOrderId,
-  );
+  if (transitioned)
+    await sendOrderEmail(
+      vo.orderId,
+      targetStatus === 'cancelled' ? 'vendor_cancelled' : targetStatus,
+      vendorOrderId,
+    );
   return getVendorOrderDetail(vendorId, vendorOrderId);
 }

@@ -78,7 +78,12 @@ export async function updateVendorOrderStatusById(
     const { vendorOrderId } = vendorOrderIdParamSchema.parse(req.params);
     const input = updateVendorOrderStatusSchema.parse(req.body);
 
-    const updatedDetail = await updateVendorOrderStatus(vendorId, vendorOrderId, input);
+    const updatedDetail = await updateVendorOrderStatus({
+      vendorId,
+      actorUserId: req.vendor!.userId,
+      vendorOrderId,
+      input,
+    });
 
     res.status(200).json({
       success: true,

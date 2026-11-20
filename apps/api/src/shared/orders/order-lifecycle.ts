@@ -1,6 +1,6 @@
 import { type getDb } from '@repo/db';
-import { orders, vendorOrders, orderItems, products } from '@repo/db/schema';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { orders, vendorOrders, type orderItems, products } from '@repo/db/schema';
+import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { AppError } from '../errors/AppError.js';
 
@@ -15,13 +15,56 @@ export function calculateParentOrderStatus(statuses: Status[]): typeof orders.$i
   return 'confirmed';
 }
 
-export function customerOrderStatus(statuses: Status[]) {
-  if (statuses.length && statuses.every((status) => status === 'cancelled')) return 'Cancelled';
-  if (statuses.length && statuses.every((status) => status === 'completed')) return 'Completed';
-  if (statuses.includes('completed')) return 'Partially fulfilled';
-  if (statuses.includes('cancelled')) return 'Partially cancelled';
-  if (statuses.includes('processing')) return 'In progress';
-  return 'Order placed';
+export function customerOrderStatusSql() {
+  return sql<string>`CASE
+    WHEN bool_and(${vendorOrders.status} = 'cancelled') THEN 'Cancelled'
+    WHEN bool_and(${vendorOrders.status} = 'completed') THEN 'Completed'
+    WHEN bool_or(${vendorOrders.status} = 'cancelled') THEN 'Partially cancelled'
+    WHEN bool_or(${vendorOrders.status} = 'completed') THEN 'Partially fulfilled'
+    WHEN bool_or(${vendorOrders.status} = 'processing') THEN 'In progress'
+    ELSE 'Order placed' END`;
+}
+
+export const cancellationReasonLabels = {
+  OUT_OF_STOCK: 'Insufficient stock',
+  QUALITY_ISSUE: 'Item damaged or failed quality check',
+  LISTING_ERROR: 'Product details are incorrect',
+  OPERATIONAL_ISSUE: 'Seller unable to prepare these items',
+  OTHER: 'Seller unable to fulfill these items',
+} as const;
+
+export function publicCancellation(
+  portion: Pick<
+    typeof vendorOrders.$inferSelect,
+    'cancellationSource' | 'cancellationReasonCode' | 'cancelledAt'
+  >,
+) {
+  if (!portion.cancellationSource) return null;
+  return {
+    source: portion.cancellationSource,
+    reasonCode: portion.cancellationReasonCode,
+    reason: portion.cancellationReasonCode
+      ? cancellationReasonLabels[portion.cancellationReasonCode]
+      : 'Cancelled by customer',
+    cancelledAt: portion.cancelledAt?.toISOString() ?? null,
+  };
+}
+
+export function cancellationQuantities(
+  item: Pick<
+    typeof orderItems.$inferSelect,
+    'cancellationReturnedQuantity' | 'cancellationDamagedQuantity' | 'cancellationMissingQuantity'
+  >,
+) {
+  return item.cancellationReturnedQuantity === null ||
+    item.cancellationDamagedQuantity === null ||
+    item.cancellationMissingQuantity === null
+    ? null
+    : {
+        returnedQuantity: item.cancellationReturnedQuantity,
+        damagedQuantity: item.cancellationDamagedQuantity,
+        missingQuantity: item.cancellationMissingQuantity,
+      };
 }
 
 export async function lockOrder(tx: Transaction, orderId: string, userId?: string) {
@@ -40,23 +83,21 @@ export async function lockOrder(tx: Transaction, orderId: string, userId?: strin
   return { order, portions };
 }
 
-export async function restoreOrderStock(tx: Transaction, portionIds: string[]) {
-  if (!portionIds.length) return;
-  const items = await tx
-    .select({
-      productId: orderItems.productId,
-      quantity: sql<number>`SUM(${orderItems.productQuantity})::integer`,
-    })
-    .from(orderItems)
-    .where(inArray(orderItems.vendorOrderId, portionIds))
-    .groupBy(orderItems.productId)
-    .orderBy(asc(orderItems.productId));
+export async function restoreOrderStock(
+  tx: Transaction,
+  allocations: { productId: string; quantity: number }[],
+) {
+  const quantities = new Map<string, number>();
+  for (const item of allocations)
+    quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity);
+  const items = [...quantities].sort(([a], [b]) => a.localeCompare(b));
   // Every inventory writer locks products in the same order.
-  for (const item of items) {
+  for (const [productId, quantity] of items) {
+    if (!quantity) continue;
     await tx
       .update(products)
-      .set({ stock: sql`${products.stock} + ${item.quantity}`, updatedAt: new Date() })
-      .where(eq(products.productId, item.productId));
+      .set({ stock: sql`${products.stock} + ${quantity}`, updatedAt: new Date() })
+      .where(eq(products.productId, productId));
   }
 }
 

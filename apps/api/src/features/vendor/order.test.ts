@@ -166,7 +166,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
     });
 
     it('returns complete only for processing orders', () => {
-      expect(orderService.getAllowedOrderActions('processing')).toEqual(['complete']);
+      expect(orderService.getAllowedOrderActions('processing')).toEqual(['complete', 'cancel']);
     });
 
     it('returns empty array for completed and cancelled terminal orders', () => {
@@ -188,6 +188,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
             vendorOrderId,
             orderNumber: 'ORD-10001',
             customer: { name: 'Customer One', email: 'customer@example.com' },
+            summary: { items: [{ name: 'Lamp', quantity: 2 }], itemCount: 2, productCount: 1 },
             itemCount: 2,
             total: '199.98',
             placedAt: new Date().toISOString(),
@@ -265,7 +266,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
           status: 'pending',
           updatedAt: new Date().toISOString(),
           completedAt: null,
-          cancellationReason: null,
+          cancellation: null,
           allowedActions: ['process', 'cancel'],
         },
         customer: {
@@ -289,6 +290,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
             productId: 'prod-1',
             productName: 'Ergonomic Desk Chair',
             productImageUrl: null,
+            cancellationQuantities: null,
             unitPrice: '149.99',
             quantity: 1,
             subtotal: '149.99',
@@ -330,7 +332,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
         .set('Cookie', [cookie])
         .send({ status: 'processing' });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
       expect(res.body.code).toBe('INVALID_ORDER_STATUS_TRANSITION');
     });
 
@@ -348,7 +350,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
         .set('Cookie', [cookie])
         .send({ status: 'completed' });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
       expect(res.body.code).toBe('INVALID_ORDER_STATUS_TRANSITION');
     });
 
@@ -364,7 +366,7 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
           status: 'processing',
           updatedAt: new Date().toISOString(),
           completedAt: null,
-          cancellationReason: null,
+          cancellation: null,
           allowedActions: ['complete'],
         },
         customer: {
@@ -405,7 +407,12 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
           status: 'cancelled',
           updatedAt: new Date().toISOString(),
           completedAt: null,
-          cancellationReason: 'Out of stock inventory',
+          cancellation: {
+            source: 'vendor',
+            reasonCode: 'OUT_OF_STOCK',
+            reason: 'Insufficient stock',
+            cancelledAt: new Date().toISOString(),
+          },
           allowedActions: [],
         },
         customer: {
@@ -427,12 +434,22 @@ describe('Vendor Orders API & Service (/api/vendor/orders)', () => {
       const res = await request(app)
         .post(`/api/vendor/orders/${vendorOrderId}/status`)
         .set('Cookie', [cookie])
-        .send({ status: 'cancelled', cancellationReason: 'Out of stock inventory' });
+        .send({
+          status: 'cancelled',
+          cancellationReasonCode: 'OUT_OF_STOCK',
+          items: [
+            {
+              orderItemId: '66666666-6666-4666-8666-666666666666',
+              damagedQuantity: 0,
+              missingQuantity: 0,
+            },
+          ],
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.fulfillment.status).toBe('cancelled');
-      expect(res.body.data.fulfillment.cancellationReason).toBe('Out of stock inventory');
+      expect(res.body.data.fulfillment.cancellation.reason).toBe('Insufficient stock');
     });
   });
 });

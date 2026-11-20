@@ -1,3 +1,44 @@
+const publicCancellation = {
+  anyOf: [
+    { type: 'null' },
+    {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        source: { type: 'string', enum: ['customer', 'vendor'] },
+        reasonCode: {
+          type: ['string', 'null'],
+          enum: [
+            'OUT_OF_STOCK',
+            'QUALITY_ISSUE',
+            'LISTING_ERROR',
+            'OPERATIONAL_ISSUE',
+            'OTHER',
+            null,
+          ],
+        },
+        reason: { type: 'string' },
+        cancelledAt: { type: ['string', 'null'], format: 'date-time' },
+      },
+      required: ['source', 'reasonCode', 'reason', 'cancelledAt'],
+    },
+  ],
+} as const;
+const quantities = {
+  anyOf: [
+    { type: 'null' },
+    {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        returnedQuantity: { type: 'integer', minimum: 0 },
+        damagedQuantity: { type: 'integer', minimum: 0 },
+        missingQuantity: { type: 'integer', minimum: 0 },
+      },
+      required: ['returnedQuantity', 'damagedQuantity', 'missingQuantity'],
+    },
+  ],
+} as const;
 export const vendorOrdersTags = [
   {
     name: 'Vendor Orders',
@@ -6,6 +47,26 @@ export const vendorOrdersTags = [
 ];
 
 export const vendorOrdersSchemas = {
+  OrderItemSummary: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      items: {
+        type: 'array',
+        maxItems: 2,
+        items: {
+          type: 'object',
+          properties: { name: { type: 'string' }, quantity: { type: 'integer', minimum: 0 } },
+          required: ['name', 'quantity'],
+        },
+      },
+      itemCount: { type: 'integer', minimum: 0 },
+      productCount: { type: 'integer', minimum: 0 },
+    },
+    required: ['items', 'itemCount', 'productCount'],
+  },
+  OrderCancellation: publicCancellation,
+  OrderCancellationQuantities: quantities,
   ListVendorOrdersResponse: {
     type: 'object',
     properties: {
@@ -28,6 +89,7 @@ export const vendorOrdersSchemas = {
                 orderNumber: {
                   type: 'string',
                 },
+                summary: { $ref: '#/components/schemas/OrderItemSummary' },
                 customer: {
                   type: 'object',
                   properties: {
@@ -56,6 +118,7 @@ export const vendorOrdersSchemas = {
               required: [
                 'vendorOrderId',
                 'orderNumber',
+                'summary',
                 'customer',
                 'itemCount',
                 'total',
@@ -150,9 +213,7 @@ export const vendorOrdersSchemas = {
               completedAt: {
                 type: ['null', 'string'],
               },
-              cancellationReason: {
-                type: ['null', 'string'],
-              },
+              cancellation: { $ref: '#/components/schemas/OrderCancellation' },
               allowedActions: {
                 type: 'array',
                 items: {
@@ -166,7 +227,7 @@ export const vendorOrdersSchemas = {
               'status',
               'updatedAt',
               'completedAt',
-              'cancellationReason',
+              'cancellation',
               'allowedActions',
             ],
           },
@@ -244,6 +305,9 @@ export const vendorOrdersSchemas = {
                   type: 'string',
                   format: 'uuid',
                 },
+                cancellationQuantities: {
+                  $ref: '#/components/schemas/OrderCancellationQuantities',
+                },
                 productName: {
                   type: 'string',
                 },
@@ -290,26 +354,63 @@ export const vendorOrdersSchemas = {
     required: ['success', 'data'],
   },
   UpdateVendorOrderStatusInput: {
-    type: 'object',
-    properties: {
-      status: {
-        type: 'string',
-        enum: ['processing', 'completed', 'cancelled'],
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        properties: { status: { const: 'processing' } },
+        required: ['status'],
       },
-      cancellationReason: {
-        anyOf: [
-          {
+      {
+        type: 'object',
+        additionalProperties: false,
+        properties: { status: { const: 'completed' } },
+        required: ['status'],
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          status: { const: 'cancelled' },
+          cancellationReasonCode: {
             type: 'string',
-            minLength: 1,
-            maxLength: 500,
+            enum: ['OUT_OF_STOCK', 'QUALITY_ISSUE', 'LISTING_ERROR', 'OPERATIONAL_ISSUE', 'OTHER'],
           },
+          cancellationDetails: {
+            type: 'string',
+            maxLength: 500,
+            description:
+              'Trimmed administrator-only text. Required and nonblank for OTHER. Never returned to vendors or customers.',
+          },
+          items: {
+            type: 'array',
+            minItems: 1,
+            description:
+              'Exact saved item set with unique IDs. Returned quantity is derived by the server.',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                orderItemId: { type: 'string', format: 'uuid' },
+                damagedQuantity: { type: 'integer', minimum: 0, maximum: 2147483647 },
+                missingQuantity: { type: 'integer', minimum: 0, maximum: 2147483647 },
+              },
+              required: ['orderItemId', 'damagedQuantity', 'missingQuantity'],
+            },
+          },
+        },
+        required: ['status', 'cancellationReasonCode', 'items'],
+        allOf: [
           {
-            type: 'null',
+            if: { properties: { cancellationReasonCode: { const: 'OTHER' } } },
+            then: {
+              required: ['cancellationDetails'],
+              properties: { cancellationDetails: { minLength: 1, pattern: '\\S' } },
+            },
           },
         ],
       },
-    },
-    required: ['status'],
+    ],
   },
 };
 
@@ -441,6 +542,11 @@ export const vendorOrdersPaths = {
                         name: 'Example',
                         email: 'customer@example.com',
                       },
+                      summary: {
+                        items: [{ name: 'Desk lamp', quantity: 1 }],
+                        itemCount: 1,
+                        productCount: 1,
+                      },
                       itemCount: 1,
                       total: '99.00',
                       placedAt: 'Example',
@@ -524,7 +630,7 @@ export const vendorOrdersPaths = {
                     status: 'Example',
                     updatedAt: 'Example',
                     completedAt: 'Example',
-                    cancellationReason: 'Example',
+                    cancellation: null,
                     allowedActions: ['process'],
                   },
                   customer: {
@@ -585,7 +691,7 @@ export const vendorOrdersPaths = {
       tags: ['Vendor Orders'],
       summary: 'Update vendor order status',
       description:
-        'Requires an authenticated, active user with the vendor role and an owned vendor profile. The vendor storefront may be suspended; these endpoints do not require an active storefront. Vendor identity is derived from the session. Allowed transitions: pending to processing or cancelled; processing to completed. Completed and cancelled fulfillments are terminal. The server validates the transition and updates inventory and parent order state atomically. After commit, a best-effort email notifies the customer of the vendor portion status change. Email failure does not fail the status update.',
+        'Requires an authenticated, active user with the vendor role and an owned vendor profile. The vendor storefront may be suspended; these endpoints do not require an active storefront. Vendor identity is derived from the session. Allowed transitions: pending to processing or cancelled; processing to completed or cancelled. Completed and cancelled fulfillments are terminal. The server validates the transition and updates inventory and parent order state atomically. After commit, a best-effort email notifies the customer of the vendor portion status change. Email failure does not fail the status update.',
       security: [
         {
           cookieAuth: [],
@@ -604,6 +710,10 @@ export const vendorOrdersPaths = {
         },
       ],
       responses: {
+        '409': {
+          description:
+            'INVALID_ORDER_STATUS_TRANSITION or CANCELLATION_ALREADY_RECORDED. An identical saved vendor cancellation returns 200 without repeating stock or email effects.',
+        },
         '200': {
           description: 'Successful response.',
           content: {
@@ -624,7 +734,7 @@ export const vendorOrdersPaths = {
                     status: 'Example',
                     updatedAt: 'Example',
                     completedAt: 'Example',
-                    cancellationReason: 'Example',
+                    cancellation: null,
                     allowedActions: ['process'],
                   },
                   customer: {
@@ -687,7 +797,6 @@ export const vendorOrdersPaths = {
             },
             example: {
               status: 'processing',
-              cancellationReason: 'Example',
             },
           },
         },

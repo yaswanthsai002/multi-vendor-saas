@@ -51,6 +51,19 @@ export interface CustomerOrder {
   address: DeliveryAddress | null;
   total: string;
   canCancel: boolean;
+  fulfillments: {
+    vendorName: string;
+    status: 'pending' | 'processing' | 'completed' | 'cancelled';
+    orderItemIds: string[];
+    completedAt: string | null;
+    completionSource: 'seller' | null;
+    cancellation: {
+      source: 'customer' | 'vendor';
+      reasonCode: string | null;
+      reason: string;
+      cancelledAt: string | null;
+    } | null;
+  }[];
 }
 export interface CustomerOrderList {
   items: CustomerOrder[];

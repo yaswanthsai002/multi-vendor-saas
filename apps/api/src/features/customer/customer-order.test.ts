@@ -6,7 +6,6 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { errorHandler } from '../../shared/middleware/errorHandler.js';
-import { customerOrderStatus } from '../../shared/orders/order-lifecycle.js';
 
 import {
   customerOrderPaginationSchema,
@@ -203,17 +202,5 @@ describe('checkout request and customer status', () => {
       }).success,
     ).toBe(false);
     expect(customerOrderPaginationSchema.parse({})).toEqual({ page: 1, limit: 20 });
-  });
-  it.each([
-    [['pending', 'pending'], 'Order placed'],
-    [['pending', 'processing'], 'In progress'],
-    [['pending', 'cancelled'], 'Partially cancelled'],
-    [['processing', 'cancelled'], 'Partially cancelled'],
-    [['completed', 'pending'], 'Partially fulfilled'],
-    [['completed', 'cancelled'], 'Partially fulfilled'],
-    [['completed', 'completed'], 'Completed'],
-    [['cancelled', 'cancelled'], 'Cancelled'],
-  ] as const)('maps %j to %s', (statuses, label) => {
-    expect(customerOrderStatus([...statuses])).toBe(label);
   });
 });

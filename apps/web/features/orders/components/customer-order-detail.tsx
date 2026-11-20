@@ -14,6 +14,7 @@ import { useCancelCustomerOrder, useCustomerOrder } from '../hooks/use-customer-
 import { formatCheckoutPrice } from '../utils/checkout-price';
 
 import { CheckoutErrorPanel } from './checkout-error-panel';
+import { CustomerOrderFulfillments } from './customer-order-fulfillments';
 import { CustomerOrderItems } from './customer-order-items';
 import { CustomerOrderProgress } from './customer-order-progress';
 
@@ -104,7 +105,7 @@ function OrderDetail({
               }
             >
               <CircleX className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              Cancel whole order
+              Cancel order
             </Dialog.Trigger>
           )}
         </div>
@@ -139,6 +140,7 @@ function OrderDetail({
               </span>
             </div>
             <CustomerOrderItems items={order.items} />
+            <CustomerOrderFulfillments fulfillments={order.fulfillments} items={order.items} />
           </section>
           <div className="grid gap-8 border-t border-border-control py-8 sm:grid-cols-2">
             <section aria-labelledby="delivery-address-heading" className="min-w-0 space-y-4">

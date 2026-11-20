@@ -19,7 +19,8 @@ import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { AppError } from '../../shared/errors/AppError.js';
 import { sendOrderEmail } from '../../shared/orders/order-email.js';
 import {
-  customerOrderStatus,
+  customerOrderStatusSql,
+  publicCancellation,
   lockOrder,
   refreshParentStatus,
   restoreOrderStock,
@@ -167,12 +168,26 @@ export async function readCustomerOrder(
     .limit(1);
   if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found.');
   const portions = await db
-    .select({ status: vendorOrders.status })
+    .select({
+      vendorOrderId: vendorOrders.vendorOrderId,
+      status: vendorOrders.status,
+      vendorName: vendors.name,
+      completedAt: vendorOrders.completedAt,
+      cancellationSource: vendorOrders.cancellationSource,
+      cancellationReasonCode: vendorOrders.cancellationReasonCode,
+      cancelledAt: vendorOrders.cancelledAt,
+    })
+    .from(vendorOrders)
+    .innerJoin(vendors, eq(vendors.vendorId, vendorOrders.vendorId))
+    .where(eq(vendorOrders.orderId, orderId));
+  const [aggregate] = await db
+    .select({ status: customerOrderStatusSql() })
     .from(vendorOrders)
     .where(eq(vendorOrders.orderId, orderId));
   const items = await db
     .select({
       orderItemId: orderItems.orderItemId,
+      vendorOrderId: orderItems.vendorOrderId,
       productId: orderItems.productId,
       name: orderItems.productNameSnapshot,
       productSlug: products.slug,
@@ -205,8 +220,18 @@ export async function readCustomerOrder(
   const statuses = portions.map((portion) => portion.status);
   return {
     ...order,
-    status: customerOrderStatus(statuses),
-    items: items.map(({ mediaId, mediaVendorId, ...item }) => ({
+    status: aggregate.status,
+    fulfillments: portions.map((portion) => ({
+      vendorName: portion.vendorName,
+      status: portion.status,
+      orderItemIds: items
+        .filter((item) => item.vendorOrderId === portion.vendorOrderId)
+        .map((item) => item.orderItemId),
+      completedAt: portion.completedAt?.toISOString() ?? null,
+      completionSource: portion.status === 'completed' ? 'seller' : null,
+      cancellation: publicCancellation(portion),
+    })),
+    items: items.map(({ mediaId, mediaVendorId, vendorOrderId: _vendorOrderId, ...item }) => ({
       ...item,
       imageUrl: productThumbnailUrl(mediaId, mediaVendorId),
     })),
@@ -231,13 +256,8 @@ export async function listCustomerOrders(userId: string, query: CustomerOrderQue
     .from(orders)
     .leftJoin(vendorOrders, eq(vendorOrders.orderId, orders.orderId))
     .where(eq(orders.userId, userId))
-    .groupBy(orders.orderId).having(sql`(CASE
-      WHEN bool_and(${vendorOrders.status} = 'cancelled') THEN 'Cancelled'
-      WHEN bool_and(${vendorOrders.status} = 'completed') THEN 'Completed'
-      WHEN bool_or(${vendorOrders.status} = 'completed') THEN 'Partially fulfilled'
-      WHEN bool_or(${vendorOrders.status} = 'cancelled') THEN 'Partially cancelled'
-      WHEN bool_or(${vendorOrders.status} = 'processing') THEN 'In progress'
-      ELSE 'Order placed' END) = ${query.status ?? ''}`);
+    .groupBy(orders.orderId)
+    .having(sql`${customerOrderStatusSql()} = ${query.status ?? ''}`);
   const filters = and(
     eq(orders.userId, userId),
     query.status ? inArray(orders.orderId, matchingStatuses) : undefined,
@@ -434,19 +454,39 @@ export async function cancelCustomerOrder(userId: string, orderId: string) {
       );
     const changed = await tx
       .update(vendorOrders)
-      .set({ status: 'cancelled', updatedAt: new Date() })
+      .set({
+        status: 'cancelled',
+        cancellationSource: 'customer',
+        cancelledByUserId: userId,
+        cancelledAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(vendorOrders.orderId, orderId),
           inArray(vendorOrders.status, ['pending', 'processing']),
         ),
       )
-      .returning({ vendorOrderId: vendorOrders.vendorOrderId });
+      .returning({ vendorOrderId: vendorOrders.vendorOrderId, vendorId: vendorOrders.vendorId });
     cancelled = changed.length > 0;
-    await restoreOrderStock(
-      tx,
-      changed.map((portion) => portion.vendorOrderId),
-    );
+    if (changed.length) {
+      const restored = await tx
+        .update(orderItems)
+        .set({
+          cancellationReturnedQuantity: orderItems.productQuantity,
+          cancellationDamagedQuantity: 0,
+          cancellationMissingQuantity: 0,
+          updatedAt: new Date(),
+        })
+        .where(
+          inArray(
+            orderItems.vendorOrderId,
+            changed.map((portion) => portion.vendorOrderId),
+          ),
+        )
+        .returning({ productId: orderItems.productId, quantity: orderItems.productQuantity });
+      await restoreOrderStock(tx, restored);
+    }
     await refreshParentStatus(tx, orderId);
     return readCustomerOrder(userId, orderId, tx);
   });

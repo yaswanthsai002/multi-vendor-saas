@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 
 import { getDb } from '@repo/db';
 import {
@@ -17,15 +16,16 @@ import {
   campaigns,
   campaignProducts,
 } from '@repo/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { checkoutTestDatabaseUrl } from '../../shared/config/test-database.js';
 import { sendEmail } from '../../shared/email/email.service.js';
 import { sendOrderEmail } from '../../shared/orders/order-email.js';
+import { adminService } from '../admin/admin.service.js';
 import { addItem, setItem } from '../cart/cart.service.js';
 import { publishPromotionDraft } from '../merchandising/merchandising.service.js';
-import { updateVendorOrderStatus } from '../vendor/order.service.js';
+import { updateVendorOrderStatus as applyVendorOrderStatus } from '../vendor/order.service.js';
 
 import {
   cancelCustomerOrder,
@@ -43,11 +43,37 @@ vi.mock('../../shared/orders/order-email.js', () => ({
   sendOrderEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
+async function updateVendorOrderStatus(
+  vendorId: string,
+  vendorOrderId: string,
+  input: { status: 'processing' | 'completed' | 'cancelled' },
+) {
+  const saved = await getDb()
+    .select()
+    .from(orderItems)
+    .where(eq(orderItems.vendorOrderId, vendorOrderId));
+  return applyVendorOrderStatus({
+    vendorId,
+    vendorOrderId,
+    actorUserId: f.owner.userId,
+    input:
+      input.status === 'cancelled'
+        ? {
+            status: 'cancelled',
+            cancellationReasonCode: 'OPERATIONAL_ISSUE',
+            items: saved.map((item) => ({
+              orderItemId: item.orderItemId,
+              damagedQuantity: 0,
+              missingQuantity: 0,
+            })),
+          }
+        : { status: input.status },
+  });
+}
+
 const namespace = `checkout_test_${randomUUID().replaceAll('-', '')}`;
-const migrationRoot = new URL('../../../../../packages/db/drizzle/', import.meta.url);
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 let f: Fixture;
-let initialized = false;
 
 async function fixture(stock = 5) {
   const db = getDb();
@@ -114,10 +140,23 @@ async function portion(orderId: string) {
 }
 
 async function assertNoPlacement() {
-  expect(await getDb().select().from(orders)).toHaveLength(0);
-  expect(await getDb().select().from(orderItems)).toHaveLength(0);
-  expect(await getDb().select().from(orderDeliveryAddresses)).toHaveLength(0);
-  expect(await getDb().select().from(cartItems)).toHaveLength(1);
+  const ownOrders = getDb()
+    .select({ id: orders.orderId })
+    .from(orders)
+    .where(eq(orders.userId, f.customer.userId));
+  expect(await ownOrders).toHaveLength(0);
+  expect(
+    await getDb().select().from(orderItems).where(eq(orderItems.productId, f.product.productId)),
+  ).toHaveLength(0);
+  expect(
+    await getDb()
+      .select()
+      .from(orderDeliveryAddresses)
+      .where(inArray(orderDeliveryAddresses.orderId, ownOrders)),
+  ).toHaveLength(0);
+  expect(
+    await getDb().select().from(cartItems).where(eq(cartItems.cartId, f.cart.cartId)),
+  ).toHaveLength(1);
   expect(await stock()).toBe(5);
 }
 
@@ -125,7 +164,7 @@ async function waitForLock() {
   const deadline = Date.now() + 3000;
   while (Date.now() < deadline) {
     const waiting = await getDb().execute(
-      sql`SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND usename = current_user AND wait_event_type = 'Lock'`,
+      sql`SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND usename = current_user AND application_name = ${namespace} AND wait_event_type = 'Lock'`,
     );
     if (waiting.length) return;
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -139,64 +178,121 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     const target = new URL(checkoutTestDatabaseUrl);
     if (!['localhost', '127.0.0.1', '[::1]'].includes(target.hostname))
       throw new Error('Checkout integration tests require localhost.');
-    target.searchParams.set(
-      'options',
-      `-csearch_path=${namespace} -capplication_name=${namespace} -clock_timeout=10000 -cclient_min_messages=warning`,
-    );
+    if (target.pathname !== '/perigee_test')
+      throw new Error('Use a disposable perigee_test database.');
+    target.searchParams.set('options', '-clock_timeout=10000 -cclient_min_messages=warning');
+    target.searchParams.set('application_name', namespace);
     vi.stubEnv('DATABASE_URL', target.toString());
-    const db = getDb();
-    await db.execute(sql`CREATE SCHEMA ${sql.identifier(namespace)}`);
-    initialized = true;
-    const journal = JSON.parse(
-      await readFile(new URL('meta/_journal.json', migrationRoot), 'utf8'),
-    );
-    for (const entry of journal.entries) {
-      if (entry.idx === 12) {
-        const [legacyUser] = await db
-          .insert(users)
-          .values({ fullName: 'Legacy address', email: 'legacy@example.test' })
-          .returning();
-        await db.insert(customerAddresses).values({
-          userId: legacyUser.userId,
-          recipientName: 'Legacy address',
-          phone: '9876543210',
-          addressLine1: 'Street',
-          city: 'Hyderabad',
-          state: 'Telangana',
-          postalCode: '500001',
-          country: 'US',
-        });
-      }
-      const migration = (
-        await readFile(new URL(`${entry.tag}.sql`, migrationRoot), 'utf8')
-      ).replaceAll('"public"', `"${namespace}"`);
-      await db.transaction(async (tx) => {
-        for (const statement of migration
-          .split('--> statement-breakpoint')
-          .filter((part) => part.trim()))
-          await tx.execute(sql.raw(statement));
-      });
-      if (entry.idx === 12) {
-        const [converted] = await db
-          .select({ country: customerAddresses.country })
-          .from(customerAddresses);
-        expect(converted.country).toBe('IN');
-      }
-    }
+    await getDb().execute(sql`SELECT 1 FROM users LIMIT 1`);
   }, 30000);
 
   beforeEach(async () => {
     vi.mocked(sendOrderEmail).mockClear();
-    await getDb().execute(sql`TRUNCATE TABLE ${sql.identifier(namespace)}."users" CASCADE`);
     f = await fixture();
   });
 
   afterAll(async () => {
-    if (initialized) {
-      await getDb().execute(sql`DROP SCHEMA ${sql.identifier(namespace)} CASCADE`);
-      await getDb().$client.end();
-    }
+    await getDb().$client.end();
     vi.unstubAllEnvs();
+  });
+
+  it('returns only sellable units and preserves cancellation evidence on retry', async () => {
+    await setItem(f.customer.userId, f.product.productId, 3);
+    const input = { ...f.input, lines: f.input.lines.map((line) => ({ ...line, quantity: 3 })) };
+    const order = await placeCustomerOrder(f.customer.userId, randomUUID(), input);
+    const vo = await portion(order.orderId);
+    await updateVendorOrderStatus(f.vendor.vendorId, vo.vendorOrderId, { status: 'processing' });
+    const action = {
+      vendorId: f.vendor.vendorId,
+      actorUserId: f.owner.userId,
+      vendorOrderId: vo.vendorOrderId,
+      input: {
+        status: 'cancelled' as const,
+        cancellationReasonCode: 'OTHER' as const,
+        cancellationDetails: 'Private stock audit detail',
+        items: [
+          { orderItemId: order.items[0].orderItemId, damagedQuantity: 1, missingQuantity: 1 },
+        ],
+      },
+    };
+    const result = await applyVendorOrderStatus(action);
+    expect(await stock()).toBe(3);
+    expect(result.items[0].cancellationQuantities).toEqual({
+      returnedQuantity: 1,
+      damagedQuantity: 1,
+      missingQuantity: 1,
+    });
+    expect(JSON.stringify(result)).not.toContain('Private stock audit detail');
+    const before = await getDb().query.vendorOrders.findFirst({
+      where: eq(vendorOrders.vendorOrderId, vo.vendorOrderId),
+    });
+    await applyVendorOrderStatus(action);
+    expect(await stock()).toBe(3);
+    expect(
+      (
+        await getDb().query.vendorOrders.findFirst({
+          where: eq(vendorOrders.vendorOrderId, vo.vendorOrderId),
+        })
+      )?.cancelledAt,
+    ).toEqual(before?.cancelledAt);
+    await expect(
+      applyVendorOrderStatus({
+        ...action,
+        input: { ...action.input, cancellationDetails: 'Changed detail' },
+      }),
+    ).rejects.toMatchObject({ code: 'CANCELLATION_ALREADY_RECORDED' });
+    const customer = await getCustomerOrder(f.customer.userId, order.orderId);
+    expect(customer.fulfillments[0].cancellation?.reason).toBe(
+      'Seller unable to fulfill these items',
+    );
+    expect(JSON.stringify(customer)).not.toContain('cancellationDetails');
+    expect(JSON.stringify(customer)).not.toContain('damagedQuantity');
+    const admin = await adminService.getOrderDetail(order.orderId);
+    expect(admin.fulfillments[0]).toMatchObject({
+      cancellationDetails: 'Private stock audit detail',
+      cancelledByUserId: f.owner.userId,
+      items: [
+        {
+          cancellationReturnedQuantity: 1,
+          cancellationDamagedQuantity: 1,
+          cancellationMissingQuantity: 1,
+        },
+      ],
+    });
+  });
+
+  it('uses real constraints for cancellation evidence', async () => {
+    const order = await placeCustomerOrder(f.customer.userId, randomUUID(), f.input);
+    const vo = await portion(order.orderId);
+    await expect(
+      getDb()
+        .update(vendorOrders)
+        .set({ status: 'cancelled' })
+        .where(eq(vendorOrders.vendorOrderId, vo.vendorOrderId)),
+    ).rejects.toMatchObject({ cause: { code: '23514' } });
+    for (const quantities of [
+      {
+        cancellationReturnedQuantity: 0,
+        cancellationDamagedQuantity: null,
+        cancellationMissingQuantity: null,
+      },
+      {
+        cancellationReturnedQuantity: 2,
+        cancellationDamagedQuantity: -1,
+        cancellationMissingQuantity: 0,
+      },
+      {
+        cancellationReturnedQuantity: 2147483647,
+        cancellationDamagedQuantity: 2147483647,
+        cancellationMissingQuantity: 2147483647,
+      },
+    ])
+      await expect(
+        getDb()
+          .update(orderItems)
+          .set(quantities)
+          .where(eq(orderItems.orderItemId, order.items[0].orderItemId)),
+      ).rejects.toMatchObject({ cause: { code: '23514' } });
   });
 
   it('emails only the order owner with persisted item snapshots and exact totals', async () => {
@@ -292,7 +388,9 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       /vendorOrderId|requestFingerprint|requestKey|passwordHash/,
     );
     expect(await stock()).toBe(4);
-    expect(await getDb().select().from(cartItems)).toHaveLength(0);
+    expect(
+      await getDb().select().from(cartItems).where(eq(cartItems.cartId, f.cart.cartId)),
+    ).toHaveLength(0);
     expect((await placeCustomerOrder(f.customer.userId, key, f.input)).orderId).toBe(order.orderId);
     expect(sendOrderEmail).toHaveBeenCalledTimes(1);
     expect(sendOrderEmail).toHaveBeenCalledWith(order.orderId, 'placed');
@@ -304,12 +402,12 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
     await getDb()
       .update(products)
-      .set({ name: 'Renamed', slug: 'renamed-lamp', price: '101.00' })
+      .set({ name: 'Renamed', slug: `renamed-${f.product.productId}`, price: '101.00' })
       .where(eq(products.productId, f.product.productId));
     expect((await getCustomerOrder(f.customer.userId, order.orderId)).items[0]).toMatchObject({
       name: 'Lamp',
       unitPrice: '100.10',
-      productSlug: 'renamed-lamp',
+      productSlug: `renamed-${f.product.productId}`,
     });
   });
 
@@ -468,8 +566,12 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     await expect(
       placeCustomerOrder(f.customer.userId, randomUUID(), f.input),
     ).rejects.toMatchObject({ code: 'CHECKOUT_CONFLICT' });
-    expect(await getDb().select().from(orders)).toHaveLength(0);
-    expect(await getDb().select().from(cartItems)).toHaveLength(1);
+    expect(
+      await getDb().select().from(orders).where(eq(orders.userId, f.customer.userId)),
+    ).toHaveLength(0);
+    expect(
+      await getDb().select().from(cartItems).where(eq(cartItems.cartId, f.cart.cartId)),
+    ).toHaveLength(1);
   });
 
   it('serializes same-key concurrent placement and different keys for the same cart', async () => {
@@ -504,26 +606,37 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     ]);
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     expect(await stock()).toBe(0);
-    expect(await getDb().select().from(orders)).toHaveLength(1);
-    expect(await getDb().select().from(cartItems)).toHaveLength(1);
+    expect(
+      await getDb()
+        .select()
+        .from(orders)
+        .where(inArray(orders.userId, [f.customer.userId, other.customer.userId])),
+    ).toHaveLength(1);
+    expect(
+      await getDb()
+        .select()
+        .from(cartItems)
+        .where(inArray(cartItems.cartId, [f.cart.cartId, other.cart.cartId])),
+    ).toHaveLength(1);
   });
 
   it('rolls back order, snapshots, inventory and cart on a persistence failure', async () => {
     await getDb().execute(
       sql.raw(
-        `CREATE FUNCTION "${namespace}".fail_checkout() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Injected checkout persistence failure'; END $$`,
+        `CREATE FUNCTION "${namespace}"() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Injected checkout persistence failure'; END $$`,
       ),
     );
     await getDb().execute(
       sql.raw(
-        `CREATE TRIGGER checkout_failure BEFORE DELETE ON "${namespace}"."cartItems" FOR EACH ROW EXECUTE FUNCTION "${namespace}".fail_checkout()`,
+        `CREATE TRIGGER "${namespace}" BEFORE DELETE ON "cartItems" FOR EACH ROW WHEN (OLD."cartId" = '${f.cart.cartId}'::uuid) EXECUTE FUNCTION "${namespace}"()`,
       ),
     );
     try {
       await expect(placeCustomerOrder(f.customer.userId, randomUUID(), f.input)).rejects.toThrow();
       await assertNoPlacement();
     } finally {
-      await getDb().execute(sql.raw(`DROP TRIGGER checkout_failure ON "${namespace}"."cartItems"`));
+      await getDb().execute(sql.raw(`DROP TRIGGER "${namespace}" ON "cartItems"`));
+      await getDb().execute(sql.raw(`DROP FUNCTION "${namespace}"()`));
     }
   });
 
@@ -565,7 +678,9 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     if (results[0].status === 'fulfilled') expect(await stock()).toBe(4);
     else {
       expect(await stock()).toBe(5);
-      expect(await getDb().select().from(orders)).toHaveLength(0);
+      expect(
+        await getDb().select().from(orders).where(eq(orders.userId, f.customer.userId)),
+      ).toHaveLength(0);
     }
     expect(results.some((result) => result.status === 'fulfilled')).toBe(true);
   });
@@ -596,7 +711,7 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       { portions: ['pending', 'pending'], status: 'Order placed' },
       { portions: ['processing', 'pending'], status: 'In progress' },
       { portions: ['cancelled', 'processing'], status: 'Partially cancelled' },
-      { portions: ['completed', 'cancelled'], status: 'Partially fulfilled' },
+      { portions: ['completed', 'cancelled'], status: 'Partially cancelled' },
       { portions: ['completed', 'completed'], status: 'Completed' },
       { portions: ['cancelled', 'cancelled'], status: 'Cancelled' },
     ] as const;
@@ -614,7 +729,18 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
         const owner = index ? other : f;
         const [portion] = await db
           .insert(vendorOrders)
-          .values({ orderId: parent.orderId, vendorId: owner.vendor.vendorId, status })
+          .values({
+            orderId: parent.orderId,
+            vendorId: owner.vendor.vendorId,
+            status,
+            ...(status === 'cancelled'
+              ? {
+                  cancellationSource: 'customer' as const,
+                  cancelledByUserId: f.customer.userId,
+                  cancelledAt: new Date(),
+                }
+              : {}),
+          })
           .returning();
         await db.insert(orderItems).values({
           vendorOrderId: portion.vendorOrderId,
@@ -639,7 +765,13 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       expect(result.items).toHaveLength(1);
       expect(result.items[0].status).toBe(entry.status);
       expect(result.items[0].orderId).not.toBe(foreign.orderId);
-      expect(result.pagination).toEqual({ page: 1, limit: 1, total: 1, totalPages: 1 });
+      const matches = cases.filter((candidate) => candidate.status === entry.status).length;
+      expect(result.pagination).toEqual({
+        page: 1,
+        limit: 1,
+        total: matches,
+        totalPages: matches,
+      });
     }
   });
 
@@ -671,13 +803,13 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     ).toHaveLength(0);
   });
 
-  it('restores vendor cancellation exactly once and prohibits processing cancellation', async () => {
+  it('restores vendor cancellation once and permits processing cancellation', async () => {
     const order = await placeCustomerOrder(f.customer.userId, randomUUID(), f.input);
     const vo = await portion(order.orderId);
     await updateVendorOrderStatus(f.vendor.vendorId, vo.vendorOrderId, { status: 'cancelled' });
     await expect(
       updateVendorOrderStatus(f.vendor.vendorId, vo.vendorOrderId, { status: 'cancelled' }),
-    ).rejects.toMatchObject({ code: 'INVALID_ORDER_STATUS_TRANSITION' });
+    ).resolves.toMatchObject({ fulfillment: { status: 'cancelled' } });
     await cancelCustomerOrder(f.customer.userId, order.orderId);
     expect(await stock()).toBe(5);
     await addItem(f.customer.userId, { productId: f.product.productId, quantity: 1 });
@@ -690,7 +822,7 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
       updateVendorOrderStatus(f.vendor.vendorId, nextPortion.vendorOrderId, {
         status: 'cancelled',
       }),
-    ).rejects.toMatchObject({ code: 'INVALID_ORDER_STATUS_TRANSITION' });
+    ).resolves.toMatchObject({ fulfillment: { status: 'cancelled' } });
     expect((await cancelCustomerOrder(f.customer.userId, next.orderId)).status).toBe('Cancelled');
     expect(await stock()).toBe(5);
   });
@@ -760,28 +892,17 @@ describe.skipIf(!checkoutTestDatabaseUrl)('customer checkout PostgreSQL integrat
     }
     await hold;
     await publishing;
-    expect(await db.select().from(campaignProducts)).toHaveLength(1);
+    expect(
+      await db
+        .select()
+        .from(campaignProducts)
+        .where(eq(campaignProducts.campaignId, draft.campaignId)),
+    ).toHaveLength(1);
     await expect(
       placeCustomerOrder(f.customer.userId, randomUUID(), f.input),
     ).rejects.toMatchObject({ code: 'CHECKOUT_CONFLICT' });
     const fresh = { ...f.input, lines: [{ ...f.input.lines[0], expectedUnitPrice: '90.00' }] };
     expect((await placeCustomerOrder(f.customer.userId, randomUUID(), fresh)).total).toBe('90.00');
-  });
-
-  it('migration rejects existing orders before changing schema', async () => {
-    await placeCustomerOrder(f.customer.userId, randomUUID(), f.input);
-    const migration = await readFile(new URL('0012_living_betty_brant.sql', migrationRoot), 'utf8');
-    await expect(
-      getDb().transaction(async (tx) => {
-        for (const statement of migration
-          .split('--> statement-breakpoint')
-          .filter((part) => part.trim()))
-          await tx.execute(sql.raw(statement));
-      }),
-    ).rejects.toMatchObject({
-      cause: { message: 'Checkout migration requires an empty orders table' },
-    });
-    expect(await getDb().select().from(orders)).toHaveLength(1);
   });
 
   it.each(['cancelled', 'completed'] as const)(

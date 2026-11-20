@@ -1,18 +1,23 @@
 'use client';
 
-import { AlertTriangle, CheckCircle, Loader2, PackageCheck, X } from 'lucide-react';
-import * as React from 'react';
+import { Dialog } from '@base-ui-components/react/dialog';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { type z } from 'zod';
 
-interface OrderActionDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  action: 'process' | 'complete' | 'cancel' | null;
-  onConfirm: (data: {
-    status: 'processing' | 'completed' | 'cancelled';
-    cancellationReason?: string;
-  }) => void;
-  isLoading: boolean;
-}
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+
+import {
+  cancellationReasons,
+  vendorOrderActionSchema,
+} from '../schemas/vendor-order-action.schema';
+
+import type { OrderItemDetail, UpdateOrderStatusInput } from '../types/order.types';
+
+const cancellationSchema = vendorOrderActionSchema.options[2];
+type CancellationForm = z.infer<typeof cancellationSchema>;
 
 export function OrderActionDialog({
   isOpen,
@@ -20,125 +25,178 @@ export function OrderActionDialog({
   action,
   onConfirm,
   isLoading,
-}: OrderActionDialogProps) {
-  const [reason, setReason] = React.useState('');
-
-  if (!isOpen || !action) return null;
-
-  const handleClose = () => {
-    setReason('');
-    onClose();
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (action === 'process') {
-      onConfirm({ status: 'processing' });
-    } else if (action === 'complete') {
-      onConfirm({ status: 'completed' });
-    } else if (action === 'cancel') {
-      onConfirm({ status: 'cancelled', cancellationReason: reason.trim() || undefined });
-    }
-    setReason('');
-  };
-
-  const config = {
-    process: {
-      title: 'Start Processing Order',
-      description:
-        'Are you ready to accept and prepare the items for this order? Customer will be notified that their order is in progress.',
-      btnText: 'Start Processing',
-      btnClass: 'bg-accent text-on-accent hover:bg-accent/90',
-      icon: PackageCheck,
-      iconColor: 'text-accent',
+  items,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  action: 'cancel' | null;
+  onConfirm: (data: UpdateOrderStatusInput) => void;
+  isLoading: boolean;
+  items: OrderItemDetail[];
+}) {
+  const form = useForm<CancellationForm>({
+    resolver: zodResolver(cancellationSchema),
+    defaultValues: {
+      status: 'cancelled',
+      cancellationReasonCode: 'OUT_OF_STOCK',
+      cancellationDetails: '',
+      items: items.map((item) => ({
+        orderItemId: item.orderItemId,
+        damagedQuantity: 0,
+        missingQuantity: 0,
+      })),
     },
-    complete: {
-      title: 'Complete Order Fulfillment',
-      description:
-        'Mark this order as successfully fulfilled and completed. Once marked completed, the order cannot be changed.',
-      btnText: 'Complete Order',
-      btnClass: 'bg-emerald-600 text-white hover:bg-emerald-700',
-      icon: CheckCircle,
-      iconColor: 'text-emerald-600',
-    },
-    cancel: {
-      title: 'Cancel Order',
-      description:
-        'Are you sure you want to cancel this order? This action is permanent and cannot be undone.',
-      btnText: 'Cancel Order',
-      btnClass: 'bg-rose-600 text-white hover:bg-rose-700',
-      icon: AlertTriangle,
-      iconColor: 'text-rose-600',
-    },
-  }[action];
-
-  const Icon = config.icon;
-
+  });
+  const quantities = useWatch({ control: form.control, name: 'items' });
+  const title = 'Cancel order';
+  const submitCancellation = form.handleSubmit((data) => {
+    let valid = true;
+    data.items.forEach((item, index) => {
+      if (item.damagedQuantity + item.missingQuantity > items[index].quantity) {
+        form.setError(`items.${index}.damagedQuantity`, {
+          message: 'Damaged and missing units cannot exceed the ordered quantity.',
+        });
+        valid = false;
+      }
+    });
+    if (valid) onConfirm(data);
+  });
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="w-full max-w-md rounded-2xl border border-border-default bg-surface-raised dark:bg-surface-raised p-6 shadow-xl relative animate-in zoom-in-95 duration-150">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={isLoading}
-          aria-label="Close dialog"
-          className="absolute right-4 top-4 p-1.5 rounded-xl text-text-tertiary hover:text-text-primary hover:bg-surface-hover transition-colors cursor-pointer"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-2xl bg-surface-subtle dark:bg-surface border border-border-default/60 shrink-0">
-            <Icon className={`h-6 w-6 ${config.iconColor}`} />
-          </div>
-
-          <div className="min-w-0 pr-4">
-            <h3 className="text-base font-bold text-text-primary">{config.title}</h3>
-            <p className="text-xs sm:text-sm text-text-secondary mt-1">{config.description}</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {action === 'cancel' && (
+    <Dialog.Root
+      open={isOpen && action !== null}
+      onOpenChange={(open) => {
+        if (!open && !isLoading) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50" />
+        <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 max-h-11/12 w-full max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-border-control bg-surface-raised p-6 shadow-xl">
+          <Dialog.Title className="text-lg font-semibold text-text-primary">{title}</Dialog.Title>
+          <Dialog.Description className="mt-2 text-sm text-text-secondary">
+            Review every item before cancellation. Only units suitable for sale return to available
+            stock.
+          </Dialog.Description>
+          <form
+            className="mt-6 space-y-5"
+            onSubmit={(event) => {
+              void submitCancellation(event);
+            }}
+          >
+            <Controller
+              control={form.control}
+              name="cancellationReasonCode"
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Cancellation reason</label>
+                  <Select
+                    aria-label="Cancellation reason"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={cancellationReasons}
+                    triggerClassName="w-full"
+                  />
+                </div>
+              )}
+            />
             <div>
-              <label
-                htmlFor="cancellationReason"
-                className="block text-xs font-semibold text-text-primary mb-1.5"
-              >
-                Cancellation Reason (Optional)
+              <label htmlFor="cancel-details" className="block text-sm font-medium">
+                Additional details for administrators
               </label>
+              <p id="cancel-details-help" className="my-2 text-xs text-text-secondary">
+                Only administrators can retrieve this text after submission. Required for Other
+                reason. Maximum 500 characters.
+              </p>
               <textarea
-                id="cancellationReason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                id="cancel-details"
+                {...form.register('cancellationDetails')}
+                maxLength={500}
                 rows={3}
-                placeholder="e.g., Out of stock inventory, customer requested cancellation..."
-                className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm bg-surface dark:bg-surface-subtle border border-border-control text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                aria-describedby="cancel-details-help cancel-details-error"
+                aria-invalid={Boolean(form.formState.errors.cancellationDetails)}
+                className="w-full rounded-lg border border-border-control bg-surface px-3 py-2 text-sm"
               />
+              <p id="cancel-details-error" className="text-sm text-danger">
+                {form.formState.errors.cancellationDetails?.message}
+              </p>
             </div>
-          )}
-
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isLoading}
-              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium border border-border-default bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-            >
-              Back
-            </button>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${config.btnClass}`}
-            >
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{config.btnText}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <div className="divide-y divide-border-control">
+              {items.map((item, index) => (
+                <fieldset key={item.orderItemId} className="py-4">
+                  <legend className="text-sm font-medium">
+                    {item.productName} · {item.quantity} ordered
+                  </legend>
+                  <div className="mt-2 grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor={`damaged-${index}`} className="text-xs text-text-secondary">
+                        Damaged or unsuitable units
+                      </label>
+                      <Input
+                        id={`damaged-${index}`}
+                        type="number"
+                        min={0}
+                        max={item.quantity}
+                        step={1}
+                        {...form.register(`items.${index}.damagedQuantity`, {
+                          valueAsNumber: true,
+                        })}
+                        aria-invalid={Boolean(
+                          form.formState.errors.items?.[index]?.damagedQuantity,
+                        )}
+                        aria-describedby={`quantity-error-${index}`}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`missing-${index}`} className="text-xs text-text-secondary">
+                        Missing units
+                      </label>
+                      <Input
+                        id={`missing-${index}`}
+                        type="number"
+                        min={0}
+                        max={item.quantity}
+                        step={1}
+                        {...form.register(`items.${index}.missingQuantity`, {
+                          valueAsNumber: true,
+                        })}
+                        aria-invalid={Boolean(
+                          form.formState.errors.items?.[index]?.missingQuantity,
+                        )}
+                        aria-describedby={`quantity-error-${index}`}
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm">
+                    Return to available stock:{' '}
+                    {Math.max(
+                      0,
+                      item.quantity -
+                        (quantities[index]?.damagedQuantity || 0) -
+                        (quantities[index]?.missingQuantity || 0),
+                    )}
+                  </p>
+                  <p id={`quantity-error-${index}`} className="text-sm text-danger">
+                    {form.formState.errors.items?.[index]?.damagedQuantity?.message ??
+                      form.formState.errors.items?.[index]?.missingQuantity?.message}
+                  </p>
+                </fieldset>
+              ))}
+            </div>
+            {Object.keys(form.formState.errors).length > 0 && (
+              <p role="alert" className="text-sm text-danger">
+                Review the highlighted fields before cancellation.
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" disabled={isLoading} onClick={onClose}>
+                Back
+              </Button>
+              <Button type="submit" variant="danger" disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Cancel order'}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

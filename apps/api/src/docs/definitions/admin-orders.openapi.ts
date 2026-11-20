@@ -187,9 +187,10 @@ export const adminOrdersSchemas = {
                   unitPrice: {
                     type: 'string',
                   },
-                  quantity: {
-                    type: 'number',
-                  },
+                  quantity: { type: 'number' },
+                  cancellationReturnedQuantity: { type: ['integer', 'null'], minimum: 0 },
+                  cancellationDamagedQuantity: { type: ['integer', 'null'], minimum: 0 },
+                  cancellationMissingQuantity: { type: ['integer', 'null'], minimum: 0 },
                 },
                 required: ['orderItemId', 'vendorOrderId', 'productName', 'unitPrice', 'quantity'],
               },
@@ -202,9 +203,13 @@ export const adminOrdersSchemas = {
               type: 'string',
               enum: ['pending', 'completed', 'cancelled', 'processing'],
             },
-            cancellationReason: {
-              type: ['null', 'string'],
+            cancellation: { $ref: '#/components/schemas/OrderCancellation' },
+            cancellationDetails: {
+              type: ['string', 'null'],
+              description: 'Administrator-only cancellation text.',
             },
+            cancelledByUserId: { type: ['string', 'null'], format: 'uuid' },
+            completedAt: { type: ['string', 'null'], format: 'date-time' },
             vendorId: {
               type: 'string',
               format: 'uuid',
@@ -224,7 +229,7 @@ export const adminOrdersSchemas = {
             'items',
             'vendorOrderId',
             'status',
-            'cancellationReason',
+            'cancellation',
             'vendorId',
             'vendorName',
             'vendorSlug',
