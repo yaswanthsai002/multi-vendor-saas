@@ -4,6 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+
 import {
   CUSTOMER_ORDER_STATUSES,
   customerOrderFiltersSchema,
@@ -14,10 +18,6 @@ import type {
   CustomerOrderFilterValues,
   CustomerOrderQuery,
 } from '../schemas/customer-order-filters.schema';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 
 export function CustomerOrderFilters({ query }: { query: CustomerOrderQuery }) {
   const router = useRouter();

@@ -1,12 +1,12 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
+import { Button } from '@/components/ui/button';
+
 import { customerOrdersHref } from '../utils/customer-orders-href';
 
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
 import type { CustomerOrderList } from '../types/customer-order.types';
-
-import { Button } from '@/components/ui/button';
 
 export function CustomerOrdersPagination({
   query,

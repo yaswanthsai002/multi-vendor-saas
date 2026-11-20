@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '@/lib/api-client';
+
 import * as service from '../services/customer-order.service';
 
 import { CheckoutReviewPage } from './checkout-review';
@@ -12,8 +14,6 @@ import { CustomerOrdersView } from './customer-orders-view';
 
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
 import type { CheckoutReview, CustomerOrder } from '../types/customer-order.types';
-
-import { ApiError } from '@/lib/api-client';
 
 const { replace, push, toast, toastError, toastInfo, auth } = vi.hoisted(() => ({
   replace: vi.fn(),

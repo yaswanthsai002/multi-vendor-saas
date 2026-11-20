@@ -1,3 +1,6 @@
+import { makeApiRequest } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
 import type { PendingCheckout } from '../schemas/customer-order.schema';
 import type {
@@ -5,9 +8,6 @@ import type {
   CustomerOrder,
   CustomerOrderList,
 } from '../types/customer-order.types';
-
-import { makeApiRequest } from '@/lib/api-client';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
 
 export function fetchCheckoutReview(addressId?: string, signal?: AbortSignal) {
   return makeApiRequest<CheckoutReview>({

@@ -7,6 +7,8 @@ import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { ApiError } from '@/lib/api-client';
+
 import {
   checkoutAddressSchema,
   pendingCheckoutSchema,
@@ -16,8 +18,6 @@ import {
 import { useCheckoutReview, usePlaceCustomerOrder } from './use-customer-orders';
 
 import type { CheckoutReview } from '../types/customer-order.types';
-
-import { ApiError } from '@/lib/api-client';
 
 const conflictSchema = z.object({ lines: z.array(z.object({ productId: z.string() })) });
 

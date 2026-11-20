@@ -2,6 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { broadcastCartChange } from '@/lib/cart-sync';
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   cancelCustomerOrder,
   fetchCheckoutReview,
@@ -11,9 +14,6 @@ import {
 } from '../services/customer-order.service';
 
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
-
-import { broadcastCartChange } from '@/lib/cart-sync';
-import { queryKeys } from '@/lib/query-keys';
 
 export function useCheckoutReview(userId: string | number, addressId?: string) {
   return useQuery({
