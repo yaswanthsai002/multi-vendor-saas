@@ -1,17 +1,25 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
+import { ApiError } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
+import { notifyNotificationTabs } from '@/lib/vendor-notification-sync';
 
 import {
+  markVendorOrderNotificationsRead,
   fetchVendorOrderDetail,
   fetchVendorOrders,
   updateVendorOrderStatus,
 } from '../services/order.service';
 
-import type { UpdateOrderStatusInput, VendorOrdersFilters } from '../types/order.types';
+import type {
+  UpdateOrderStatusInput,
+  VendorOrdersFilters,
+  VendorOrderStatus,
+} from '../types/order.types';
 
 export function useVendorOrders(filters: VendorOrdersFilters = {}) {
   return useQuery({
@@ -56,4 +64,22 @@ export function useUpdateOrderStatus() {
       toast.error(err.message || 'Failed to update order status.');
     },
   });
+}
+
+export function useReadOpenedOrderNotifications(
+  vendorOrderId: string,
+  status: VendorOrderStatus | undefined,
+) {
+  const { mutate } = useMutation({
+    mutationFn: markVendorOrderNotificationsRead,
+    retry: (attempt, error) =>
+      attempt < 2 && error instanceof ApiError && (error.status === 0 || error.status >= 500),
+    onSuccess: ({ vendorId, changed }) => {
+      if (changed) notifyNotificationTabs(vendorId);
+    },
+    onError: () => toast.error('Order opened, but notification read status could not be saved.'),
+  });
+  useEffect(() => {
+    if (status) mutate({ vendorOrderId, status });
+  }, [vendorOrderId, status, mutate]);
 }

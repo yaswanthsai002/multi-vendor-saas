@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { vendorOrderDetailSchema, vendorOrdersListSchema } from '../schemas/vendor-order.schema';
 
 import type {
+  VendorOrderStatus,
   UpdateOrderStatusInput,
   VendorOrderDetail,
   VendorOrdersFilters,
@@ -67,5 +68,28 @@ export async function updateVendorOrderStatus(
       'INVALID_RESPONSE',
       'Could not read the order response. Please try again.',
     );
+  return result.data.data;
+}
+
+export async function markVendorOrderNotificationsRead({
+  vendorOrderId,
+  status,
+}: {
+  vendorOrderId: string;
+  status: VendorOrderStatus;
+}) {
+  const body = await makeApiRequest<unknown>({
+    url: API_ENDPOINTS.vendor.notifications.readOrder(vendorOrderId),
+    method: 'PUT',
+    data: { status },
+  });
+  const result = z
+    .object({
+      success: z.literal(true),
+      data: z.object({ vendorId: z.uuid(), changed: z.boolean() }),
+    })
+    .safeParse(body);
+  if (!result.success)
+    throw new ApiError(502, 'INVALID_RESPONSE', 'Could not update notification read status.');
   return result.data.data;
 }

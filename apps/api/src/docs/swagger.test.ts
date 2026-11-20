@@ -246,6 +246,39 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
     ).toContain('active published campaign deal');
   });
 
+  it('documents saved notifications and keeps private cancellation details out of public contracts', async () => {
+    const res = await request(app).get('/api/docs.json');
+    const {
+      paths,
+      components: { schemas },
+    } = res.body;
+    expect(paths['/api/vendor/notifications'].get.responses['200']).toBeDefined();
+    expect(
+      paths['/api/vendor/notifications/events'].get.responses['200'].content['text/event-stream'],
+    ).toBeDefined();
+    expect(
+      paths['/api/vendor/notifications/{notificationId}/read'].put.responses['204'],
+    ).toBeDefined();
+    expect(
+      paths['/api/vendor/notifications/{notificationId}'].delete.responses['204'],
+    ).toBeDefined();
+    const publicContract = JSON.stringify(schemas.OrderCancellation);
+    expect(publicContract).not.toContain('cancellationDetails');
+    expect(publicContract).not.toContain('cancelledByUserId');
+    expect(schemas.VendorNotification.required).toContain('readAt');
+    const action = schemas.UpdateVendorOrderStatusInput.oneOf.find(
+      (entry: { properties: { status: { const: string } } }) =>
+        entry.properties.status.const === 'cancelled',
+    );
+    expect(action.required).toContain('items');
+    expect(
+      new RegExp(action.allOf[0].then.properties.cancellationDetails.pattern).test('Reason'),
+    ).toBe(true);
+    expect(new RegExp(action.allOf[0].then.properties.cancellationDetails.pattern).test('  ')).toBe(
+      false,
+    );
+  });
+
   it('should serve Swagger UI HTML page at GET /api/docs/', async () => {
     const res = await request(app).get('/api/docs/');
 

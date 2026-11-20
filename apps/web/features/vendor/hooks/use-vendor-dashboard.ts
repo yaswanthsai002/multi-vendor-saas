@@ -2,6 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/query-keys';
+
 import {
   fetchVendorDashboard,
   fetchVendorDashboardMetrics,
@@ -12,18 +14,9 @@ import {
 
 import type { TimeframePeriod } from '../types/vendor-dashboard.types';
 
-export const vendorDashboardQueryKeys = {
-  all: ['vendor'] as const,
-  dashboard: (period: TimeframePeriod) => ['vendor', 'dashboard', period] as const,
-  metrics: (period: TimeframePeriod) => ['vendor', 'dashboard', 'metrics', period] as const,
-  performance: (period: TimeframePeriod) => ['vendor', 'dashboard', 'performance', period] as const,
-  recentOrders: () => ['vendor', 'dashboard', 'recent-orders'] as const,
-  topProducts: () => ['vendor', 'dashboard', 'top-products'] as const,
-};
-
 export function useVendorDashboard(period: TimeframePeriod = '7d') {
   return useQuery({
-    queryKey: vendorDashboardQueryKeys.dashboard(period),
+    queryKey: queryKeys.vendorDashboard.dashboard(period),
     queryFn: ({ signal }) => fetchVendorDashboard({ period, signal }),
     staleTime: 60 * 1000,
   });
@@ -31,7 +24,7 @@ export function useVendorDashboard(period: TimeframePeriod = '7d') {
 
 export function useVendorDashboardMetrics(period: TimeframePeriod = '7d') {
   return useQuery({
-    queryKey: vendorDashboardQueryKeys.metrics(period),
+    queryKey: queryKeys.vendorDashboard.metrics(period),
     queryFn: ({ signal }) => fetchVendorDashboardMetrics({ period, signal }),
     staleTime: 60 * 1000,
   });
@@ -39,7 +32,7 @@ export function useVendorDashboardMetrics(period: TimeframePeriod = '7d') {
 
 export function useVendorDashboardPerformance(period: TimeframePeriod = '7d') {
   return useQuery({
-    queryKey: vendorDashboardQueryKeys.performance(period),
+    queryKey: queryKeys.vendorDashboard.performance(period),
     queryFn: ({ signal }) => fetchVendorDashboardPerformance({ period, signal }),
     staleTime: 60 * 1000,
   });
@@ -47,7 +40,7 @@ export function useVendorDashboardPerformance(period: TimeframePeriod = '7d') {
 
 export function useVendorDashboardRecentOrders() {
   return useQuery({
-    queryKey: vendorDashboardQueryKeys.recentOrders(),
+    queryKey: queryKeys.vendorDashboard.recentOrders(),
     queryFn: ({ signal }) => fetchVendorDashboardRecentOrders({ signal }),
     staleTime: 60 * 1000,
   });
@@ -55,7 +48,7 @@ export function useVendorDashboardRecentOrders() {
 
 export function useVendorDashboardTopProducts() {
   return useQuery({
-    queryKey: vendorDashboardQueryKeys.topProducts(),
+    queryKey: queryKeys.vendorDashboard.topProducts(),
     queryFn: ({ signal }) => fetchVendorDashboardTopProducts({ signal }),
     staleTime: 60 * 1000,
   });

@@ -9,6 +9,7 @@ const { mutate, fulfillment } = vi.hoisted(() => ({
   fulfillment: { status: 'pending', allowedActions: ['process', 'cancel'], cancellation: null },
 }));
 vi.mock('../hooks/use-orders', () => ({
+  useReadOpenedOrderNotifications: vi.fn(),
   useVendorOrderDetail: () => ({
     isPending: false,
     isError: false,

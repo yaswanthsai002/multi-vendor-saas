@@ -16,3 +16,4 @@ export * from './mediaLibrary.js';
 export * from './productMedia.js';
 export * from './orderDeliveryAddresses.js';
 export * from './customerAddresses.js';
+export * from './vendor-order-notifications.js';

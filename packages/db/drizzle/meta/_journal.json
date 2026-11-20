@@ -99,6 +99,13 @@
       "when": 1795154042135,
       "tag": "0013_public_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795161621096,
+      "tag": "0014_vendor_order_notifications",
+      "breakpoints": true
     }
   ]
 }

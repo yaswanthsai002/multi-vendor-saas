@@ -25,6 +25,11 @@ import {
   refreshParentStatus,
   restoreOrderStock,
 } from '../../shared/orders/order-lifecycle.js';
+import {
+  publishOrderNotifications,
+  type NotificationSignal,
+} from '../../shared/orders/order-notification-events.js';
+import { saveOrderNotification } from '../../shared/orders/order-notifications.js';
 import { currentProductPriceSql } from '../../shared/pricing/current-product-price.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
@@ -295,6 +300,7 @@ export async function placeCustomerOrder(
 ) {
   const fingerprint = checkoutFingerprint(input);
   let created = false;
+  const notifications: NotificationSignal[] = [];
   const result = await getDb().transaction(async (tx) => {
     await activeCustomer(tx, userId, true);
     const [cart] = await tx
@@ -412,6 +418,9 @@ export async function placeCustomerOrder(
         vendorOrderId = randomUUID();
         portionIds.set(line.vendorId, vendorOrderId);
         await tx.insert(vendorOrders).values({ vendorOrderId, orderId, vendorId: line.vendorId });
+        notifications.push(
+          await saveOrderNotification(tx, { vendorOrderId, vendorId: line.vendorId }, 'new_order'),
+        );
       }
       await tx.insert(orderItems).values({
         vendorOrderId,
@@ -437,12 +446,14 @@ export async function placeCustomerOrder(
     created = true;
     return readCustomerOrder(userId, orderId, tx);
   });
+  await publishOrderNotifications(notifications);
   if (created) await sendOrderEmail(result.orderId, 'placed');
   return result;
 }
 
 export async function cancelCustomerOrder(userId: string, orderId: string) {
   let cancelled = false;
+  const notifications: NotificationSignal[] = [];
   const result = await getDb().transaction(async (tx) => {
     await activeCustomer(tx, userId, true);
     const { portions } = await lockOrder(tx, orderId, userId);
@@ -486,10 +497,13 @@ export async function cancelCustomerOrder(userId: string, orderId: string) {
         )
         .returning({ productId: orderItems.productId, quantity: orderItems.productQuantity });
       await restoreOrderStock(tx, restored);
+      for (const portion of changed)
+        notifications.push(await saveOrderNotification(tx, portion, 'customer_cancelled'));
     }
     await refreshParentStatus(tx, orderId);
     return readCustomerOrder(userId, orderId, tx);
   });
+  await publishOrderNotifications(notifications);
   if (cancelled) await sendOrderEmail(orderId, 'cancelled');
   return result;
 }

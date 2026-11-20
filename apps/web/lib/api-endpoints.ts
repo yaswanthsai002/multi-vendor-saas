@@ -57,6 +57,13 @@ export const API_ENDPOINTS = {
     postalCode: (postalCode: string) => `/api/locations/pincodes/${postalCode}` as const,
   },
   vendor: {
+    notifications: {
+      list: '/api/vendor/notifications',
+      readOrder: (id: string) => `/api/vendor/notifications/orders/${id}/read`,
+      events: '/api/vendor/notifications/events',
+      read: (id: string) => `/api/vendor/notifications/${id}/read`,
+      remove: (id: string) => `/api/vendor/notifications/${id}`,
+    },
     dashboard: '/api/vendor/dashboard',
     dashboardMetrics: '/api/vendor/dashboard/metrics',
     dashboardPerformance: '/api/vendor/dashboard/performance',

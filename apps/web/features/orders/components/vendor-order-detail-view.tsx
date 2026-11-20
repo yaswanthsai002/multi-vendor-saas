@@ -6,7 +6,11 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 
-import { useUpdateOrderStatus, useVendorOrderDetail } from '../hooks/use-orders';
+import {
+  useReadOpenedOrderNotifications,
+  useUpdateOrderStatus,
+  useVendorOrderDetail,
+} from '../hooks/use-orders';
 
 import { OrderActionDialog } from './order-action-dialog';
 import { OrderCustomerCard } from './order-customer-card';
@@ -22,6 +26,10 @@ import type { UpdateOrderStatusInput } from '../types/order.types';
 export function VendorOrderDetailView({ vendorOrderId }: { vendorOrderId: string }) {
   const query = useVendorOrderDetail(vendorOrderId);
   const update = useUpdateOrderStatus();
+  useReadOpenedOrderNotifications(
+    vendorOrderId,
+    query.isSuccess ? query.data.fulfillment.status : undefined,
+  );
   const [action, setAction] = useState<'cancel' | null>(null);
   if (query.isPending)
     return (

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { verifyToken } from '../../shared/middleware/verifyToken.js';
 import { bulkImportRouter } from '../bulk-import/bulk-import.routes.js';
 
+import { notificationsRouter } from './notifications.routes.js';
 import {
   getVendorOrderById,
   getVendorOrders,
@@ -31,6 +32,7 @@ export const vendorRouter = Router();
 
 // Base middleware: must be authenticated and own a vendor profile
 vendorRouter.use(verifyToken, requireVendorProfile);
+vendorRouter.use('/notifications', notificationsRouter);
 
 // Profile management routes
 vendorRouter.get('/profile', requireActiveVendor, getVendorProfile);

@@ -39,6 +39,25 @@ const quantities = {
     },
   ],
 } as const;
+const notificationErrors = {
+  '400': { description: 'Invalid UUID, query, cursor or body.' },
+  '401': { description: 'Authentication is missing, invalid or expired.' },
+  '403': {
+    description:
+      'Active user with vendor role and owned profile required. Profile suspension is permitted.',
+  },
+  '500': { description: 'Unexpected failure. No internal details are returned.' },
+} as const;
+const notificationAccess =
+  'Requires cookie authentication, an active user with the vendor role and an owned vendor profile. Profile suspension is permitted. Ownership is derived from the session. No vendor ID is accepted from the client.';
+const notificationIdParameter = {
+  name: 'notificationId',
+  in: 'path',
+  required: true,
+  schema: { type: 'string', format: 'uuid' },
+  example: '11111111-1111-4111-8111-111111111111',
+} as const;
+
 export const vendorOrdersTags = [
   {
     name: 'Vendor Orders',
@@ -67,6 +86,46 @@ export const vendorOrdersSchemas = {
   },
   OrderCancellation: publicCancellation,
   OrderCancellationQuantities: quantities,
+  VendorNotification: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      notificationId: { type: 'string', format: 'uuid' },
+      vendorOrderId: { type: 'string', format: 'uuid' },
+      orderNumber: { type: 'string' },
+      summary: { $ref: '#/components/schemas/OrderItemSummary' },
+      type: { type: 'string', enum: ['new_order', 'customer_cancelled'] },
+      createdAt: { type: 'string', format: 'date-time' },
+      readAt: { type: ['string', 'null'], format: 'date-time' },
+    },
+    required: [
+      'notificationId',
+      'vendorOrderId',
+      'orderNumber',
+      'summary',
+      'type',
+      'createdAt',
+      'readAt',
+    ],
+  },
+  VendorNotificationListResponse: {
+    type: 'object',
+    properties: {
+      success: { const: true },
+      data: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          vendorId: { type: 'string', format: 'uuid' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/VendorNotification' } },
+          unreadCount: { type: 'integer', minimum: 0 },
+          nextCursor: { type: ['string', 'null'] },
+        },
+        required: ['vendorId', 'items', 'unreadCount', 'nextCursor'],
+      },
+    },
+    required: ['success', 'data'],
+  },
   ListVendorOrdersResponse: {
     type: 'object',
     properties: {
@@ -415,6 +474,167 @@ export const vendorOrdersSchemas = {
 };
 
 export const vendorOrdersPaths = {
+  '/api/vendor/notifications/orders/{vendorOrderId}/read': {
+    put: {
+      tags: ['Vendor Orders'],
+      summary: 'Mark notifications read after an order is displayed',
+      description: `${notificationAccess} Idempotently marks unread records for this vendor portion only when its current status matches the displayed status. Missing, foreign, deleted, already-read or changed-state portions are no-ops. Preserves the first read timestamp.`,
+      security: [{ cookieAuth: [] }],
+      parameters: [
+        {
+          name: 'vendorOrderId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+          example: '11111111-1111-4111-8111-111111111111',
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'processing', 'completed', 'cancelled'],
+                },
+              },
+              required: ['status'],
+            },
+            example: { status: 'pending' },
+          },
+        },
+      },
+      responses: {
+        ...notificationErrors,
+        '200': {
+          description: 'Server-resolved vendor scope and whether any unread records changed.',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { const: true },
+                  data: {
+                    type: 'object',
+                    properties: {
+                      vendorId: { type: 'string', format: 'uuid' },
+                      changed: { type: 'boolean' },
+                    },
+                    required: ['vendorId', 'changed'],
+                  },
+                },
+                required: ['success', 'data'],
+              },
+              example: {
+                success: true,
+                data: { vendorId: '22222222-2222-4222-8222-222222222222', changed: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/vendor/notifications': {
+    get: {
+      tags: ['Vendor Orders'],
+      summary: 'List saved vendor notifications and unread count',
+      description:
+        notificationAccess +
+        ' Newest-first keyset pagination uses a base64url JSON cursor with a UTC millisecond createdAt and notificationId. Count includes every owned unread record and shares the list statement snapshot. No automatic retention.',
+      security: [{ cookieAuth: [] }],
+      parameters: [
+        {
+          name: 'limit',
+          in: 'query',
+          schema: { type: 'integer', default: 20, minimum: 1, maximum: 50 },
+          example: 20,
+        },
+        {
+          name: 'cursor',
+          in: 'query',
+          schema: { type: 'string', maxLength: 512 },
+          description: 'Use nextCursor from the previous response.',
+        },
+      ],
+      responses: {
+        ...notificationErrors,
+        '200': {
+          description: 'Saved inbox page, server-resolved scope and total unread count.',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/VendorNotificationListResponse' },
+              example: {
+                success: true,
+                data: {
+                  vendorId: '22222222-2222-4222-8222-222222222222',
+                  items: [],
+                  unreadCount: 0,
+                  nextCursor: null,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/vendor/notifications/events': {
+    get: {
+      tags: ['Vendor Orders'],
+      summary: 'Stream live vendor order signals',
+      description:
+        notificationAccess +
+        ' Sends ready after subscription, notification with notificationId/vendorOrderId/type, refresh with {}, and 15-second comment heartbeats. Rechecks authorization before payloads and heartbeats. Closes at token expiry or loss of access. No replay or Last-Event-ID guarantee. Fetch saved inbox on reconnect. Errors after headers close the stream.',
+      security: [{ cookieAuth: [] }],
+      responses: {
+        ...notificationErrors,
+        '200': {
+          description: 'Authenticated event stream. No private text or customer address data.',
+          content: {
+            'text/event-stream': {
+              schema: { type: 'string' },
+              example: 'event: ready\ndata: {}\n\nevent: refresh\ndata: {}\n\n',
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/vendor/notifications/{notificationId}/read': {
+    put: {
+      tags: ['Vendor Orders'],
+      summary: 'Mark one notification read',
+      description:
+        notificationAccess +
+        ' Idempotent. Preserves first readAt. Missing, deleted and foreign IDs return the same no-op 204. Accepts no body fields. View order uses this operation without blocking navigation.',
+      security: [{ cookieAuth: [] }],
+      parameters: [notificationIdParameter],
+      responses: {
+        ...notificationErrors,
+        '204': { description: 'Read state saved, or authorized no-op. No body.' },
+      },
+    },
+  },
+  '/api/vendor/notifications/{notificationId}': {
+    delete: {
+      tags: ['Vendor Orders'],
+      summary: 'Delete one saved notification',
+      description:
+        notificationAccess +
+        ' Physically removes the owned inbox record. Never deletes the order. Idempotent for missing, deleted and foreign IDs. Deleting a read record does not change unread count. Accepts no body fields.',
+      security: [{ cookieAuth: [] }],
+      parameters: [notificationIdParameter],
+      responses: {
+        ...notificationErrors,
+        '204': { description: 'Deleted, or authorized no-op. No body.' },
+      },
+    },
+  },
   '/api/vendor/orders': {
     get: {
       tags: ['Vendor Orders'],

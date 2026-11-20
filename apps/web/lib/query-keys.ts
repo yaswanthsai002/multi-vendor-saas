@@ -3,6 +3,15 @@
  * Adheres to AGENTS.md §13 — namespaced tuples for cache invalidation & query keys.
  */
 export const queryKeys = {
+  vendorNotifications: { all: (userId: string) => ['vendor', userId, 'notifications'] as const },
+  vendorDashboard: {
+    all: () => ['vendor', 'dashboard'] as const,
+    dashboard: (period: string) => ['vendor', 'dashboard', period] as const,
+    metrics: (period: string) => ['vendor', 'dashboard', 'metrics', period] as const,
+    performance: (period: string) => ['vendor', 'dashboard', 'performance', period] as const,
+    recentOrders: () => ['vendor', 'dashboard', 'recent-orders'] as const,
+    topProducts: () => ['vendor', 'dashboard', 'top-products'] as const,
+  },
   customerOrders: {
     all: (userId: string | number) => ['customer', userId, 'orders'] as const,
     review: (userId: string | number, addressId?: string) =>

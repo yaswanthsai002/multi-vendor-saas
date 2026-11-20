@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeApiRequest } from '@/lib/api-client';
 
 import {
+  markVendorOrderNotificationsRead,
   fetchVendorOrderDetail,
   fetchVendorOrders,
   updateVendorOrderStatus,
@@ -47,6 +48,16 @@ describe('vendor order response boundary', () => {
     };
     vi.mocked(makeApiRequest).mockResolvedValue({ success: true, data: list });
     expect(await fetchVendorOrders()).toEqual(list);
+  });
+  it('validates the order-notification result and sends the displayed state', async () => {
+    const data = { vendorId: '11111111-1111-4111-8111-111111111111', changed: true };
+    vi.mocked(makeApiRequest).mockResolvedValue({ success: true, data });
+    expect(
+      await markVendorOrderNotificationsRead({ vendorOrderId: 'portion', status: 'pending' }),
+    ).toEqual(data);
+    expect(makeApiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'PUT', data: { status: 'pending' } }),
+    );
   });
   it('rejects malformed data and preserves request failures', async () => {
     vi.mocked(makeApiRequest).mockResolvedValue(detail);
