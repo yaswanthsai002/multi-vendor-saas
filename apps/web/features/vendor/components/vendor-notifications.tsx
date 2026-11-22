@@ -37,7 +37,7 @@ function OwnedNotifications({ userId }: { userId: string }) {
     },
     [mutateAsync],
   );
-  const view = useCallback((_id: string) => {
+  const view = useCallback(() => {
     setOpen(false);
   }, []);
   const live = useVendorNotificationEvents(vendorId, recover, view, userId);
