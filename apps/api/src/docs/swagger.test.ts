@@ -159,6 +159,7 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
       '/api/customer/addresses',
       '/api/customer/addresses/{addressId}',
       '/api/wishlist',
+      '/api/customer/orders/{orderId}/items/{orderItemId}/review',
     ]) {
       expect(body.paths).toHaveProperty(path);
     }
@@ -176,6 +177,20 @@ describe('Swagger Documentation Endpoints (/api/docs)', () => {
       for (const nested of Object.values(value)) checkReferences(nested);
     }
     checkReferences(body);
+    expect(
+      body.paths['/api/customer/orders/{orderId}'].get.responses['200'].content['application/json']
+        .schema.$ref,
+    ).toBe('#/components/schemas/CustomerOrderDetail');
+    expect(body.components.schemas.CustomerReviewState.required).toEqual([
+      'orderItemId',
+      'reviewVersion',
+      'canReview',
+      'review',
+    ]);
+    expect(
+      body.components.schemas.ProductReviewsResponse.properties.items.items.required,
+    ).toContain('authorAvatarUrl');
+
     const tagNames = body.tags.map((tag: { name: string }) => tag.name);
     expect(new Set(tagNames).size).toBe(tagNames.length);
     for (const path of Object.values(body.paths)) {

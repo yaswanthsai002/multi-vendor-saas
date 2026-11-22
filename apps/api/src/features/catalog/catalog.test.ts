@@ -316,12 +316,14 @@ describe('Catalog Feature', () => {
       const review = {
         reviewId: randomUUID(),
         authorName: 'Maya',
+        authorAvatarUrl: null,
         rating: 5,
         reviewText: null,
         createdAt: new Date().toISOString(),
       };
       const itemsQuery = {
         from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnValue({
             orderBy: vi.fn().mockReturnValue({
               limit: vi.fn().mockReturnValue({
@@ -391,6 +393,7 @@ describe('Catalog Feature', () => {
       };
       const itemsQuery = {
         from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnValue({
             orderBy: vi.fn().mockReturnValue({
               limit: vi.fn().mockReturnValue({

@@ -33,6 +33,9 @@ import { saveOrderNotification } from '../../shared/orders/order-notifications.j
 import { currentProductPriceSql } from '../../shared/pricing/current-product-price.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
+import { activeCustomer } from './customer-access.js';
+import { readCustomerReviewStates } from './customer-review.service.js';
+
 import type { CustomerOrderQuery, PlaceCustomerOrderInput } from './customer-order.schema.js';
 
 type Database = ReturnType<typeof getDb>;
@@ -45,23 +48,6 @@ function productThumbnailUrl(mediaId: string | null, vendorId: string | null) {
         STORAGE_BUCKETS.productMedia,
       )
     : null;
-}
-
-async function activeCustomer(
-  db: Database | Transaction,
-  userId: string,
-  lock = false,
-  requireCustomer = true,
-) {
-  const query = db
-    .select({ userId: users.userId, roles: users.roles })
-    .from(users)
-    .where(and(eq(users.userId, userId), eq(users.status, 'active')))
-    .limit(1);
-  const [user] = await (lock ? query.for('update') : query);
-  if (!user) throw new AppError(403, 'ACCOUNT_INACTIVE', 'Active account required.');
-  if (requireCustomer && !user.roles.includes('customer'))
-    throw new AppError(403, 'CUSTOMER_REQUIRED', 'Customer account required.');
 }
 
 export function checkoutFingerprint(input: PlaceCustomerOrderInput) {
@@ -250,7 +236,18 @@ export async function readCustomerOrder(
 
 export async function getCustomerOrder(userId: string, orderId: string) {
   await activeCustomer(getDb(), userId);
-  return readCustomerOrder(userId, orderId);
+  const order = await readCustomerOrder(userId, orderId);
+  const states = new Map(
+    (await readCustomerReviewStates(userId, orderId)).map((state) => [state.orderItemId, state]),
+  );
+  return {
+    ...order,
+    items: order.items.map((item) => {
+      const state = states.get(item.orderItemId);
+      if (!state) throw new Error('Missing order item review state.');
+      return { ...item, ...state };
+    }),
+  };
 }
 
 export async function listCustomerOrders(userId: string, query: CustomerOrderQuery) {

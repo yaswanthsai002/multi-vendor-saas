@@ -5,7 +5,7 @@ export const customerOrdersTags = [
   },
 ];
 
-export const customerOrdersSchemas = {
+const customerOrderBaseSchemas = {
   ReviewCustomerCheckoutResponse: {
     type: 'object',
     properties: {
@@ -481,7 +481,144 @@ export const customerOrdersSchemas = {
   },
 };
 
+const reviewStateProperties = {
+  orderItemId: { type: 'string', format: 'uuid' },
+  reviewVersion: { type: 'integer', minimum: 0, maximum: 2147483647 },
+  canReview: { type: 'boolean' },
+  review: { oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/CustomerReview' }] },
+};
+
+export const customerOrdersSchemas = {
+  ...customerOrderBaseSchemas,
+  CustomerReview: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      reviewId: { type: 'string', format: 'uuid' },
+      rating: { type: 'integer', minimum: 1, maximum: 5 },
+      reviewText: { type: ['string', 'null'], maxLength: 2000 },
+      createdAt: { type: 'string', format: 'date-time' },
+      updatedAt: { type: 'string', format: 'date-time' },
+    },
+    required: ['reviewId', 'rating', 'reviewText', 'createdAt', 'updatedAt'],
+  },
+  CustomerReviewState: {
+    type: 'object',
+    additionalProperties: false,
+    properties: reviewStateProperties,
+    required: Object.keys(reviewStateProperties),
+  },
+  CustomerOrderDetail: {
+    ...customerOrderBaseSchemas.PlaceCustomerOrderResponse,
+    properties: {
+      ...customerOrderBaseSchemas.PlaceCustomerOrderResponse.properties,
+      items: {
+        type: 'array',
+        items: {
+          ...customerOrderBaseSchemas.PlaceCustomerOrderResponse.properties.items.items,
+          properties: {
+            ...customerOrderBaseSchemas.PlaceCustomerOrderResponse.properties.items.items
+              .properties,
+            ...reviewStateProperties,
+          },
+          required: [
+            ...customerOrderBaseSchemas.PlaceCustomerOrderResponse.properties.items.items.required,
+            'reviewVersion',
+            'canReview',
+            'review',
+          ],
+        },
+      },
+    },
+  },
+};
+
+function reviewOperation(deleting: boolean) {
+  return {
+    tags: ['Customer Orders'],
+    summary: deleting ? 'Delete an order item review' : 'Create or replace an order item review',
+    description:
+      'Requires an authenticated active customer who owns the item. The vendor portion must be completed, regardless of product visibility. Identity and product references come from the server. Writes require the current item version. Deleting an absent review is a successful no-op even with an old version. Failed writes change no data. Text is trimmed, empty text becomes null, and omitted text clears previous feedback. Reject NUL, invalid Unicode and more than 2,000 code points.',
+    security: [{ cookieAuth: [] }],
+    parameters: ['orderId', 'orderItemId'].map((name) => ({
+      name,
+      in: 'path',
+      required: true,
+      schema: { type: 'string', format: 'uuid' },
+    })),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              expectedVersion: { type: 'integer', minimum: 0, maximum: 2147483647 },
+              ...(deleting
+                ? {}
+                : {
+                    rating: { type: 'integer', minimum: 1, maximum: 5 },
+                    reviewText: { type: ['string', 'null'], maxLength: 2000 },
+                  }),
+            },
+            required: deleting ? ['expectedVersion'] : ['expectedVersion', 'rating'],
+          },
+          example: deleting
+            ? { expectedVersion: 1 }
+            : { expectedVersion: 0, rating: 5, reviewText: 'Works as described.' },
+        },
+      },
+    },
+    responses: {
+      '200': {
+        description:
+          'Current review state. A successful write advances the version once; absent deletion keeps it unchanged.',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/CustomerReviewState' },
+            example: {
+              orderItemId: '11111111-1111-4111-8111-111111111111',
+              reviewVersion: 1,
+              canReview: true,
+              review: deleting
+                ? null
+                : {
+                    reviewId: '22222222-2222-4222-8222-222222222222',
+                    rating: 5,
+                    reviewText: 'Works as described.',
+                    createdAt: '2026-11-22T10:00:00.000Z',
+                    updatedAt: '2026-11-22T10:00:00.000Z',
+                  },
+            },
+          },
+        },
+      },
+      '400': { $ref: '#/components/responses/Error400' },
+      '401': { $ref: '#/components/responses/Error401' },
+      '403': {
+        description: 'ACCOUNT_INACTIVE or CUSTOMER_REQUIRED.',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+      },
+      '404': {
+        description: 'ORDER_NOT_FOUND or ORDER_ITEM_NOT_FOUND, including inaccessible resources.',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+      },
+      '409': {
+        description:
+          'REVIEW_VERSION_CONFLICT, REVIEW_NOT_ELIGIBLE or REVIEW_VERSION_EXHAUSTED. Reload after a version conflict; do not retry automatically.',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+      },
+      '500': { $ref: '#/components/responses/Error500' },
+    },
+  };
+}
+
 export const customerOrdersPaths = {
+  '/api/customer/orders/{orderId}/items/{orderItemId}/review': {
+    put: reviewOperation(false),
+    delete: reviewOperation(true),
+  },
   '/api/customer/checkout/review': {
     get: {
       tags: ['Customer Orders'],
@@ -848,7 +985,7 @@ export const customerOrdersPaths = {
           content: {
             'application/json': {
               schema: {
-                $ref: '#/components/schemas/PlaceCustomerOrderResponse',
+                $ref: '#/components/schemas/CustomerOrderDetail',
               },
               example: {
                 status: 'Example',
@@ -863,6 +1000,9 @@ export const customerOrdersPaths = {
                     unitPrice: '99.00',
                     status: 'pending',
                     subtotal: '99.00',
+                    reviewVersion: 0,
+                    canReview: false,
+                    review: null,
                   },
                 ],
                 address: {

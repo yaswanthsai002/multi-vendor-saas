@@ -25,6 +25,7 @@ export const orderItems = pgTable(
       .references(() => products.productId, { onDelete: 'restrict' }),
     productNameSnapshot: text('productNameSnapshot').notNull(),
     productQuantity: integer('productQuantity').notNull(),
+    reviewVersion: integer('reviewVersion').notNull().default(0),
     cancellationReturnedQuantity: integer('cancellationReturnedQuantity'),
     cancellationDamagedQuantity: integer('cancellationDamagedQuantity'),
     cancellationMissingQuantity: integer('cancellationMissingQuantity'),
@@ -36,6 +37,7 @@ export const orderItems = pgTable(
     index('order_items_productId_idx').on(table.productId),
     index('order_items_vendorOrderId_idx').on(table.vendorOrderId),
     check('order_items_product_quantity_check', sql`${table.productQuantity} >= 1`),
+    check('order_items_review_version_check', sql`${table.reviewVersion} >= 0`),
     check('order_items_product_price_check', sql`${table.productPriceSnapshot} >= 0`),
     check(
       'order_items_cancellation_quantities_check',

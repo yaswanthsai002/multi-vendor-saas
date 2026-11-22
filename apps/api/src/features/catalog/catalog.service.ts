@@ -540,12 +540,14 @@ export async function getProductReviews(
   const items = await db
     .select({
       reviewId: productReviews.reviewId,
-      authorName: productReviews.authorName,
+      authorName: users.fullName,
+      authorAvatarUrl: users.avatarUrl,
       rating: productReviews.rating,
       reviewText: productReviews.reviewText,
       createdAt: productReviews.createdAt,
     })
     .from(productReviews)
+    .innerJoin(users, eq(users.userId, productReviews.userId))
     .where(where)
     .orderBy(desc(productReviews.createdAt), desc(productReviews.reviewId))
     .limit(limit)

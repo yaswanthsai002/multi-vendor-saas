@@ -90,6 +90,10 @@ export const reviewsSchemas = {
             authorName: {
               type: 'string',
             },
+            authorAvatarUrl: {
+              type: ['string', 'null'],
+              description: 'Current profile photo, if present.',
+            },
             rating: {
               type: 'integer',
               minimum: 1,
@@ -97,13 +101,21 @@ export const reviewsSchemas = {
             },
             reviewText: {
               type: ['string', 'null'],
+              maxLength: 2000,
             },
             createdAt: {
               type: 'string',
               format: 'date-time',
             },
           },
-          required: ['reviewId', 'authorName', 'rating', 'reviewText', 'createdAt'],
+          required: [
+            'reviewId',
+            'authorName',
+            'authorAvatarUrl',
+            'rating',
+            'reviewText',
+            'createdAt',
+          ],
         },
       },
       pagination: {
