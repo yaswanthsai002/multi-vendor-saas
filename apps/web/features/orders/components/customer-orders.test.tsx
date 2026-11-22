@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api-client';
 
 import * as service from '../services/customer-order.service';
+import * as reviewService from '../services/customer-review.service';
 
 import { CheckoutReviewPage } from './checkout-review';
 import { CustomerOrderDetail } from './customer-order-detail';
@@ -13,7 +14,11 @@ import { CustomerOrderProgress } from './customer-order-progress';
 import { CustomerOrdersView } from './customer-orders-view';
 
 import type { CustomerOrderQuery } from '../schemas/customer-order-filters.schema';
-import type { CheckoutReview, CustomerOrder } from '../types/customer-order.types';
+import type {
+  CheckoutReview,
+  CustomerOrder,
+  CustomerOrderDetail as OrderDetailData,
+} from '../types/customer-order.types';
 
 const { replace, push, toast, toastError, toastInfo, auth } = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -74,7 +79,7 @@ const review: CheckoutReview = {
   addressEligible: true,
   total: '200.20',
 };
-const order: CustomerOrder = {
+const order: OrderDetailData = {
   orderId,
   orderNumber: 'PG-order',
   placedAt: '2026-11-13T10:00:00Z',
@@ -94,6 +99,9 @@ const order: CustomerOrder = {
       unitPrice: '100.10',
       subtotal: '200.20',
       status: 'pending',
+      reviewVersion: 0,
+      canReview: false,
+      review: null,
     },
   ],
 };
@@ -680,5 +688,56 @@ describe('customer order views', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Completed')).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Cancel order' })).toBeNull();
+  });
+  it('keeps an unsaved review when a conflict refresh fails on the actual detail page', async () => {
+    const completed: OrderDetailData = {
+      ...order,
+      status: 'Completed',
+      canCancel: false,
+      items: order.items.map((item) => ({ ...item, status: 'completed', canReview: true })),
+    };
+    vi.mocked(service.fetchCustomerOrder)
+      .mockResolvedValueOnce(completed)
+      .mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR', 'Offline'));
+    vi.spyOn(reviewService, 'saveCustomerReview').mockRejectedValue(
+      new ApiError(409, 'REVIEW_VERSION_CONFLICT', 'Changed'),
+    );
+    mount(<CustomerOrderDetail orderId={orderId} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Submit a Review' }));
+    await userEvent.click(screen.getByRole('radio', { name: '5 stars' }));
+    await userEvent.type(screen.getByRole('textbox', { name: /Your review/ }), 'Keep this draft');
+    await userEvent.click(screen.getByRole('button', { name: 'Save review' }));
+    await screen.findByRole('button', { name: 'Reload saved review' });
+    expect(screen.getByRole('textbox', { name: /Your review/ })).toHaveProperty(
+      'value',
+      'Keep this draft',
+    );
+    expect(screen.queryByText(/Could not load this order/)).toBeNull();
+  });
+  it('removes the previous customer draft after an account change', async () => {
+    const completed: OrderDetailData = {
+      ...order,
+      status: 'Completed',
+      canCancel: false,
+      items: order.items.map((item) => ({ ...item, status: 'completed', canReview: true })),
+    };
+    vi.mocked(service.fetchCustomerOrder).mockResolvedValue(completed);
+    const view = mount(<CustomerOrderDetail orderId={orderId} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Submit a Review' }));
+    await userEvent.type(screen.getByRole('textbox', { name: /Your review/ }), 'Private draft');
+    try {
+      auth.data = { user: { userId: 'other-customer' } };
+      view.rerender(
+        <QueryClientProvider client={view.client}>
+          <CustomerOrderDetail orderId={orderId} />
+        </QueryClientProvider>,
+      );
+      await screen.findByRole('button', { name: 'Submit a Review' });
+      expect(screen.queryByRole('textbox', { name: /Your review/ })).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Submit a Review' }));
+      expect(screen.getByRole('textbox', { name: /Your review/ })).toHaveProperty('value', '');
+    } finally {
+      auth.data = { user: { userId } };
+    }
   });
 });

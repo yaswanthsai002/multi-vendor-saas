@@ -2,6 +2,7 @@ export type ReviewPage = {
   items: {
     reviewId: string;
     authorName: string;
+    authorAvatarUrl: string | null;
     rating: number;
     reviewText: string | null;
     createdAt: string;

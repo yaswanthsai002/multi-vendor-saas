@@ -4,6 +4,8 @@
 export const API_ENDPOINTS = {
   customerOrders: {
     review: '/api/customer/checkout/review',
+    itemReview: (orderId: string, orderItemId: string) =>
+      `/api/customer/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(orderItemId)}/review`,
     list: '/api/customer/orders',
     detail: (orderId: string) => `/api/customer/orders/${orderId}`,
     cancel: (orderId: string) => `/api/customer/orders/${orderId}/cancel`,

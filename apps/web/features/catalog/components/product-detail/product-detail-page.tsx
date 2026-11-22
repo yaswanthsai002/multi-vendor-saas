@@ -35,13 +35,14 @@ export function ProductDetailPage() {
   const [cartMessage, setCartMessage] = React.useState('');
   const wishlist = useWishlist();
   const reviews = useInfiniteQuery({
-    queryKey: [...queryKeys.catalog.detail(slug), 'reviews'],
+    queryKey: queryKeys.catalog.reviews(slug),
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
+    queryFn: ({ pageParam, signal }) =>
       makeApiRequest<ReviewPage>({
         url: API_ENDPOINTS.catalog.productReviews(slug),
         method: 'GET',
         params: { page: pageParam, limit: 3 },
+        signal,
       }),
     getNextPageParam: (last) => (last.pagination.hasMore ? last.pagination.page + 1 : undefined),
   });

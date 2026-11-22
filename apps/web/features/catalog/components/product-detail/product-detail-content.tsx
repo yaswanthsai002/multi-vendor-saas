@@ -1,6 +1,7 @@
 'use client';
 
 import { Star, X } from 'lucide-react';
+import Image from 'next/image';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -144,7 +145,28 @@ export function ProductDetailContent({ product, reviews }: ProductDetailContentP
                 .map((review) => (
                   <article key={review.reviewId} className="py-5 first:pt-0">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-text-primary">{review.authorName}</p>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-text-secondary"
+                          aria-hidden="true"
+                        >
+                          {review.authorAvatarUrl ? (
+                            <Image
+                              src={review.authorAvatarUrl}
+                              alt=""
+                              width={36}
+                              height={36}
+                              unoptimized
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            review.authorName.charAt(0).toUpperCase()
+                          )}
+                        </span>
+                        <p className="text-sm font-semibold text-text-primary">
+                          {review.authorName}
+                        </p>
+                      </div>
                       <time dateTime={review.createdAt} className="text-xs text-text-tertiary">
                         {reviewDate.format(new Date(review.createdAt)).replaceAll(' ', '-')}
                       </time>

@@ -17,6 +17,7 @@ import { CheckoutErrorPanel } from './checkout-error-panel';
 import { CustomerOrderFulfillments } from './customer-order-fulfillments';
 import { CustomerOrderItems } from './customer-order-items';
 import { CustomerOrderProgress } from './customer-order-progress';
+import { CustomerOrderReview } from './customer-order-review';
 
 export function CustomerOrderDetail({
   orderId,
@@ -66,7 +67,7 @@ function OrderDetail({
   const cancel = useCancelCustomerOrder(userId);
   const [open, setOpen] = useState(false);
   if (query.isPending) return <p role="status">Loading order…</p>;
-  if (query.isError)
+  if (!query.data)
     return (
       <CheckoutErrorPanel
         message="Could not load this order. It may be unavailable or belong to another account."
@@ -139,7 +140,15 @@ function OrderDetail({
                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </span>
             </div>
-            <CustomerOrderItems items={order.items} />
+            <CustomerOrderItems
+              items={order.items}
+              renderReview={(orderItemId) => {
+                const item = order.items.find((entry) => entry.orderItemId === orderItemId);
+                return item ? (
+                  <CustomerOrderReview userId={userId} orderId={orderId} item={item} />
+                ) : null;
+              }}
+            />
             <CustomerOrderFulfillments fulfillments={order.fulfillments} items={order.items} />
           </section>
           <div className="grid gap-8 border-t border-border-control py-8 sm:grid-cols-2">

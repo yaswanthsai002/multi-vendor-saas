@@ -43,6 +43,7 @@ export function ProfileForm({ user }: { user: CurrentUserData }) {
     mutationFn: ({ fullName }: ProfileFormValues) => updateProfile(fullName),
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.auth.me(), { user: result.user });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.catalog.all() });
       toast.success('Profile updated.');
     },
     onError: () => toast.error('Could not update profile. Try again.'),
@@ -51,6 +52,7 @@ export function ProfileForm({ user }: { user: CurrentUserData }) {
     mutationFn: uploadProfileAvatar,
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.auth.me(), { user: result.user });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.catalog.all() });
       toast.success('Profile photo updated.');
     },
     onError: () => toast.error('Could not upload profile photo. Try again.'),
@@ -59,6 +61,7 @@ export function ProfileForm({ user }: { user: CurrentUserData }) {
     mutationFn: removeProfileAvatar,
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.auth.me(), { user: result.user });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.catalog.all() });
       toast.success('Profile photo removed.');
     },
     onError: () => toast.error('Could not remove profile photo. Try again.'),

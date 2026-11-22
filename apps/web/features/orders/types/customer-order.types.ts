@@ -69,3 +69,19 @@ export interface CustomerOrderList {
   items: CustomerOrder[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
+
+export interface CustomerReviewState {
+  orderItemId: string;
+  reviewVersion: number;
+  canReview: boolean;
+  review: {
+    reviewId: string;
+    rating: number;
+    reviewText: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+}
+export type CustomerOrderDetail = Omit<CustomerOrder, 'items'> & {
+  items: (CustomerOrder['items'][number] & CustomerReviewState)[];
+};

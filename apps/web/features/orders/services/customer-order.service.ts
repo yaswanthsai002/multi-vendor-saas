@@ -7,6 +7,7 @@ import type {
   CheckoutReview,
   CustomerOrder,
   CustomerOrderList,
+  CustomerOrderDetail,
 } from '../types/customer-order.types';
 
 export function fetchCheckoutReview(addressId?: string, signal?: AbortSignal) {
@@ -34,7 +35,7 @@ export function fetchCustomerOrders(query: CustomerOrderQuery, signal?: AbortSig
   });
 }
 export function fetchCustomerOrder(orderId: string, signal?: AbortSignal) {
-  return makeApiRequest<CustomerOrder>({
+  return makeApiRequest<CustomerOrderDetail>({
     method: 'GET',
     url: API_ENDPOINTS.customerOrders.detail(orderId),
     signal,

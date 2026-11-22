@@ -58,6 +58,7 @@ export const queryKeys = {
     list: (filters?: unknown) => ['catalog', 'list', filters] as const,
     facets: () => ['catalog', 'facets'] as const,
     detail: (slug: string) => ['catalog', 'detail', slug] as const,
+    reviews: (slug: string) => ['catalog', 'detail', slug, 'reviews'] as const,
   },
   brands: {
     all: () => ['brands'] as const,
