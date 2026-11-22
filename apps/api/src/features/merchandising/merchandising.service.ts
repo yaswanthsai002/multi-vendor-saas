@@ -748,6 +748,7 @@ export async function getHomepageCampaigns() {
     )
     .groupBy(
       campaignProducts.campaignId,
+      campaignProducts.dealPrice,
       products.productId,
       mediaLibrary.mediaId,
       mediaLibrary.vendorId,
