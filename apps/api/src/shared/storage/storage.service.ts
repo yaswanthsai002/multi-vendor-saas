@@ -198,26 +198,32 @@ export class StorageService {
    * Deletes all objects under a prefix.
    */
   async deletePrefix(prefix: string, bucket = this.defaultBucket): Promise<void> {
-    try {
-      const listCommand = new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix,
-      });
-      const listedObjects = await this.client.send(listCommand);
-
-      if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
-
-      const deleteCommand = new DeleteObjectsCommand({
-        Bucket: bucket,
-        Delete: {
-          Objects: listedObjects.Contents.map(({ Key }) => ({ Key: Key! })),
-        },
-      });
-
-      await this.client.send(deleteCommand);
-    } catch {
-      // Non-fatal
-    }
+    let continuationToken: string | undefined;
+    do {
+      const listedObjects = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      const objects = (listedObjects.Contents ?? []).flatMap(({ Key }) => (Key ? [{ Key }] : []));
+      if (objects.length) {
+        const result = await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: { Objects: objects },
+          }),
+        );
+        if (result.Errors?.length) throw new Error('Storage did not delete every object.');
+      }
+      if (listedObjects.IsTruncated && !listedObjects.NextContinuationToken) {
+        throw new Error('Storage listing ended before all objects were checked.');
+      }
+      continuationToken = listedObjects.IsTruncated
+        ? listedObjects.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
   }
 
   /**

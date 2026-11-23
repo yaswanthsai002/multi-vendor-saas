@@ -2,9 +2,7 @@ import { AppError } from '../../shared/errors/AppError.js';
 
 import {
   campaignListQuerySchema,
-  campaignBannerUploadSchema,
   createPromotionDraftSchema,
-  promotionDraftBannerParamsSchema,
   promotionDraftIdParamsSchema,
   promotionDraftPayloadSchema,
 } from './merchandising.schema.js';
@@ -115,45 +113,6 @@ export async function publishPromotionDraft(
     const { campaignId } = promotionDraftIdParamsSchema.parse(req.params);
     const campaign = await merchandisingService.publishPromotionDraft(adminUserId(req), campaignId);
     return res.status(200).json({ campaign });
-  } catch (error) {
-    return next(error);
-  }
-}
-
-export async function uploadPromotionDraftBanner(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    const { campaignId, slot } = promotionDraftBannerParamsSchema.parse(req.params);
-    const metadata = campaignBannerUploadSchema.parse(req.body);
-    const result = await merchandisingService.initiateCampaignBannerUpload(
-      adminUserId(req),
-      campaignId,
-      slot,
-      metadata,
-    );
-    return res.status(201).json(result);
-  } catch (error) {
-    return next(error);
-  }
-}
-
-export async function completePromotionDraftBanner(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    const { campaignId, slot } = promotionDraftBannerParamsSchema.parse(req.params);
-    const result = await merchandisingService.completeCampaignBannerUpload(
-      adminUserId(req),
-      campaignId,
-      slot,
-      req.body,
-    );
-    return res.status(201).json(result);
   } catch (error) {
     return next(error);
   }

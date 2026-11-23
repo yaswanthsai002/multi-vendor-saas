@@ -46,6 +46,7 @@ const { db } = vi.hoisted(() => ({
         })),
       })),
     })),
+    transaction: vi.fn(<T>(callback: (tx: unknown) => Promise<T>) => callback(db)),
   },
 }));
 
@@ -109,7 +110,7 @@ describe('Category Feature', () => {
     parentCategoryId: null,
     name: 'Electronics',
     slug: 'electronics',
-    imageUrl: null,
+    imageMediaId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -119,7 +120,7 @@ describe('Category Feature', () => {
     parentCategoryId: rootCategoryId,
     name: 'Audio',
     slug: 'audio',
-    imageUrl: null,
+    imageMediaId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

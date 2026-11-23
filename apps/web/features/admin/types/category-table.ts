@@ -8,5 +8,6 @@ export interface CategoryTableRow {
   childCount: number;
   level: number;
   imageUrl?: string | null;
+  imageMediaId?: string | null;
   subRows?: CategoryTableRow[];
 }

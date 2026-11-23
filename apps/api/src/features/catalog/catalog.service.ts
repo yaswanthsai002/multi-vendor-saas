@@ -110,10 +110,12 @@ function resolveImageUrl(media: {
 
 function resolveFullImageUrl(media: {
   mediaId: string;
-  vendorId: string;
+  vendorId: string | null;
   originalStorageKey: string;
 }): string {
-  const dirPrefix = `vendors/${media.vendorId}/media/${media.mediaId}`;
+  const dirPrefix = media.vendorId
+    ? `vendors/${media.vendorId}/media/${media.mediaId}`
+    : `admin/media/${media.mediaId}`;
   return storageService.resolveUrl(`${dirPrefix}/large.webp`, STORAGE_BUCKETS.productMedia);
 }
 

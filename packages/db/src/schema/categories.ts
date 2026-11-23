@@ -1,5 +1,7 @@
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
+import { mediaLibrary } from './mediaLibrary.js';
+
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const categories = pgTable(
@@ -14,7 +16,9 @@ export const categories = pgTable(
     ),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
-    imageUrl: text('imageUrl'),
+    imageMediaId: uuid('imageMediaId').references(() => mediaLibrary.mediaId, {
+      onDelete: 'restrict',
+    }),
     createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
   },

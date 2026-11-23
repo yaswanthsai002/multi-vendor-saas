@@ -352,7 +352,7 @@ export function PromotionDraftForm({
         title="Choose a banner image"
         description="Choose an existing image or upload a new campaign banner."
         acceptedType="image"
-        mediaScope="catalog"
+        mediaScope="admin"
         maxUploadFiles={1}
         uploadAccept=".jpg,.jpeg,.png,.webp"
         onUploadFiles={async (files, onProgress) => {

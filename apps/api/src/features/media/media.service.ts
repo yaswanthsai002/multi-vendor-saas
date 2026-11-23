@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import { createWriteStream } from 'node:fs';
 import { unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import { getDb } from '@repo/db';
-import { mediaLibrary, productMedia, products } from '@repo/db/schema';
-import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
+import { campaigns, categories, mediaLibrary, productMedia, products } from '@repo/db/schema';
+import { and, count, desc, eq, ilike, isNull, sql } from 'drizzle-orm';
+import sharp from 'sharp';
 
 import { AppError } from '../../shared/errors/AppError.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
@@ -31,7 +35,7 @@ export interface FormattedMediaItem {
   width: number | null;
   height: number | null;
   durationSeconds?: number | null;
-  status: 'active' | 'disabled';
+  status: 'active' | 'disabled' | 'deleting';
   original: string;
   variants?: {
     thumbnail: string;
@@ -47,7 +51,7 @@ export interface FormattedMediaItem {
 // single serializer formatting DB row into contract representation with resolved URLs
 export function formatMediaResponse(row: typeof mediaLibrary.$inferSelect): FormattedMediaItem {
   const bucket = STORAGE_BUCKETS.productMedia;
-  const dirPrefix = `vendors/${row.vendorId}/media/${row.mediaId}`;
+  const dirPrefix = mediaPrefix(row.vendorId, row.mediaId);
   const originalUrl = storageService.resolveUrl(row.originalStorageKey, bucket);
 
   const base: FormattedMediaItem = {
@@ -82,6 +86,40 @@ export function formatMediaResponse(row: typeof mediaLibrary.$inferSelect): Form
   }
 
   return base;
+}
+
+function mediaPrefix(vendorId: string | null, mediaId: string) {
+  return vendorId ? `vendors/${vendorId}/media/${mediaId}` : `admin/media/${mediaId}`;
+}
+
+function ownerFilter(vendorId: string | null) {
+  return vendorId ? eq(mediaLibrary.vendorId, vendorId) : isNull(mediaLibrary.vendorId);
+}
+
+async function downloadVerifiedMedia(key: string, maxBytes: number) {
+  const filePath = join(tmpdir(), `media-${randomUUID()}`);
+  let bytes = 0;
+  try {
+    await pipeline(
+      await storageService.getObjectStream(key, STORAGE_BUCKETS.productMedia),
+      new Transform({
+        transform(chunk: Buffer, _encoding, callback) {
+          bytes += chunk.length;
+          callback(
+            bytes > maxBytes
+              ? new AppError(400, 'FILE_TOO_LARGE', 'File exceeds its size limit.')
+              : null,
+            chunk,
+          );
+        },
+      }),
+      createWriteStream(filePath, { flags: 'wx' }),
+    );
+    return { filePath, bytes };
+  } catch (error) {
+    await unlink(filePath).catch(() => {});
+    throw error;
+  }
 }
 
 /**
@@ -172,12 +210,12 @@ export async function uploadMedia(
 /**
  * Lists media items scoped to the authenticated vendor with status, type, search, and pagination.
  */
-export async function listMedia(vendorId: string, query: ListMediaQuery) {
+export async function listMedia(vendorId: string | null, query: ListMediaQuery) {
   const db = getDb();
   const { status, mediaType, search, page, limit } = query;
   const offset = (page - 1) * limit;
 
-  const conditions = [eq(mediaLibrary.vendorId, vendorId)];
+  const conditions = [ownerFilter(vendorId)];
 
   if (status !== 'all') {
     conditions.push(eq(mediaLibrary.status, status));
@@ -205,7 +243,7 @@ export async function listMedia(vendorId: string, query: ListMediaQuery) {
         disabled: sql<number>`count(*) filter (where ${mediaLibrary.status} = 'disabled')`,
       })
       .from(mediaLibrary)
-      .where(eq(mediaLibrary.vendorId, vendorId)),
+      .where(ownerFilter(vendorId)),
     db
       .select()
       .from(mediaLibrary)
@@ -238,7 +276,11 @@ export async function listMedia(vendorId: string, query: ListMediaQuery) {
 export async function listCampaignMediaAssets(query: ListMediaQuery) {
   const db = getDb();
   const { search, page, limit } = query;
-  const conditions = [eq(mediaLibrary.status, 'active'), eq(mediaLibrary.mediaType, 'image')];
+  const conditions = [
+    isNull(mediaLibrary.vendorId),
+    eq(mediaLibrary.status, 'active'),
+    eq(mediaLibrary.mediaType, 'image'),
+  ];
   if (search) conditions.push(ilike(mediaLibrary.originalFileName, `%${search}%`));
 
   const [[{ count: totalCount }], rows] = await Promise.all([
@@ -265,11 +307,14 @@ export async function listCampaignMediaAssets(query: ListMediaQuery) {
 /**
  * Retrieves a single media item owned by the vendor.
  */
-export async function getMediaById(vendorId: string, mediaId: string): Promise<FormattedMediaItem> {
+export async function getMediaById(
+  vendorId: string | null,
+  mediaId: string,
+): Promise<FormattedMediaItem> {
   const db = getDb();
 
   const row = await db.query.mediaLibrary.findFirst({
-    where: and(eq(mediaLibrary.mediaId, mediaId), eq(mediaLibrary.vendorId, vendorId)),
+    where: and(eq(mediaLibrary.mediaId, mediaId), ownerFilter(vendorId)),
   });
 
   if (!row) {
@@ -286,14 +331,19 @@ export async function getMediaById(vendorId: string, mediaId: string): Promise<F
  * - unlinks from any products using it as primary image (productImageId = null)
  * - marks status = 'disabled' and disabledAt = now()
  */
-export async function disableMedia(vendorId: string, mediaId: string): Promise<FormattedMediaItem> {
+export async function disableMedia(
+  vendorId: string | null,
+  mediaId: string,
+): Promise<FormattedMediaItem> {
   const db = getDb();
 
   return await db.transaction(async (tx) => {
-    // 1. Verify media exists and belongs to current vendor
-    const media = await tx.query.mediaLibrary.findFirst({
-      where: and(eq(mediaLibrary.mediaId, mediaId), eq(mediaLibrary.vendorId, vendorId)),
-    });
+    const [media] = await tx
+      .select()
+      .from(mediaLibrary)
+      .where(and(eq(mediaLibrary.mediaId, mediaId), ownerFilter(vendorId)))
+      .for('update')
+      .limit(1);
 
     if (!media) {
       throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media asset not found.');
@@ -302,15 +352,49 @@ export async function disableMedia(vendorId: string, mediaId: string): Promise<F
     if (media.status === 'disabled') {
       throw new AppError(400, 'MEDIA_ALREADY_DISABLED', 'Media asset is already disabled.');
     }
+    if (media.status === 'deleting') {
+      throw new AppError(409, 'MEDIA_DELETING', 'Media asset is being deleted.');
+    }
 
-    // 2. Remove all productMedia references
-    await tx.delete(productMedia).where(eq(productMedia.mediaId, mediaId));
-
-    // 3. Nullify productImageId for any products pointing to this media
-    await tx
-      .update(products)
-      .set({ productImageId: null })
-      .where(and(eq(products.vendorId, vendorId), eq(products.productImageId, mediaId)));
+    if (vendorId) {
+      await tx.delete(productMedia).where(eq(productMedia.mediaId, mediaId));
+      await tx
+        .update(products)
+        .set({ productImageId: null })
+        .where(and(eq(products.vendorId, vendorId), eq(products.productImageId, mediaId)));
+    } else {
+      const [categoryUse] = await tx
+        .select({ name: categories.name })
+        .from(categories)
+        .where(eq(categories.imageMediaId, mediaId))
+        .limit(1);
+      const [publishedUse] = await tx
+        .select({ title: campaigns.title })
+        .from(campaigns)
+        .where(
+          and(
+            eq(campaigns.status, 'published'),
+            sql`(${campaigns.desktopMediaId} = ${mediaId} OR ${campaigns.mobileMediaId} = ${mediaId})`,
+          ),
+        )
+        .limit(1);
+      if (categoryUse || publishedUse) {
+        const name = categoryUse?.name ?? publishedUse?.title ?? 'a published campaign';
+        throw new AppError(
+          409,
+          'MEDIA_IN_USE',
+          `Replace this image in ${name} before disabling it.`,
+        );
+      }
+      await tx
+        .update(campaigns)
+        .set({ draftDesktopMediaId: null, updatedAt: new Date() })
+        .where(and(eq(campaigns.status, 'draft'), eq(campaigns.draftDesktopMediaId, mediaId)));
+      await tx
+        .update(campaigns)
+        .set({ draftMobileMediaId: null, updatedAt: new Date() })
+        .where(and(eq(campaigns.status, 'draft'), eq(campaigns.draftMobileMediaId, mediaId)));
+    }
 
     // 4. Update status to disabled
     const [updated] = await tx
@@ -334,36 +418,81 @@ export async function disableMedia(vendorId: string, mediaId: string): Promise<F
  * - verifies no productMedia references exist
  * - deletes DB row and physical files
  */
-export async function deleteMedia(vendorId: string, mediaId: string): Promise<void> {
+export async function deleteMedia(vendorId: string | null, mediaId: string): Promise<void> {
   const db = getDb();
-
-  const media = await db.query.mediaLibrary.findFirst({
-    where: and(eq(mediaLibrary.mediaId, mediaId), eq(mediaLibrary.vendorId, vendorId)),
+  await db.transaction(async (tx) => {
+    const [media] = await tx
+      .select()
+      .from(mediaLibrary)
+      .where(and(eq(mediaLibrary.mediaId, mediaId), ownerFilter(vendorId)))
+      .for('update')
+      .limit(1);
+    if (!media) throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media asset not found.');
+    if (media.status === 'active') {
+      throw new AppError(400, 'MEDIA_NOT_DISABLED', 'Disable this asset before deleting it.');
+    }
+    const [productUse] = await tx
+      .select({ mediaId: productMedia.mediaId })
+      .from(productMedia)
+      .where(eq(productMedia.mediaId, mediaId))
+      .limit(1);
+    if (productUse) throw new AppError(409, 'MEDIA_IN_USE', 'Media asset is in use.');
+    if (!vendorId) {
+      const [categoryUse] = await tx
+        .select({ categoryId: categories.categoryId })
+        .from(categories)
+        .where(eq(categories.imageMediaId, mediaId))
+        .limit(1);
+      const [campaignUse] = await tx
+        .select({ campaignId: campaigns.campaignId })
+        .from(campaigns)
+        .where(
+          sql`(${campaigns.desktopMediaId} = ${mediaId} OR ${campaigns.mobileMediaId} = ${mediaId} OR ${campaigns.draftDesktopMediaId} = ${mediaId} OR ${campaigns.draftMobileMediaId} = ${mediaId})`,
+        )
+        .limit(1);
+      if (categoryUse || campaignUse)
+        throw new AppError(409, 'MEDIA_IN_USE', 'Media asset is in use.');
+    }
+    await tx
+      .update(mediaLibrary)
+      .set({ status: 'deleting', updatedAt: new Date() })
+      .where(eq(mediaLibrary.mediaId, mediaId));
   });
+  await finishMediaDeletion(mediaId, vendorId);
+}
 
-  if (!media) {
-    throw new AppError(404, 'MEDIA_NOT_FOUND', 'Media asset not found.');
+async function finishMediaDeletion(mediaId: string, vendorId: string | null) {
+  await storageService.deletePrefix(
+    `${mediaPrefix(vendorId, mediaId)}/`,
+    STORAGE_BUCKETS.productMedia,
+  );
+  await getDb()
+    .delete(mediaLibrary)
+    .where(
+      and(
+        eq(mediaLibrary.mediaId, mediaId),
+        ownerFilter(vendorId),
+        eq(mediaLibrary.status, 'deleting'),
+      ),
+    );
+}
+
+export async function retryDeletingMedia() {
+  const rows = await getDb()
+    .select({ mediaId: mediaLibrary.mediaId, vendorId: mediaLibrary.vendorId })
+    .from(mediaLibrary)
+    .where(eq(mediaLibrary.status, 'deleting'))
+    .limit(20);
+  let failures = 0;
+  for (const row of rows) {
+    try {
+      await finishMediaDeletion(row.mediaId, row.vendorId);
+    } catch {
+      failures++;
+    }
   }
-
-  if (media.status !== 'disabled') {
-    throw new AppError(400, 'MEDIA_NOT_DISABLED', 'Only disabled media assets can be deleted.');
-  }
-
-  const existingRef = await db.query.productMedia.findFirst({
-    where: eq(productMedia.mediaId, mediaId),
-  });
-
-  if (existingRef) {
-    throw new AppError(409, 'MEDIA_IN_USE', 'Cannot delete media asset that is still referenced.');
-  }
-
-  const dirPrefix = `vendors/${vendorId}/media/${mediaId}`;
-
-  // Delete DB row first
-  await db.delete(mediaLibrary).where(eq(mediaLibrary.mediaId, mediaId));
-
-  // Clean up physical directory in R2
-  await storageService.deletePrefix(dirPrefix, STORAGE_BUCKETS.productMedia);
+  if (failures)
+    throw new Error(`Media cleanup failed for ${failures} assets; rows kept for retry.`);
 }
 
 /**
@@ -372,11 +501,14 @@ export async function deleteMedia(vendorId: string, mediaId: string): Promise<vo
  * - verifies status === 'disabled'
  * - updates status = 'active', disabledAt = null
  */
-export async function enableMedia(vendorId: string, mediaId: string): Promise<FormattedMediaItem> {
+export async function enableMedia(
+  vendorId: string | null,
+  mediaId: string,
+): Promise<FormattedMediaItem> {
   const db = getDb();
 
   const media = await db.query.mediaLibrary.findFirst({
-    where: and(eq(mediaLibrary.mediaId, mediaId), eq(mediaLibrary.vendorId, vendorId)),
+    where: and(eq(mediaLibrary.mediaId, mediaId), ownerFilter(vendorId)),
   });
 
   if (!media) {
@@ -386,6 +518,8 @@ export async function enableMedia(vendorId: string, mediaId: string): Promise<Fo
   if (media.status === 'active') {
     throw new AppError(400, 'MEDIA_ALREADY_ACTIVE', 'Media asset is already active.');
   }
+  if (media.status === 'deleting')
+    throw new AppError(409, 'MEDIA_DELETING', 'Media asset is being deleted.');
 
   const [updated] = await db
     .update(mediaLibrary)
@@ -394,16 +528,24 @@ export async function enableMedia(vendorId: string, mediaId: string): Promise<Fo
       disabledAt: null,
       updatedAt: new Date(),
     })
-    .where(eq(mediaLibrary.mediaId, mediaId))
+    .where(
+      and(
+        eq(mediaLibrary.mediaId, mediaId),
+        ownerFilter(vendorId),
+        eq(mediaLibrary.status, 'disabled'),
+      ),
+    )
     .returning();
 
+  if (!updated)
+    throw new AppError(409, 'MEDIA_STATE_CHANGED', 'Media asset changed. Refresh and try again.');
   return formatMediaResponse(updated);
 }
 
 /**
  * Performs bulk actions (enable, disable, delete) on a list of vendor-owned media IDs.
  */
-export async function bulkAction(vendorId: string, input: BulkMediaActionInput) {
+export async function bulkAction(vendorId: string | null, input: BulkMediaActionInput) {
   const { action, mediaIds } = input;
   const uniqueIds = Array.from(new Set(mediaIds));
 
@@ -437,7 +579,8 @@ export async function bulkAction(vendorId: string, input: BulkMediaActionInput) 
       }
       processed++;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message =
+        err instanceof AppError ? err.message : 'Could not update this asset. Try again.';
       failed.push({ mediaId: id, reason: message });
     }
   }
@@ -465,7 +608,7 @@ export interface PresignedUploadItem {
  * Initiates direct-to-storage media uploads by generating presigned PUT URLs based on file metadata.
  */
 export async function initiateMediaUpload(
-  vendorId: string,
+  vendorId: string | null,
   input: InitiateMediaUploadInput,
 ): Promise<PresignedUploadItem[]> {
   const bucket = STORAGE_BUCKETS.productMedia;
@@ -488,7 +631,7 @@ export async function initiateMediaUpload(
     const mediaId = randomUUID();
     const rawExt = extname(file.fileName) || (isImage ? '.jpg' : '.mp4');
     const safeExt = rawExt.startsWith('.') ? rawExt.toLowerCase() : `.${rawExt.toLowerCase()}`;
-    const dirPrefix = `vendors/${vendorId}/media/${mediaId}`;
+    const dirPrefix = mediaPrefix(vendorId, mediaId);
     const originalStorageKey = `${dirPrefix}/original${safeExt}`;
 
     const uploadUrl = await storageService.generatePresignedPutUrl(
@@ -515,7 +658,7 @@ export async function initiateMediaUpload(
  * Completes direct-to-storage media upload: verifies files in storage, processes WebP/poster variants, and records in database.
  */
 export async function completeMediaUpload(
-  vendorId: string,
+  vendorId: string | null,
   userId: string,
   input: CompleteMediaUploadInput,
 ): Promise<FormattedMediaItem[]> {
@@ -523,9 +666,22 @@ export async function completeMediaUpload(
   const completedItems: FormattedMediaItem[] = [];
 
   for (const item of input.items) {
-    const expectedPrefix = `vendors/${vendorId}/media/${item.mediaId}/`;
+    const expectedPrefix = `${mediaPrefix(vendorId, item.mediaId)}/`;
     if (!item.originalStorageKey.startsWith(expectedPrefix)) {
       throw new AppError(403, 'FORBIDDEN', 'Invalid storage key ownership.');
+    }
+    const existing = await getDb().query.mediaLibrary.findFirst({
+      where: eq(mediaLibrary.mediaId, item.mediaId),
+    });
+    if (existing) {
+      if (
+        existing.vendorId !== vendorId ||
+        existing.originalStorageKey !== item.originalStorageKey
+      ) {
+        throw new AppError(409, 'MEDIA_ALREADY_EXISTS', 'This media ID is already in use.');
+      }
+      completedItems.push(formatMediaResponse(existing));
+      continue;
     }
 
     const head = await storageService.headObject(item.originalStorageKey, bucket);
@@ -545,30 +701,43 @@ export async function completeMediaUpload(
     }
 
     const mediaType: 'image' | 'video' = isImage ? 'image' : 'video';
-    const dirPrefix = `vendors/${vendorId}/media/${item.mediaId}`;
-    const buffer = await storageService.getObjectBuffer(item.originalStorageKey, bucket);
+    const maxBytes = isImage ? MAX_IMAGE_SIZE_BYTES : MAX_VIDEO_SIZE_BYTES;
+    if (!head.contentLength || head.contentLength > maxBytes) {
+      throw new AppError(400, 'FILE_TOO_LARGE', 'Uploaded file exceeds its size limit.');
+    }
+    if (head.contentType !== item.mimeType) {
+      throw new AppError(400, 'UPLOAD_METADATA_MISMATCH', 'Uploaded file type does not match.');
+    }
+    const dirPrefix = mediaPrefix(vendorId, item.mediaId);
+    const { filePath, bytes } = await downloadVerifiedMedia(item.originalStorageKey, maxBytes);
 
     let width: number | null;
     let height: number | null;
     let durationSeconds: number | null = null;
 
     try {
+      if (bytes !== head.contentLength) {
+        throw new AppError(400, 'UPLOAD_METADATA_MISMATCH', 'Uploaded file size changed.');
+      }
       if (mediaType === 'image') {
-        const imgRes = await processImage(buffer, dirPrefix);
+        const metadata = await sharp(filePath).metadata();
+        const expectedFormat =
+          item.mimeType === 'image/jpeg' ? 'jpeg' : item.mimeType.split('/')[1];
+        if (metadata.format !== expectedFormat) {
+          throw new AppError(
+            400,
+            'UPLOAD_METADATA_MISMATCH',
+            'Uploaded image type does not match.',
+          );
+        }
+        const imgRes = await processImage(filePath, dirPrefix);
         width = imgRes.width;
         height = imgRes.height;
       } else {
-        const rawExt = extname(item.fileName) || '.mp4';
-        const tempVideoPath = join(tmpdir(), `upload-${randomUUID()}${rawExt}`);
-        try {
-          await writeFile(tempVideoPath, buffer);
-          const vidRes = await processVideo(tempVideoPath, dirPrefix);
-          width = vidRes.width;
-          height = vidRes.height;
-          durationSeconds = vidRes.durationSeconds;
-        } finally {
-          await unlink(tempVideoPath).catch(() => {});
-        }
+        const vidRes = await processVideo(filePath, dirPrefix);
+        width = vidRes.width;
+        height = vidRes.height;
+        durationSeconds = vidRes.durationSeconds;
       }
 
       const db = getDb();
@@ -580,8 +749,8 @@ export async function completeMediaUpload(
           createdBy: userId,
           mediaType,
           originalFileName: item.fileName,
-          mimeType: item.mimeType,
-          fileSizeBytes: item.fileSizeBytes,
+          mimeType: head.contentType,
+          fileSizeBytes: bytes,
           width,
           height,
           durationSeconds,
@@ -591,9 +760,8 @@ export async function completeMediaUpload(
         .returning();
 
       completedItems.push(formatMediaResponse(inserted));
-    } catch (err) {
-      await storageService.deletePrefix(dirPrefix, bucket);
-      throw err;
+    } finally {
+      await unlink(filePath).catch(() => {});
     }
   }
 

@@ -44,6 +44,7 @@ export async function processVideo(
   });
 
   const videoStream = metadata.streams.find((s) => s.codec_type === 'video');
+  if (!videoStream) throw new Error('Uploaded file has no video stream.');
   const width = videoStream?.width ?? null;
   const height = videoStream?.height ?? null;
   const rawDuration = metadata.format.duration;

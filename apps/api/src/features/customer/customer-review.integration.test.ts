@@ -4,6 +4,7 @@ import { getDb } from '@repo/db';
 import {
   campaigns,
   campaignProducts,
+  mediaLibrary,
   orderItems,
   orders,
   productReviews,
@@ -411,6 +412,18 @@ describe
 
     it('keeps catalog and homepage aggregates current across buyers, edits and deletion', async () => {
       const db = getDb();
+      const [banner] = await db
+        .insert(mediaLibrary)
+        .values({
+          vendorId: null,
+          createdBy: f.owner.userId,
+          mediaType: 'image',
+          originalFileName: 'banner.webp',
+          mimeType: 'image/webp',
+          fileSizeBytes: 1024,
+          originalStorageKey: `admin/media/${randomUUID()}/original.webp`,
+        })
+        .returning();
       const [campaign] = await db
         .insert(campaigns)
         .values({
@@ -419,7 +432,7 @@ describe
           eyebrow: 'Reviews',
           title: 'Reviews',
           subtitle: 'Reviews',
-          imageUrl: 'https://example.test/banner.webp',
+          desktopMediaId: banner.mediaId,
           ctaLabel: 'Shop',
           ctaHref: '/products',
           startsAt: new Date(Date.now() - 60000),
@@ -478,5 +491,7 @@ describe
       await assertRatings(null, 0);
       await db.update(users).set({ status: 'suspended' }).where(eq(users.userId, f.owner.userId));
       await expect(reviews()).rejects.toMatchObject({ code: 'PRODUCT_NOT_FOUND' });
+      await db.delete(campaigns).where(eq(campaigns.campaignId, campaign.campaignId));
+      await db.delete(mediaLibrary).where(eq(mediaLibrary.mediaId, banner.mediaId));
     });
   });

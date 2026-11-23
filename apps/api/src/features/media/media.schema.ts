@@ -33,7 +33,10 @@ export const initiateMediaUploadItemSchema = z.object({
 });
 
 export const initiateMediaUploadSchema = z.object({
-  files: z.array(initiateMediaUploadItemSchema).min(1, 'At least one file must be specified.'),
+  files: z
+    .array(initiateMediaUploadItemSchema)
+    .min(1, 'At least one file must be specified.')
+    .max(10),
 });
 
 export const completeMediaUploadItemSchema = z.object({
@@ -45,7 +48,10 @@ export const completeMediaUploadItemSchema = z.object({
 });
 
 export const completeMediaUploadSchema = z.object({
-  items: z.array(completeMediaUploadItemSchema).min(1, 'At least one item must be specified.'),
+  items: z
+    .array(completeMediaUploadItemSchema)
+    .min(1, 'At least one item must be specified.')
+    .max(10),
 });
 
 export type ListMediaQuery = z.infer<typeof listMediaQuerySchema>;

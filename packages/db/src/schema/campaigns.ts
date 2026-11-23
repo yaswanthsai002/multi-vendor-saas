@@ -14,6 +14,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import { mediaLibrary } from './mediaLibrary.js';
 import { products } from './products.js';
 import { users } from './users.js';
 
@@ -27,13 +28,21 @@ export const campaigns = pgTable(
     sourceCampaignId: uuid('source_campaign_id'),
     ownerUserId: uuid('owner_user_id').references(() => users.userId, { onDelete: 'cascade' }),
     draftPayload: jsonb('draft_payload').$type<Record<string, unknown>>(),
-    draftDesktopBannerPrefix: text('draft_desktop_banner_prefix'),
-    draftMobileBannerPrefix: text('draft_mobile_banner_prefix'),
+    draftDesktopMediaId: uuid('draft_desktop_media_id').references(() => mediaLibrary.mediaId, {
+      onDelete: 'restrict',
+    }),
+    draftMobileMediaId: uuid('draft_mobile_media_id').references(() => mediaLibrary.mediaId, {
+      onDelete: 'restrict',
+    }),
     eyebrow: text('eyebrow'),
     title: text('title'),
     subtitle: text('subtitle'),
-    imageUrl: text('image_url'),
-    mobileImageUrl: text('mobile_image_url'),
+    desktopMediaId: uuid('desktop_media_id').references(() => mediaLibrary.mediaId, {
+      onDelete: 'restrict',
+    }),
+    mobileMediaId: uuid('mobile_media_id').references(() => mediaLibrary.mediaId, {
+      onDelete: 'restrict',
+    }),
     ctaLabel: text('cta_label'),
     ctaHref: text('cta_href'),
     startsAt: timestamp('starts_at', { withTimezone: true }),
@@ -67,7 +76,7 @@ export const campaigns = pgTable(
       'campaigns_published_fields_check',
       sql`${table.status} = 'draft' OR (
         ${table.eyebrow} IS NOT NULL AND ${table.title} IS NOT NULL AND
-        ${table.subtitle} IS NOT NULL AND ${table.imageUrl} IS NOT NULL AND
+        ${table.subtitle} IS NOT NULL AND ${table.desktopMediaId} IS NOT NULL AND
         ${table.ctaLabel} IS NOT NULL AND ${table.ctaHref} IS NOT NULL AND
         ${table.startsAt} IS NOT NULL AND ${table.endsAt} IS NOT NULL AND
         ${table.endsAt} > ${table.startsAt}

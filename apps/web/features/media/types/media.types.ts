@@ -7,7 +7,7 @@ export interface MediaItem {
   width: number | null;
   height: number | null;
   durationSeconds?: number | null;
-  status: 'active' | 'disabled';
+  status: 'active' | 'disabled' | 'deleting';
   original: string;
   variants?: {
     thumbnail: string;

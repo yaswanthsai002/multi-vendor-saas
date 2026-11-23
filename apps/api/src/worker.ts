@@ -2,6 +2,7 @@ import './shared/config/env.js';
 
 import { Worker, type Job } from 'bullmq';
 
+import { retryDeletingMedia } from './features/media/media.service.js';
 import {
   BULK_IMPORT_QUEUE_NAME,
   getRedisConnectionOptions,
@@ -43,13 +44,22 @@ bulkImportWorker.on('completed', (job) => {
   console.log(`[Worker] Job ${job.id} completed successfully.`);
 });
 
+const mediaCleanupTimer = setInterval(() => {
+  void retryDeletingMedia().catch((error: unknown) => {
+    console.error('[Worker] Media cleanup pass failed:', error);
+  });
+}, 60_000);
+mediaCleanupTimer.unref();
+
 process.on('SIGTERM', async () => {
+  clearInterval(mediaCleanupTimer);
   console.log('[Worker] SIGTERM received. Closing worker...');
   await bulkImportWorker.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
+  clearInterval(mediaCleanupTimer);
   console.log('[Worker] SIGINT received. Closing worker...');
   await bulkImportWorker.close();
   process.exit(0);

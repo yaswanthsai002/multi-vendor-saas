@@ -23,7 +23,7 @@ export interface MediaPickerModalProps {
   multiple?: boolean;
   acceptedType?: 'image' | 'video';
   maxSelect?: number;
-  mediaScope?: 'vendor' | 'catalog';
+  mediaScope?: 'vendor' | 'catalog' | 'admin';
   allowUpload?: boolean;
   maxUploadFiles?: number;
   uploadAccept?: string;
@@ -89,7 +89,7 @@ function MediaPickerContent({
   const { data, isLoading, isFetching } = useMediaList(queryParams, mediaScope);
 
   const handleItemSelect = (item: MediaItem) => {
-    if (item.status === 'disabled') return;
+    if (item.status !== 'active') return;
 
     setSelectedMap((prev) => {
       const next = new Map(prev);
@@ -145,6 +145,7 @@ function MediaPickerContent({
     return (
       <MediaUploadDialog
         open
+        mediaScope={mediaScope === 'admin' ? 'admin' : 'vendor'}
         maxFiles={maxUploadFiles}
         accept={uploadAccept}
         onUploadComplete={onUploadFiles ? onClose : undefined}

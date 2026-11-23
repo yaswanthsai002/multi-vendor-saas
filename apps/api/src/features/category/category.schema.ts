@@ -17,7 +17,7 @@ export const createCategorySchema = z.object({
     .min(1, 'Category name is required')
     .max(100, 'Name must be 100 characters or fewer'),
   parentCategoryId: z.string().uuid('Invalid parentCategoryId format').nullable().optional(),
-  imageUrl: z.string().url('Invalid imageUrl format').nullable().optional(),
+  imageMediaId: z.string().uuid('Invalid image ID').nullable().optional(),
 });
 
 export const updateCategorySchema = z.object({
@@ -28,7 +28,7 @@ export const updateCategorySchema = z.object({
     .max(100, 'Name must be 100 characters or fewer')
     .optional(),
   parentCategoryId: z.string().uuid('Invalid parentCategoryId format').nullable().optional(),
-  imageUrl: z.string().url('Invalid imageUrl format').nullable().optional(),
+  imageMediaId: z.uuid('Invalid image ID').nullable().optional(),
 });
 
 export type ListCategoriesQuery = z.infer<typeof listCategoriesQuerySchema>;

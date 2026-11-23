@@ -2,6 +2,7 @@
 
 import {
   Home,
+  Images,
   Layers,
   LogOut,
   Megaphone,
@@ -54,6 +55,7 @@ export function AdminSidebar() {
   const isDashboard = pathname === '/admin' || pathname === '/admin/';
   const isProducts = pathname.startsWith('/admin/products');
   const isCategories = pathname.startsWith('/admin/categories');
+  const isMedia = pathname.startsWith('/admin/media');
   const isMerchandising = pathname.startsWith('/admin/merchandising');
   const isCampaigns = pathname.startsWith('/admin/campaigns');
   const isOrders = pathname.startsWith('/admin/orders');
@@ -115,6 +117,7 @@ export function AdminSidebar() {
               icon={Layers}
               active={isCategories}
             />
+            <NavItem href="/admin/media" label="Media library" icon={Images} active={isMedia} />
             <NavItem
               href="/admin/merchandising"
               label="Merchandising"

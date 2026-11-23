@@ -15,16 +15,14 @@ import { users } from './users.js';
 import { vendors } from './vendors.js';
 
 export const mediaTypeEnum = pgEnum('media_type', ['image', 'video']);
-export const mediaStatusEnum = pgEnum('media_status', ['active', 'disabled']);
+export const mediaStatusEnum = pgEnum('media_status', ['active', 'disabled', 'deleting']);
 
 // ponytail: single consolidated table for media library assets, no redundant variants table
 export const mediaLibrary = pgTable(
   'mediaLibrary',
   {
     mediaId: uuid('mediaId').defaultRandom().primaryKey(),
-    vendorId: uuid('vendorId')
-      .notNull()
-      .references(() => vendors.vendorId, { onDelete: 'restrict' }),
+    vendorId: uuid('vendorId').references(() => vendors.vendorId, { onDelete: 'restrict' }),
     createdBy: uuid('createdBy')
       .notNull()
       .references(() => users.userId, { onDelete: 'restrict' }),

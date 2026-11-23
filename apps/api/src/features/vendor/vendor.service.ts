@@ -15,6 +15,7 @@ import {
 import { and, asc, count, desc, eq, gt, gte, ilike, inArray, ne, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 import { formatMediaResponse } from '../media/media.service.js';
 
 import type { UpdateVendorProfileInput } from './profile.schema.js';
@@ -433,7 +434,7 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
         categoryId: categories.categoryId,
         name: categories.name,
         slug: categories.slug,
-        imageUrl: categories.imageUrl,
+        imageMediaId: categories.imageMediaId,
       })
       .from(productCategories)
       .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
@@ -447,7 +448,12 @@ export async function getVendorProducts(vendorId: string, query: GetVendorProduc
         categoryId: row.categoryId,
         name: row.name,
         slug: row.slug,
-        imageUrl: row.imageUrl,
+        imageUrl: row.imageMediaId
+          ? storageService.resolveUrl(
+              `admin/media/${row.imageMediaId}/large.webp`,
+              STORAGE_BUCKETS.productMedia,
+            )
+          : null,
       });
     }
   }
@@ -520,7 +526,7 @@ export async function getVendorProductById(vendorId: string, productId: string) 
       categoryId: categories.categoryId,
       name: categories.name,
       slug: categories.slug,
-      imageUrl: categories.imageUrl,
+      imageMediaId: categories.imageMediaId,
     })
     .from(productCategories)
     .innerJoin(categories, eq(productCategories.categoryId, categories.categoryId))
@@ -556,7 +562,15 @@ export async function getVendorProductById(vendorId: string, productId: string) 
     primaryImage,
     gallery: galleryMedia,
     media: galleryMedia,
-    categories: linkedCategories,
+    categories: linkedCategories.map((category) => ({
+      ...category,
+      imageUrl: category.imageMediaId
+        ? storageService.resolveUrl(
+            `admin/media/${category.imageMediaId}/large.webp`,
+            STORAGE_BUCKETS.productMedia,
+          )
+        : null,
+    })),
   };
 }
 

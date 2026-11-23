@@ -4,12 +4,16 @@ import { putFileToStorage } from '@/lib/direct-upload';
 
 import type { ListMediaFilters, MediaItem, MediaListResponse } from '../types/media.types';
 
+export type MediaScope = 'vendor' | 'admin';
+const mediaEndpoint = (scope: MediaScope) =>
+  scope === 'admin' ? API_ENDPOINTS.admin.media.library : API_ENDPOINTS.vendor.media;
+
 export async function fetchMediaList(
   filters: ListMediaFilters = {},
-  scope: 'vendor' | 'catalog' = 'vendor',
+  scope: MediaScope | 'catalog' = 'vendor',
 ): Promise<MediaListResponse> {
   return makeApiRequest<MediaListResponse>({
-    url: scope === 'catalog' ? API_ENDPOINTS.admin.media.catalog : API_ENDPOINTS.vendor.media,
+    url: scope === 'catalog' ? API_ENDPOINTS.admin.media.catalog : mediaEndpoint(scope),
     method: 'GET',
     params: filters,
   });
@@ -18,6 +22,7 @@ export async function fetchMediaList(
 export async function uploadMediaAsset(
   files: File[] | File,
   onProgress?: (percent: number) => void,
+  scope: MediaScope = 'vendor',
 ): Promise<{ message: string; media: MediaItem; items?: MediaItem[] }> {
   const fileList = Array.isArray(files) ? files : [files];
 
@@ -39,7 +44,7 @@ export async function uploadMediaAsset(
       mimeType: string;
     }>;
   }>({
-    url: API_ENDPOINTS.vendor.mediaInitiate,
+    url: `${mediaEndpoint(scope)}/initiate`,
     method: 'POST',
     data: { files: filePayload },
   });
@@ -70,7 +75,7 @@ export async function uploadMediaAsset(
 
   // 3. Send metadata only to complete processing and persist MediaLibrary record
   return makeApiRequest<{ message: string; media: MediaItem; items?: MediaItem[] }>({
-    url: API_ENDPOINTS.vendor.mediaComplete,
+    url: `${mediaEndpoint(scope)}/complete`,
     method: 'POST',
     data: {
       items: initiateRes.items.map((item) => ({
@@ -87,25 +92,30 @@ export async function uploadMediaAsset(
 
 export async function disableMediaAsset(
   mediaId: string,
+  scope: MediaScope = 'vendor',
 ): Promise<{ message: string; media: MediaItem }> {
   return makeApiRequest<{ message: string; media: MediaItem }>({
-    url: `${API_ENDPOINTS.vendor.media}/${mediaId}/disable`,
+    url: `${mediaEndpoint(scope)}/${mediaId}/disable`,
     method: 'PATCH',
   });
 }
 
 export async function enableMediaAsset(
   mediaId: string,
+  scope: MediaScope = 'vendor',
 ): Promise<{ message: string; media: MediaItem }> {
   return makeApiRequest<{ message: string; media: MediaItem }>({
-    url: `${API_ENDPOINTS.vendor.media}/${mediaId}/enable`,
+    url: `${mediaEndpoint(scope)}/${mediaId}/enable`,
     method: 'PATCH',
   });
 }
 
-export async function deleteMediaAsset(mediaId: string): Promise<void> {
+export async function deleteMediaAsset(
+  mediaId: string,
+  scope: MediaScope = 'vendor',
+): Promise<void> {
   return makeApiRequest<void>({
-    url: `${API_ENDPOINTS.vendor.media}/${mediaId}`,
+    url: `${mediaEndpoint(scope)}/${mediaId}`,
     method: 'DELETE',
   });
 }
@@ -113,15 +123,17 @@ export async function deleteMediaAsset(mediaId: string): Promise<void> {
 export async function bulkMediaAction(
   action: 'enable' | 'disable' | 'delete',
   mediaIds: string[],
+  scope: MediaScope = 'vendor',
 ): Promise<{
   action: string;
   total: number;
   processed: number;
   failedCount: number;
+  failed: Array<{ mediaId: string; reason: string }>;
   message: string;
 }> {
   return makeApiRequest({
-    url: `${API_ENDPOINTS.vendor.media}/bulk`,
+    url: `${mediaEndpoint(scope)}/bulk`,
     method: 'POST',
     data: { action, mediaIds },
   });

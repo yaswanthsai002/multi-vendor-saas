@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { uploadMediaAsset } from '@/features/media/services/media.service';
+
 import {
   useAdminPromotionDraft,
   useCreateAdminPromotionDraft,
@@ -12,7 +14,6 @@ import {
   usePublishAdminPromotionDraft,
   useSaveAdminPromotionDraft,
 } from '../hooks/use-admin';
-import { adminService } from '../services/admin.service';
 
 import { PromotionDraftForm } from './promotion-draft-form';
 import { PromotionEditorHeading, PromotionEditorLoadError } from './promotion-editor-fields';
@@ -31,6 +32,8 @@ function fromPayload(payload: AdminPromotionDraftPayload): PromotionFormInput {
     subtitle: payload.subtitle ?? '',
     imageUrl: payload.imageUrl ?? '',
     mobileImageUrl: payload.mobileImageUrl ?? '',
+    imageMediaId: payload.imageMediaId ?? null,
+    mobileImageMediaId: payload.mobileImageMediaId ?? null,
     ctaLabel: payload.ctaLabel ?? 'Shop now',
     ctaHref: payload.ctaHref ?? '/products',
     startsAt: payload.startsAt ? localDateTime(payload.startsAt) : '',
@@ -47,8 +50,8 @@ function toPayload(
     eyebrow: values.eyebrow,
     title: values.title,
     subtitle: values.subtitle,
-    imageUrl: values.imageUrl,
-    mobileImageUrl: values.mobileImageUrl,
+    imageMediaId: values.imageMediaId,
+    mobileImageMediaId: values.mobileImageMediaId,
     ctaLabel: values.ctaLabel,
     ctaHref: values.ctaHref,
     startsAt: values.startsAt ? new Date(values.startsAt).toISOString() : '',
@@ -203,15 +206,9 @@ export function PromotionEditor({
     setUploading(true);
     setActionError('');
     try {
-      const response = await adminService.uploadPromotionDraftBanner(
-        draftId,
-        slot,
-        file,
-        onProgress,
-      );
-      form.setValue(slot === 'desktop' ? 'imageUrl' : 'mobileImageUrl', response.imageUrl, {
-        shouldDirty: true,
-      });
+      const response = await uploadMediaAsset(file, onProgress, 'admin');
+      const media = response.media;
+      if (media) selectBannerMedia(media, slot);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Banner upload failed.';
       setActionError(message);
@@ -222,6 +219,9 @@ export function PromotionEditor({
   };
 
   const selectBannerMedia = (media: MediaItem, slot: 'desktop' | 'mobile') => {
+    form.setValue(slot === 'desktop' ? 'imageMediaId' : 'mobileImageMediaId', media.mediaId, {
+      shouldDirty: true,
+    });
     form.setValue(
       slot === 'desktop' ? 'imageUrl' : 'mobileImageUrl',
       media.variants?.large ?? media.original,
@@ -243,7 +243,7 @@ export function PromotionEditor({
     if (!(await form.trigger())) return;
     const values = form.getValues();
     if (
-      !values.imageUrl ||
+      !values.imageMediaId ||
       !selectedProducts.length ||
       selectedProducts.some((item) => !item.dealPrice.trim())
     ) {

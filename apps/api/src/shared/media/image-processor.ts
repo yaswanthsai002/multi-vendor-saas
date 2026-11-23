@@ -8,14 +8,14 @@ export interface ImageProcessingResult {
 }
 
 export async function processImage(
-  buffer: Buffer,
+  input: Buffer | string,
   storagePrefix: string,
 ): Promise<ImageProcessingResult> {
   const bucket = STORAGE_BUCKETS.productMedia;
-  const metadata = await sharp(buffer).metadata();
+  const metadata = await sharp(input).metadata();
   const width = metadata.width ?? null;
   const height = metadata.height ?? null;
-  const thumbnailBuffer = await sharp(buffer)
+  const thumbnailBuffer = await sharp(input)
     .resize(150, 150, { fit: 'cover' })
     .webp({ quality: 80 })
     .toBuffer();
@@ -25,7 +25,7 @@ export async function processImage(
     'image/webp',
     bucket,
   );
-  const mediumBuffer = await sharp(buffer)
+  const mediumBuffer = await sharp(input)
     .resize(600, 600, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 85 })
     .toBuffer();
@@ -35,7 +35,7 @@ export async function processImage(
     'image/webp',
     bucket,
   );
-  const largeBuffer = await sharp(buffer)
+  const largeBuffer = await sharp(input)
     .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 90 })
     .toBuffer();

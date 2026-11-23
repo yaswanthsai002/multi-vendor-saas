@@ -469,3 +469,56 @@ describe('Media API (/api/vendor/media)', () => {
     });
   });
 });
+
+describe('Admin media API', () => {
+  const userId = '11111111-1111-4111-8111-111111111111';
+  async function authCookie() {
+    const token = await new SignJWT({})
+      .setProtectedHeader({ alg: 'HS512' })
+      .setSubject(userId)
+      .setIssuer('perigee-api')
+      .setAudience('perigee-web-app')
+      .setIssuedAt()
+      .setExpirationTime('2h')
+      .sign(new TextEncoder().encode('test-secret-at-least-32-characters-long-key'));
+    return `auth_token=${token}`;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.JWT_SECRET = 'test-secret-at-least-32-characters-long-key';
+  });
+
+  it('requires authentication and admin role', async () => {
+    expect((await request(app).get('/api/admin/media')).status).toBe(401);
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      userId,
+      roles: ['vendor'],
+    } as unknown as typeof users.$inferSelect);
+    expect(
+      (
+        await request(app)
+          .get('/api/admin/media')
+          .set('Cookie', await authCookie())
+      ).status,
+    ).toBe(403);
+    expect(mediaService.listMedia).not.toHaveBeenCalled();
+  });
+
+  it('lists only the admin media scope', async () => {
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      userId,
+      roles: ['admin'],
+    } as unknown as typeof users.$inferSelect);
+    vi.mocked(mediaService.listMedia).mockResolvedValueOnce({
+      items: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 1 },
+      counts: { all: 0, image: 0, video: 0, disabled: 0 },
+    });
+    const res = await request(app)
+      .get('/api/admin/media')
+      .set('Cookie', await authCookie());
+    expect(res.status).toBe(200);
+    expect(mediaService.listMedia).toHaveBeenCalledWith(null, expect.objectContaining({ page: 1 }));
+  });
+});

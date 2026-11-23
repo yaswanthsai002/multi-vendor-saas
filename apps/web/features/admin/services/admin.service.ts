@@ -1,6 +1,5 @@
 import { ApiError, makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
-import { putFileToStorage } from '@/lib/direct-upload';
 
 import { adminOrderDetailSchema, adminOrdersSchema } from '../schemas/admin-order.schema';
 
@@ -200,6 +199,8 @@ export interface AdminPromotionDraftPayload {
   subtitle?: string;
   imageUrl?: string;
   mobileImageUrl?: string;
+  imageMediaId?: string | null;
+  mobileImageMediaId?: string | null;
   ctaLabel?: string;
   ctaHref?: string;
   startsAt?: string;
@@ -461,37 +462,4 @@ export const adminService = {
       url: API_ENDPOINTS.admin.merchandising.campaign(draftId),
       method: 'PATCH',
     }),
-
-  uploadPromotionDraftBanner: (
-    draftId: string,
-    slot: 'desktop' | 'mobile',
-    file: File,
-    onUploadProgress: (percent: number) => void,
-  ) =>
-    (async () => {
-      const metadata = {
-        fileName: file.name,
-        fileSizeBytes: file.size,
-        mimeType: file.type,
-      };
-      const upload = await makeApiRequest<{
-        uploadUrl: string;
-        storageKey: string;
-        fileName: string;
-        fileSizeBytes: number;
-        mimeType: string;
-      }>({
-        url: API_ENDPOINTS.admin.merchandising.draftBanner(draftId, slot),
-        method: 'POST',
-        data: metadata,
-      });
-      await putFileToStorage(upload.uploadUrl, file, (loaded) =>
-        onUploadProgress(Math.round((loaded / Math.max(file.size, 1)) * 100)),
-      );
-      return makeApiRequest<{ imageUrl: string }>({
-        url: API_ENDPOINTS.admin.merchandising.completeDraftBanner(draftId, slot),
-        method: 'POST',
-        data: { storageKey: upload.storageKey, ...metadata },
-      });
-    })(),
 };

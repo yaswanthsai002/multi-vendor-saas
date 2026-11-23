@@ -4,7 +4,6 @@ import { requireAdmin } from '../../shared/middleware/requireAdmin.js';
 import { verifyToken } from '../../shared/middleware/verifyToken.js';
 
 import {
-  completePromotionDraftBanner,
   createPromotionDraft,
   discardPromotionDraft,
   getPromotionDraft,
@@ -12,7 +11,6 @@ import {
   listCampaigns,
   publishPromotionDraft,
   savePromotionDraft,
-  uploadPromotionDraftBanner,
 } from './merchandising.controller.js';
 
 export const merchandisingRouter = Router();
@@ -43,16 +41,4 @@ merchandisingRouter.patch(
   verifyToken,
   requireAdmin,
   publishPromotionDraft,
-);
-merchandisingRouter.post(
-  '/admin/campaigns/:campaignId/banners/:slot',
-  verifyToken,
-  requireAdmin,
-  uploadPromotionDraftBanner,
-);
-merchandisingRouter.post(
-  '/admin/campaigns/:campaignId/banners/:slot/complete',
-  verifyToken,
-  requireAdmin,
-  completePromotionDraftBanner,
 );

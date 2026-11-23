@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto';
 
 import { getDb } from '@repo/db';
-import { categories, productCategories } from '@repo/db/schema';
+import { categories, mediaLibrary, productCategories } from '@repo/db/schema';
 import { and, asc, eq, ilike, isNull, ne, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
+import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
 import { invalidateCategoryMap } from './category.cache.js';
 
@@ -16,6 +17,33 @@ export function slugify(text: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+}
+
+function categoryImageUrl(mediaId: string | null) {
+  return mediaId
+    ? storageService.resolveUrl(`admin/media/${mediaId}/large.webp`, STORAGE_BUCKETS.productMedia)
+    : null;
+}
+
+async function validateCategoryImage(
+  tx: Parameters<Parameters<ReturnType<typeof getDb>['transaction']>[0]>[0],
+  mediaId: string | null | undefined,
+) {
+  if (!mediaId) return;
+  const [media] = await tx
+    .select({ mediaId: mediaLibrary.mediaId })
+    .from(mediaLibrary)
+    .where(
+      and(
+        eq(mediaLibrary.mediaId, mediaId),
+        isNull(mediaLibrary.vendorId),
+        eq(mediaLibrary.mediaType, 'image'),
+        eq(mediaLibrary.status, 'active'),
+      ),
+    )
+    .for('update')
+    .limit(1);
+  if (!media) throw new AppError(400, 'INVALID_CATEGORY_IMAGE', 'Select an active admin image.');
 }
 
 /**
@@ -100,7 +128,7 @@ export async function listCategories(parentCategoryId?: string, search?: string,
       name: categories.name,
       slug: categories.slug,
       parentCategoryId: categories.parentCategoryId,
-      imageUrl: categories.imageUrl,
+      imageMediaId: categories.imageMediaId,
       hasChildren: sql<boolean>`EXISTS (
         SELECT 1 FROM "categories" c2
         WHERE c2."parentCategoryId" = "categories"."categoryId"
@@ -110,7 +138,7 @@ export async function listCategories(parentCategoryId?: string, search?: string,
     .where(filter ?? sql`TRUE`)
     .orderBy(asc(categories.name));
 
-  return rows;
+  return rows.map((row) => ({ ...row, imageUrl: categoryImageUrl(row.imageMediaId) }));
 }
 
 /**
@@ -125,7 +153,7 @@ export async function getCategoryById(categoryId: string) {
       name: categories.name,
       slug: categories.slug,
       parentCategoryId: categories.parentCategoryId,
-      imageUrl: categories.imageUrl,
+      imageMediaId: categories.imageMediaId,
       hasChildren: sql<boolean>`EXISTS (
         SELECT 1 FROM "categories" c2
         WHERE c2."parentCategoryId" = "categories"."categoryId"
@@ -138,7 +166,7 @@ export async function getCategoryById(categoryId: string) {
     throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found.');
   }
 
-  return row;
+  return { ...row, imageUrl: categoryImageUrl(row.imageMediaId) };
 }
 
 /**
@@ -160,26 +188,25 @@ export async function createCategory(input: CreateCategoryInput) {
 
   const slug = await generateUniqueSlug(input.name);
 
-  const [created] = await db
-    .insert(categories)
-    .values({
-      name: input.name,
-      slug,
-      parentCategoryId: input.parentCategoryId ?? null,
-      imageUrl: input.imageUrl ?? null,
-    })
-    .returning({
-      categoryId: categories.categoryId,
-      name: categories.name,
-      slug: categories.slug,
-      parentCategoryId: categories.parentCategoryId,
-      imageUrl: categories.imageUrl,
-    });
+  const created = await db.transaction(async (tx) => {
+    await validateCategoryImage(tx, input.imageMediaId);
+    const [row] = await tx
+      .insert(categories)
+      .values({
+        name: input.name,
+        slug,
+        parentCategoryId: input.parentCategoryId ?? null,
+        imageMediaId: input.imageMediaId ?? null,
+      })
+      .returning();
+    return row;
+  });
 
   await invalidateCategoryMap();
 
   return {
     ...created,
+    imageUrl: categoryImageUrl(created.imageMediaId),
     hasChildren: false,
   };
 }
@@ -202,7 +229,7 @@ export async function updateCategory(categoryId: string, input: UpdateCategoryIn
     name?: string;
     slug?: string;
     parentCategoryId?: string | null;
-    imageUrl?: string | null;
+    imageMediaId?: string | null;
     updatedAt: Date;
   } = {
     updatedAt: new Date(),
@@ -229,11 +256,14 @@ export async function updateCategory(categoryId: string, input: UpdateCategoryIn
     updatePayload.slug = await generateUniqueSlug(input.name, categoryId);
   }
 
-  if (input.imageUrl !== undefined) {
-    updatePayload.imageUrl = input.imageUrl;
+  if (input.imageMediaId !== undefined) {
+    updatePayload.imageMediaId = input.imageMediaId;
   }
 
-  await db.update(categories).set(updatePayload).where(eq(categories.categoryId, categoryId));
+  await db.transaction(async (tx) => {
+    await validateCategoryImage(tx, input.imageMediaId);
+    await tx.update(categories).set(updatePayload).where(eq(categories.categoryId, categoryId));
+  });
   await invalidateCategoryMap();
 
   return getCategoryById(categoryId);

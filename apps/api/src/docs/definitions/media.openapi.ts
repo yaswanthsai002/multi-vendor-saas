@@ -55,7 +55,7 @@ export const mediaSchemas = {
       },
       status: {
         type: 'string',
-        enum: ['active', 'disabled'],
+        enum: ['active', 'disabled', 'deleting'],
       },
       original: {
         type: 'string',
@@ -565,7 +565,7 @@ export const mediaSchemas = {
   },
 };
 
-export const mediaPaths = {
+const baseMediaPaths = {
   '/api/vendor/media/initiate': {
     post: {
       tags: ['Vendor Media'],
@@ -586,6 +586,7 @@ export const mediaPaths = {
               properties: {
                 files: {
                   minItems: 1,
+                  maxItems: 10,
                   type: 'array',
                   items: {
                     type: 'object',
@@ -681,6 +682,7 @@ export const mediaPaths = {
               properties: {
                 items: {
                   minItems: 1,
+                  maxItems: 10,
                   type: 'array',
                   items: {
                     type: 'object',
@@ -811,8 +813,8 @@ export const mediaPaths = {
   '/api/admin/media/catalog': {
     get: {
       tags: ['Admin Media'],
-      summary: 'List active image assets for campaign banners',
-      description: 'Returns active image assets across the media library to administrators.',
+      summary: 'List active admin images for categories and campaigns',
+      description: 'Returns active admin-owned images for the category and campaign pickers.',
       security: [
         {
           cookieAuth: [],
@@ -1475,6 +1477,80 @@ export const mediaPaths = {
           $ref: '#/components/responses/Error403',
         },
       },
+    },
+  },
+};
+
+export const mediaPaths = {
+  ...baseMediaPaths,
+  '/api/admin/media/initiate': {
+    post: {
+      ...baseMediaPaths['/api/vendor/media/initiate'].post,
+      tags: ['Admin Media'],
+      summary: 'Initiate an admin media upload',
+      description:
+        'An authenticated administrator receives direct storage upload URLs for up to ten files. Uploaded objects must pass server-side validation at completion.',
+    },
+  },
+  '/api/admin/media/complete': {
+    post: {
+      ...baseMediaPaths['/api/vendor/media/complete'].post,
+      tags: ['Admin Media'],
+      summary: 'Validate and complete an admin media upload',
+      description:
+        'An authenticated administrator completes up to ten direct uploads. The server verifies stored size and content before processing and saving each asset.',
+    },
+  },
+  '/api/admin/media': {
+    get: {
+      ...baseMediaPaths['/api/vendor/media'].get,
+      tags: ['Admin Media'],
+      summary: 'List admin-owned media',
+      description: 'Lists admin-owned assets with pagination, search, type, and status filters.',
+    },
+  },
+  '/api/admin/media/{mediaId}': {
+    parameters: baseMediaPaths['/api/vendor/media/{mediaId}'].parameters,
+    get: {
+      ...baseMediaPaths['/api/vendor/media/{mediaId}'].get,
+      tags: ['Admin Media'],
+      summary: 'Get an admin-owned media asset',
+      description:
+        'Returns metadata and URLs for an admin-owned asset. Requires an administrator session.',
+    },
+    delete: {
+      ...baseMediaPaths['/api/vendor/media/{mediaId}'].delete,
+      tags: ['Admin Media'],
+      summary: 'Delete a disabled admin-owned media asset',
+      description:
+        'Rejects assets still used by categories or campaigns. Storage cleanup can be retried after a failure.',
+    },
+  },
+  '/api/admin/media/{mediaId}/disable': {
+    parameters: baseMediaPaths['/api/vendor/media/{mediaId}/disable'].parameters,
+    patch: {
+      ...baseMediaPaths['/api/vendor/media/{mediaId}/disable'].patch,
+      tags: ['Admin Media'],
+      summary: 'Disable an admin-owned media asset',
+      description:
+        'Rejects assets used by categories or published campaigns and clears draft campaign references.',
+    },
+  },
+  '/api/admin/media/{mediaId}/enable': {
+    parameters: baseMediaPaths['/api/vendor/media/{mediaId}/enable'].parameters,
+    patch: {
+      ...baseMediaPaths['/api/vendor/media/{mediaId}/enable'].patch,
+      tags: ['Admin Media'],
+      summary: 'Enable an admin-owned media asset',
+      description: 'Reactivates a disabled admin-owned asset. Requires an administrator session.',
+    },
+  },
+  '/api/admin/media/bulk': {
+    post: {
+      ...baseMediaPaths['/api/vendor/media/bulk'].post,
+      tags: ['Admin Media'],
+      summary: 'Enable, disable, or delete admin-owned assets in bulk',
+      description: 'Processes each asset independently and returns failures with reasons.',
     },
   },
 };

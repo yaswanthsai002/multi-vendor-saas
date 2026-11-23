@@ -31,6 +31,11 @@ export const categoriesSchemas = {
         type: ['string', 'null'],
         example: null,
       },
+      imageMediaId: {
+        type: ['string', 'null'],
+        format: 'uuid',
+        example: null,
+      },
       hasChildren: {
         type: 'boolean',
         example: true,
@@ -61,11 +66,11 @@ export const categoriesSchemas = {
         ],
         example: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
       },
-      imageUrl: {
+      imageMediaId: {
         anyOf: [
           {
             type: 'string',
-            format: 'uri',
+            format: 'uuid',
           },
           {
             type: 'null',
@@ -99,11 +104,11 @@ export const categoriesSchemas = {
         ],
         example: null,
       },
-      imageUrl: {
+      imageMediaId: {
         anyOf: [
           {
             type: 'string',
-            format: 'uri',
+            format: 'uuid',
           },
           {
             type: 'null',

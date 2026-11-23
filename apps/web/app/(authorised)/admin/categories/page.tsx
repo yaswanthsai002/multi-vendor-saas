@@ -28,6 +28,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { type DataTableColumnDef as ColumnDef } from '@/components/ui/data-table-features';
 import { AdminCategoryActionsMenu } from '@/features/admin/components/admin-category-actions-menu';
 import { KpiCard } from '@/features/admin/components/kpi-card';
+import { MediaPickerModal } from '@/features/media/components/media-picker-modal';
 import { makeApiRequest } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { queryKeys } from '@/lib/query-keys';
@@ -41,6 +42,7 @@ interface CategoryNode {
   slug: string;
   parentCategoryId: string | null;
   imageUrl?: string | null;
+  imageMediaId?: string | null;
   hasChildren?: boolean;
 }
 
@@ -54,6 +56,8 @@ export default function AdminCategoriesPage() {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [name, setName] = React.useState('');
   const [imageUrl, setImageUrl] = React.useState('');
+  const [imageMediaId, setImageMediaId] = React.useState<string | null>(null);
+  const [pickerFor, setPickerFor] = React.useState<'create' | 'edit' | null>(null);
   const [parentId, setParentId] = React.useState<string>('');
   const [targetParentCategory, setTargetParentCategory] = React.useState<CategoryTableRow | null>(
     null,
@@ -62,6 +66,7 @@ export default function AdminCategoriesPage() {
   const [editTarget, setEditTarget] = React.useState<CategoryTableRow | null>(null);
   const [editName, setEditName] = React.useState('');
   const [editImageUrl, setEditImageUrl] = React.useState('');
+  const [editImageMediaId, setEditImageMediaId] = React.useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = React.useState<CategoryTableRow | null>(null);
 
@@ -89,7 +94,7 @@ export default function AdminCategoriesPage() {
     mutationFn: (newCat: {
       name: string;
       parentCategoryId?: string | null;
-      imageUrl?: string | null;
+      imageMediaId?: string | null;
     }) =>
       makeApiRequest({
         url: API_ENDPOINTS.categories.create,
@@ -101,6 +106,7 @@ export default function AdminCategoriesPage() {
       setIsCreateOpen(false);
       setName('');
       setImageUrl('');
+      setImageMediaId(null);
       setParentId('');
       setTargetParentCategory(null);
       if (parentId) {
@@ -121,7 +127,7 @@ export default function AdminCategoriesPage() {
       payload,
     }: {
       categoryId: string;
-      payload: { name: string; imageUrl?: string | null };
+      payload: { name: string; imageMediaId?: string | null };
     }) =>
       makeApiRequest({
         url: API_ENDPOINTS.categories.detail(categoryId),
@@ -165,7 +171,7 @@ export default function AdminCategoriesPage() {
     createMutation.mutate({
       name: name.trim(),
       parentCategoryId: parentId ? parentId : null,
-      imageUrl: imageUrl.trim() ? imageUrl.trim() : null,
+      imageMediaId,
     });
   };
 
@@ -176,7 +182,7 @@ export default function AdminCategoriesPage() {
       categoryId: editTarget.categoryId,
       payload: {
         name: editName.trim(),
-        imageUrl: editImageUrl.trim() ? editImageUrl.trim() : null,
+        imageMediaId: editImageMediaId,
       },
     });
   };
@@ -186,6 +192,7 @@ export default function AdminCategoriesPage() {
     setTargetParentCategory(parentCategory);
     setName('');
     setImageUrl('');
+    setImageMediaId(null);
     setIsCreateOpen(true);
   };
 
@@ -194,6 +201,7 @@ export default function AdminCategoriesPage() {
     setTargetParentCategory(null);
     setName('');
     setImageUrl('');
+    setImageMediaId(null);
     setIsCreateOpen(true);
   };
 
@@ -201,6 +209,7 @@ export default function AdminCategoriesPage() {
     setEditTarget(category);
     setEditName(category.name);
     setEditImageUrl(category.imageUrl ?? '');
+    setEditImageMediaId(category.imageMediaId ?? null);
   };
 
   // ponytail: recursive tree builder supporting arbitrary category depth
@@ -236,6 +245,7 @@ export default function AdminCategoriesPage() {
         childCount: subRows.length,
         level: depth,
         imageUrl: cat.imageUrl,
+        imageMediaId: cat.imageMediaId,
         subRows: subRows.length > 0 ? subRows : undefined,
       };
     };
@@ -678,15 +688,36 @@ export default function AdminCategoriesPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-primary mb-1.5">
-                  Image URL (Optional)
+                  Category image (optional)
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/category-image.png"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
-                />
+                {imageUrl && (
+                  <Image
+                    src={imageUrl}
+                    alt="Selected category image"
+                    width={96}
+                    height={96}
+                    className="mb-2 h-24 w-24 rounded-md object-cover"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPickerFor('create')}
+                  className="rounded-md border border-border-control px-3 py-2 text-sm text-text-primary cursor-pointer"
+                >
+                  {imageUrl ? 'Change image' : 'Choose image'}
+                </button>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageUrl('');
+                      setImageMediaId(null);
+                    }}
+                    className="ml-2 text-sm text-text-secondary cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
 
               {!targetParentCategory && (
@@ -775,15 +806,36 @@ export default function AdminCategoriesPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-primary mb-1.5">
-                  Image URL (Optional)
+                  Category image (optional)
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/category-image.png"
-                  value={editImageUrl}
-                  onChange={(e) => setEditImageUrl(e.target.value)}
-                  className="w-full p-3 text-xs sm:text-sm rounded-xl bg-surface dark:bg-surface border border-border-control  text-text-primary placeholder:text-text-tertiary"
-                />
+                {editImageUrl && (
+                  <Image
+                    src={editImageUrl}
+                    alt="Selected category image"
+                    width={96}
+                    height={96}
+                    className="mb-2 h-24 w-24 rounded-md object-cover"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPickerFor('edit')}
+                  className="rounded-md border border-border-control px-3 py-2 text-sm text-text-primary cursor-pointer"
+                >
+                  {editImageUrl ? 'Change image' : 'Choose image'}
+                </button>
+                {editImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditImageUrl('');
+                      setEditImageMediaId(null);
+                    }}
+                    className="ml-2 text-sm text-text-secondary cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -806,6 +858,24 @@ export default function AdminCategoriesPage() {
           </div>
         </div>
       )}
+      <MediaPickerModal
+        open={pickerFor !== null}
+        onClose={() => setPickerFor(null)}
+        onConfirm={(items) => {
+          const image = items[0];
+          if (!image) return;
+          if (pickerFor === 'create') {
+            setImageMediaId(image.mediaId);
+            setImageUrl(image.variants?.large ?? image.original);
+          } else {
+            setEditImageMediaId(image.mediaId);
+            setEditImageUrl(image.variants?.large ?? image.original);
+          }
+        }}
+        mediaScope="admin"
+        acceptedType="image"
+        title="Choose a category image"
+      />
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (

@@ -84,6 +84,7 @@ export function MediaCard({
   };
 
   const isDisabled = item.status === 'disabled';
+  const isDeleting = item.status === 'deleting';
 
   const handleCardClick = () => {
     if (selectable && onSelect) {
@@ -106,7 +107,7 @@ export function MediaCard({
     >
       {/* Visual Media Preview */}
       <div className="relative aspect-square w-full bg-surface-subtle overflow-hidden flex items-center justify-center">
-        {!imgError ? (
+        {!imgError && !isDeleting ? (
           <Image
             src={previewSrc}
             alt={item.originalFileName}
@@ -136,9 +137,9 @@ export function MediaCard({
         ) : null}
 
         {/* Status Badge */}
-        {isDisabled ? (
+        {isDisabled || isDeleting ? (
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-danger-100 text-danger-500 dark:bg-danger-500/20 text-xs font-medium">
-            Disabled
+            {isDeleting ? 'Deleting' : 'Disabled'}
           </div>
         ) : null}
 
@@ -185,7 +186,7 @@ export function MediaCard({
                   <span>Copy URL</span>
                 </button>
 
-                {!isDisabled && onDisable ? (
+                {!isDisabled && !isDeleting && onDisable ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -213,7 +214,7 @@ export function MediaCard({
                   </button>
                 ) : null}
 
-                {isDisabled && onDelete ? (
+                {(isDisabled || isDeleting) && onDelete ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -223,7 +224,7 @@ export function MediaCard({
                     className="w-full flex items-center gap-2 px-3 py-2 text-danger-500 hover:bg-danger-100/50 dark:hover:bg-danger-500/10 text-left cursor-pointer transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-danger-500" />
-                    <span>Delete permanently</span>
+                    <span>{isDeleting ? 'Retry deletion' : 'Delete permanently'}</span>
                   </button>
                 ) : null}
               </div>

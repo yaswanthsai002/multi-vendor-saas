@@ -1,9 +1,10 @@
+import { Readable } from 'node:stream';
+
+import { campaigns, categories, type mediaLibrary, productMedia } from '@repo/db/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as mediaProcessor from './media.processor.js';
 import * as mediaService from './media.service.js';
-
-import type { mediaLibrary, productMedia } from '@repo/db/schema';
 
 const { db, mockR2Service } = vi.hoisted(() => ({
   db: {
@@ -14,6 +15,8 @@ const { db, mockR2Service } = vi.hoisted(() => ({
       productMedia: {
         findFirst: vi.fn(),
       },
+      categories: { findFirst: vi.fn() },
+      campaigns: { findFirst: vi.fn() },
     },
     insert: vi.fn(() => ({
       values: vi.fn(() => ({
@@ -31,10 +34,31 @@ const { db, mockR2Service } = vi.hoisted(() => ({
       where: vi.fn(() => Promise.resolve([])),
     })),
     select: vi.fn(() => ({
-      from: vi.fn(() => ({
+      from: vi.fn((table: unknown) => ({
         where: vi.fn(() => {
           const promise = Promise.resolve([{ count: 1, all: 1, image: 1, video: 0, disabled: 0 }]);
           return Object.assign(promise, {
+            for: vi.fn(() => ({
+              limit: vi.fn(async () => {
+                const row = await db.query.mediaLibrary.findFirst();
+                return row ? [row] : [];
+              }),
+            })),
+            limit: vi.fn(async () => {
+              if (table === productMedia) {
+                const row = await db.query.productMedia.findFirst();
+                return row ? [row] : [];
+              }
+              if (table === categories) {
+                const row = await db.query.categories.findFirst();
+                return row ? [row] : [];
+              }
+              if (table === campaigns) {
+                const row = await db.query.campaigns.findFirst();
+                return row ? [row] : [];
+              }
+              return [];
+            }),
             orderBy: vi.fn(() => ({
               limit: vi.fn(() => ({
                 offset: vi.fn(() => Promise.resolve([])),
@@ -49,6 +73,7 @@ const { db, mockR2Service } = vi.hoisted(() => ({
   mockR2Service: {
     putObject: vi.fn().mockResolvedValue(undefined),
     getObjectStream: vi.fn(),
+    headObject: vi.fn(),
     deleteObject: vi.fn().mockResolvedValue(undefined),
     deletePrefix: vi.fn().mockResolvedValue(undefined),
     resolveUrl: vi.fn((key: string) => `http://localhost:4000/media/${key}`),
@@ -246,6 +271,20 @@ describe('Media Service (media.service.ts)', () => {
   });
 
   describe('disableMedia', () => {
+    it('keeps an admin image active while a category uses it', async () => {
+      vi.mocked(db.query.mediaLibrary.findFirst).mockResolvedValueOnce({
+        mediaId,
+        vendorId: null,
+        status: 'active',
+      } as typeof mediaLibrary.$inferSelect);
+      vi.mocked(db.query.categories.findFirst).mockResolvedValueOnce({ name: 'Shoes' });
+
+      await expect(mediaService.disableMedia(null, mediaId)).rejects.toMatchObject({
+        code: 'MEDIA_IN_USE',
+        statusCode: 409,
+      });
+      expect(db.update).not.toHaveBeenCalled();
+    });
     it('disables active media, removes productMedia references, and nulls productImageId', async () => {
       const mockDbRow = {
         mediaId,
@@ -372,9 +411,72 @@ describe('Media Service (media.service.ts)', () => {
 
       expect(db.delete).toHaveBeenCalled();
       expect(mockR2Service.deletePrefix).toHaveBeenCalledWith(
-        `vendors/${vendorA}/media/${mediaId}`,
+        `vendors/${vendorA}/media/${mediaId}/`,
         'perigee-product-media',
       );
+    });
+  });
+
+  describe('completeMediaUpload', () => {
+    const item = {
+      mediaId,
+      originalStorageKey: `admin/media/${mediaId}/original.png`,
+      fileName: 'category.png',
+      fileSizeBytes: 12,
+      mimeType: 'image/png',
+    };
+
+    it('returns an existing upload without processing or deleting its files', async () => {
+      vi.mocked(db.query.mediaLibrary.findFirst).mockResolvedValueOnce({
+        mediaId,
+        vendorId: null,
+        createdBy: userId,
+        mediaType: 'image',
+        originalFileName: item.fileName,
+        mimeType: item.mimeType,
+        fileSizeBytes: item.fileSizeBytes,
+        width: 1,
+        height: 1,
+        durationSeconds: null,
+        originalStorageKey: item.originalStorageKey,
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        disabledAt: null,
+      } as typeof mediaLibrary.$inferSelect);
+
+      const result = await mediaService.completeMediaUpload(null, userId, { items: [item] });
+      expect(result[0]?.mediaId).toBe(mediaId);
+      expect(mockR2Service.headObject).not.toHaveBeenCalled();
+      expect(mockR2Service.deletePrefix).not.toHaveBeenCalled();
+    });
+
+    it('rejects an oversized stored object before downloading it', async () => {
+      vi.mocked(mockR2Service.headObject).mockResolvedValueOnce({
+        contentLength: 10 * 1024 * 1024 + 1,
+        contentType: 'image/png',
+      });
+
+      await expect(
+        mediaService.completeMediaUpload(null, userId, { items: [item] }),
+      ).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });
+      expect(mockR2Service.getObjectStream).not.toHaveBeenCalled();
+      expect(db.insert).not.toHaveBeenCalled();
+    });
+
+    it('stops a stream that exceeds the stored size and limit', async () => {
+      vi.mocked(mockR2Service.headObject).mockResolvedValueOnce({
+        contentLength: 12,
+        contentType: 'image/png',
+      });
+      vi.mocked(mockR2Service.getObjectStream).mockResolvedValueOnce(
+        Readable.from([Buffer.alloc(10 * 1024 * 1024 + 1)]),
+      );
+
+      await expect(
+        mediaService.completeMediaUpload(null, userId, { items: [item] }),
+      ).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });
+      expect(db.insert).not.toHaveBeenCalled();
     });
   });
 });

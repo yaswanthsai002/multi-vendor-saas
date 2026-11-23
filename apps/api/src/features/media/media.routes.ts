@@ -6,6 +6,15 @@ import { verifyToken } from '../../shared/middleware/verifyToken.js';
 import { requireActiveVendor } from '../vendor/vendor.middleware.js';
 
 import {
+  bulkAdminMedia,
+  changeAdminMedia,
+  completeAdminUpload,
+  deleteAdminMedia,
+  getAdminMedia,
+  initiateAdminUpload,
+  listAdminMedia,
+} from './admin-media.controller.js';
+import {
   bulkAction,
   completeUpload,
   deleteMedia,
@@ -23,6 +32,14 @@ export const mediaRouter = Router();
 export const adminMediaRouter = Router();
 adminMediaRouter.use(verifyToken, requireAdmin);
 adminMediaRouter.get('/catalog', listCampaignMedia);
+adminMediaRouter.post('/initiate', initiateAdminUpload);
+adminMediaRouter.post('/complete', completeAdminUpload);
+adminMediaRouter.post('/bulk', bulkAdminMedia);
+adminMediaRouter.get('/', listAdminMedia);
+adminMediaRouter.get('/:mediaId', getAdminMedia);
+adminMediaRouter.patch('/:mediaId/enable', changeAdminMedia);
+adminMediaRouter.patch('/:mediaId/disable', changeAdminMedia);
+adminMediaRouter.delete('/:mediaId', deleteAdminMedia);
 
 // ponytail: use in-memory buffer storage so Sharp and storage service operate directly without duplicate disk writes
 const upload = multer({

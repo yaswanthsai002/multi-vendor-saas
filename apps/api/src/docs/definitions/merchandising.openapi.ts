@@ -170,13 +170,13 @@ export const merchandisingSchemas = {
         type: 'string',
         maxLength: 240,
       },
-      imageUrl: {
-        type: 'string',
-        maxLength: 2048,
+      imageMediaId: {
+        type: ['string', 'null'],
+        format: 'uuid',
       },
-      mobileImageUrl: {
-        type: 'string',
-        maxLength: 2048,
+      mobileImageMediaId: {
+        type: ['string', 'null'],
+        format: 'uuid',
       },
       ctaLabel: {
         type: 'string',
@@ -269,8 +269,16 @@ export const merchandisingSchemas = {
       imageUrl: {
         type: 'string',
       },
+      imageMediaId: {
+        type: 'string',
+        format: 'uuid',
+      },
       mobileImageUrl: {
         type: ['string', 'null'],
+      },
+      mobileImageMediaId: {
+        type: ['string', 'null'],
+        format: 'uuid',
       },
       ctaLabel: {
         type: 'string',
@@ -384,8 +392,16 @@ export const merchandisingSchemas = {
                 imageUrl: {
                   type: ['null', 'string'],
                 },
+                imageMediaId: {
+                  type: ['null', 'string'],
+                  format: 'uuid',
+                },
                 mobileImageUrl: {
                   type: ['null', 'string'],
+                },
+                mobileImageMediaId: {
+                  type: ['null', 'string'],
+                  format: 'uuid',
                 },
                 ctaLabel: {
                   type: ['null', 'string'],
@@ -481,8 +497,16 @@ export const merchandisingSchemas = {
                     imageUrl: {
                       type: ['string'],
                     },
+                    imageMediaId: {
+                      type: ['null', 'string'],
+                      format: 'uuid',
+                    },
                     mobileImageUrl: {
                       type: ['string'],
+                    },
+                    mobileImageMediaId: {
+                      type: ['null', 'string'],
+                      format: 'uuid',
                     },
                     ctaLabel: {
                       type: ['string'],
@@ -1003,277 +1027,6 @@ export const merchandisingPaths = {
         },
         '404': {
           description: 'Draft not found or not owned by this administrator.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  '/api/admin/campaigns/{campaignId}/banners/{slot}': {
-    post: {
-      tags: ['Merchandising'],
-      summary: 'Initiate direct-to-storage campaign banner upload',
-      security: [
-        {
-          cookieAuth: [],
-        },
-      ],
-      parameters: [
-        {
-          name: 'campaignId',
-          in: 'path',
-          required: true,
-          schema: {
-            type: 'string',
-            format: 'uuid',
-          },
-        },
-        {
-          name: 'slot',
-          in: 'path',
-          required: true,
-          schema: {
-            type: 'string',
-            enum: ['desktop', 'mobile'],
-          },
-        },
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                fileName: {
-                  type: 'string',
-                  minLength: 1,
-                  maxLength: 255,
-                },
-                fileSizeBytes: {
-                  type: 'integer',
-                  exclusiveMinimum: 0,
-                  maximum: 10485760,
-                },
-                mimeType: {
-                  type: 'string',
-                  enum: ['image/jpeg', 'image/png', 'image/webp'],
-                },
-              },
-              required: ['fileName', 'fileSizeBytes', 'mimeType'],
-              additionalProperties: false,
-            },
-          },
-        },
-      },
-      responses: {
-        '201': {
-          description: 'Presigned upload location.',
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['uploadUrl', 'storageKey', 'fileName', 'fileSizeBytes', 'mimeType'],
-                properties: {
-                  uploadUrl: {
-                    type: 'string',
-                    format: 'uri',
-                  },
-                  storageKey: {
-                    type: 'string',
-                  },
-                  fileName: {
-                    type: 'string',
-                  },
-                  fileSizeBytes: {
-                    type: 'integer',
-                  },
-                  mimeType: {
-                    type: 'string',
-                  },
-                },
-              },
-            },
-          },
-        },
-        '400': {
-          description: 'Invalid image metadata.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '401': {
-          description: 'Authentication required.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '403': {
-          description: 'Administrator role required.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '404': {
-          description: 'Draft not found or not owned by this administrator.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '413': {
-          description: 'Banner image exceeds 10 MB.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  '/api/admin/campaigns/{campaignId}/banners/{slot}/complete': {
-    post: {
-      tags: ['Merchandising'],
-      summary: 'Complete campaign banner processing',
-      security: [
-        {
-          cookieAuth: [],
-        },
-      ],
-      parameters: [
-        {
-          name: 'campaignId',
-          in: 'path',
-          required: true,
-          schema: {
-            type: 'string',
-            format: 'uuid',
-          },
-        },
-        {
-          name: 'slot',
-          in: 'path',
-          required: true,
-          schema: {
-            type: 'string',
-            enum: ['desktop', 'mobile'],
-          },
-        },
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                storageKey: {
-                  type: 'string',
-                  minLength: 1,
-                  maxLength: 512,
-                },
-                fileName: {
-                  type: 'string',
-                  minLength: 1,
-                  maxLength: 255,
-                },
-                fileSizeBytes: {
-                  type: 'integer',
-                  exclusiveMinimum: 0,
-                  maximum: 10485760,
-                },
-                mimeType: {
-                  type: 'string',
-                  enum: ['image/jpeg', 'image/png', 'image/webp'],
-                },
-              },
-              required: ['storageKey', 'fileName', 'fileSizeBytes', 'mimeType'],
-              additionalProperties: false,
-            },
-          },
-        },
-      },
-      responses: {
-        '201': {
-          description: 'Banner processed and draft updated.',
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['imageUrl', 'width', 'height'],
-                properties: {
-                  imageUrl: {
-                    type: 'string',
-                    format: 'uri',
-                  },
-                  width: {
-                    type: 'integer',
-                    nullable: true,
-                  },
-                  height: {
-                    type: 'integer',
-                    nullable: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        '400': {
-          description: 'Invalid upload metadata or storage key.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '401': {
-          description: 'Authentication required.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '403': {
-          description: 'Administrator role required.',
-          content: {
-            'application/json': {
-              schema: {
-                $ref: '#/components/schemas/ErrorResponse',
-              },
-            },
-          },
-        },
-        '404': {
-          description: 'Draft or uploaded object not found.',
           content: {
             'application/json': {
               schema: {

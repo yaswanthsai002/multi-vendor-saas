@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { getDb } from '@repo/db';
 import {
   campaignProducts,
@@ -13,129 +11,35 @@ import {
 import { and, asc, count, desc, eq, gt, inArray, lt, sql } from 'drizzle-orm';
 
 import { AppError } from '../../shared/errors/AppError.js';
-import { processImage } from '../../shared/media/image-processor.js';
 import { STORAGE_BUCKETS, storageService } from '../../shared/storage/storage.service.js';
 
-import {
-  campaignBannerCompleteSchema,
-  promotionDraftPayloadSchema,
-  saveCampaignSchema,
-} from './merchandising.schema.js';
+import { promotionDraftPayloadSchema, saveCampaignSchema } from './merchandising.schema.js';
 
 import type { PromotionDraftPayload, SaveCampaignInput } from './merchandising.schema.js';
 
 type Transaction = Parameters<Parameters<ReturnType<typeof getDb>['transaction']>[0]>[0];
-const CAMPAIGN_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_CAMPAIGN_IMAGE_BYTES = 10 * 1024 * 1024;
+function adminImageUrl(mediaId: string | null) {
+  return mediaId
+    ? storageService.resolveUrl(`admin/media/${mediaId}/large.webp`, STORAGE_BUCKETS.productMedia)
+    : null;
+}
 
-async function getOwnedDraft(ownerUserId: string, draftId: string) {
-  const db = getDb();
-  const [draft] = await db
-    .select({
-      desktopBannerPrefix: campaigns.draftDesktopBannerPrefix,
-      mobileBannerPrefix: campaigns.draftMobileBannerPrefix,
-    })
-    .from(campaigns)
+async function lockAdminImage(tx: Transaction, mediaId: string | null | undefined) {
+  if (!mediaId) return;
+  const [media] = await tx
+    .select({ mediaId: mediaLibrary.mediaId })
+    .from(mediaLibrary)
     .where(
       and(
-        eq(campaigns.campaignId, draftId),
-        eq(campaigns.ownerUserId, ownerUserId),
-        eq(campaigns.status, 'draft'),
+        eq(mediaLibrary.mediaId, mediaId),
+        sql`${mediaLibrary.vendorId} IS NULL`,
+        eq(mediaLibrary.mediaType, 'image'),
+        eq(mediaLibrary.status, 'active'),
       ),
     )
+    .for('update')
     .limit(1);
-  if (!draft) throw new AppError(404, 'PROMOTION_DRAFT_NOT_FOUND', 'Promotion draft not found.');
-  return draft;
-}
-
-export async function initiateCampaignBannerUpload(
-  ownerUserId: string,
-  draftId: string,
-  slot: 'desktop' | 'mobile',
-  input: { fileName: string; fileSizeBytes: number; mimeType: string },
-) {
-  if (!CAMPAIGN_IMAGE_MIMES.has(input.mimeType)) {
-    throw new AppError(400, 'UNSUPPORTED_MEDIA_TYPE', 'Use a JPEG, PNG, or WebP banner image.');
-  }
-  if (input.fileSizeBytes > MAX_CAMPAIGN_IMAGE_BYTES) {
-    throw new AppError(400, 'FILE_TOO_LARGE', 'Banner image must be 10 MB or smaller.');
-  }
-  await getOwnedDraft(ownerUserId, draftId);
-  const storagePrefix = `homepage-campaign-drafts/${draftId}/${slot}/${randomUUID()}`;
-  const storageKey = `${storagePrefix}/original`;
-  return {
-    uploadUrl: await storageService.generatePresignedPutUrl(
-      storageKey,
-      input.mimeType,
-      900,
-      STORAGE_BUCKETS.productMedia,
-    ),
-    storageKey,
-    fileName: input.fileName,
-    fileSizeBytes: input.fileSizeBytes,
-    mimeType: input.mimeType,
-  };
-}
-
-export async function completeCampaignBannerUpload(
-  ownerUserId: string,
-  draftId: string,
-  slot: 'desktop' | 'mobile',
-  rawInput: { storageKey: string; fileName: string; fileSizeBytes: number; mimeType: string },
-) {
-  const input = campaignBannerCompleteSchema.parse(rawInput);
-  const prefixPattern = new RegExp(
-    `^homepage-campaign-drafts/${draftId}/${slot}/[0-9a-f-]{36}/original$`,
-    'i',
-  );
-  if (!prefixPattern.test(input.storageKey)) {
-    throw new AppError(400, 'INVALID_STORAGE_KEY', 'Invalid campaign banner upload key.');
-  }
-  const draft = await getOwnedDraft(ownerUserId, draftId);
-  const head = await storageService.headObject(input.storageKey, STORAGE_BUCKETS.productMedia);
-  if (!head) throw new AppError(404, 'STORAGE_OBJECT_NOT_FOUND', 'Uploaded banner was not found.');
-  if (head.contentLength !== input.fileSizeBytes || head.contentType !== input.mimeType) {
-    throw new AppError(400, 'UPLOAD_METADATA_MISMATCH', 'Uploaded banner metadata did not match.');
-  }
-  const storagePrefix = input.storageKey.slice(0, -'/original'.length);
-  try {
-    const dimensions = await processImage(
-      await storageService.getObjectBuffer(input.storageKey, STORAGE_BUCKETS.productMedia),
-      storagePrefix,
-    );
-    const previousPrefix =
-      slot === 'desktop' ? draft.desktopBannerPrefix : draft.mobileBannerPrefix;
-    const updated = await getDb()
-      .update(campaigns)
-      .set({
-        [slot === 'desktop' ? 'draftDesktopBannerPrefix' : 'draftMobileBannerPrefix']:
-          storagePrefix,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(campaigns.campaignId, draftId),
-          eq(campaigns.ownerUserId, ownerUserId),
-          eq(campaigns.status, 'draft'),
-        ),
-      )
-      .returning({ draftId: campaigns.campaignId });
-    if (!updated.length)
-      throw new AppError(404, 'PROMOTION_DRAFT_NOT_FOUND', 'Promotion draft not found.');
-    if (previousPrefix && previousPrefix !== storagePrefix) {
-      await storageService.deletePrefix(previousPrefix, STORAGE_BUCKETS.productMedia);
-    }
-    return {
-      imageUrl: storageService.resolveUrl(
-        `${storagePrefix}/large.webp`,
-        STORAGE_BUCKETS.productMedia,
-      ),
-      ...dimensions,
-    };
-  } catch (error) {
-    await storageService.deletePrefix(storagePrefix, STORAGE_BUCKETS.productMedia);
-    throw error;
-  }
+  if (!media) throw new AppError(400, 'INVALID_CAMPAIGN_IMAGE', 'Select an active admin image.');
 }
 
 function toMinorUnits(value: string) {
@@ -236,8 +140,8 @@ function campaignValues(input: SaveCampaignInput) {
     eyebrow: input.eyebrow,
     title: input.title,
     subtitle: input.subtitle,
-    imageUrl: input.imageUrl,
-    mobileImageUrl: input.mobileImageUrl ?? null,
+    desktopMediaId: input.imageMediaId,
+    mobileMediaId: input.mobileImageMediaId ?? null,
     ctaLabel: input.ctaLabel,
     ctaHref: input.ctaHref,
     startsAt: new Date(input.startsAt),
@@ -278,8 +182,8 @@ function campaignResponse(
     eyebrow: campaign.eyebrow!,
     title: campaign.title!,
     subtitle: campaign.subtitle!,
-    imageUrl: campaign.imageUrl!,
-    mobileImageUrl: campaign.mobileImageUrl,
+    imageUrl: adminImageUrl(campaign.desktopMediaId)!,
+    mobileImageUrl: adminImageUrl(campaign.mobileMediaId),
     ctaLabel: campaign.ctaLabel!,
     ctaHref: campaign.ctaHref!,
     startsAt: campaign.startsAt!,
@@ -300,8 +204,8 @@ export async function listCampaigns() {
       eyebrow: campaigns.eyebrow,
       title: campaigns.title,
       subtitle: campaigns.subtitle,
-      imageUrl: campaigns.imageUrl,
-      mobileImageUrl: campaigns.mobileImageUrl,
+      desktopMediaId: campaigns.desktopMediaId,
+      mobileMediaId: campaigns.mobileMediaId,
       ctaLabel: campaigns.ctaLabel,
       ctaHref: campaigns.ctaHref,
       startsAt: campaigns.startsAt,
@@ -340,6 +244,8 @@ export async function listCampaigns() {
 
   return rows.map((row) => ({
     ...row,
+    imageUrl: adminImageUrl(row.desktopMediaId),
+    mobileImageUrl: adminImageUrl(row.mobileMediaId),
     published: true,
     products: productsByCampaign.get(row.campaignId) ?? [],
   }));
@@ -353,8 +259,8 @@ export async function getCampaign(campaignId: string) {
       eyebrow: campaigns.eyebrow,
       title: campaigns.title,
       subtitle: campaigns.subtitle,
-      imageUrl: campaigns.imageUrl,
-      mobileImageUrl: campaigns.mobileImageUrl,
+      desktopMediaId: campaigns.desktopMediaId,
+      mobileMediaId: campaigns.mobileMediaId,
       ctaLabel: campaigns.ctaLabel,
       ctaHref: campaigns.ctaHref,
       startsAt: campaigns.startsAt,
@@ -386,6 +292,8 @@ export async function getCampaign(campaignId: string) {
 
   return {
     ...campaign,
+    imageUrl: adminImageUrl(campaign.desktopMediaId),
+    mobileImageUrl: adminImageUrl(campaign.mobileMediaId),
     published: true,
     products: items.map(({ mediaId, mediaVendorId, ...product }) => ({
       ...product,
@@ -416,8 +324,8 @@ export async function createPromotionDraft(ownerUserId: string, campaignId?: str
       eyebrow: campaign.eyebrow!,
       title: campaign.title!,
       subtitle: campaign.subtitle!,
-      imageUrl: campaign.imageUrl!,
-      mobileImageUrl: campaign.mobileImageUrl ?? '',
+      imageMediaId: campaign.desktopMediaId,
+      mobileImageMediaId: campaign.mobileMediaId,
       ctaLabel: campaign.ctaLabel!,
       ctaHref: campaign.ctaHref!,
       startsAt: campaign.startsAt!.toISOString(),
@@ -425,9 +333,21 @@ export async function createPromotionDraft(ownerUserId: string, campaignId?: str
       position: campaign.position,
       products: campaign.products.map(({ productId, dealPrice }) => ({ productId, dealPrice })),
     } satisfies PromotionDraftPayload;
+    const {
+      imageMediaId: _desktopMediaId,
+      mobileImageMediaId: _mobileMediaId,
+      ...draftContent
+    } = payload;
     const [created] = await db
       .insert(campaigns)
-      .values({ status: 'draft', sourceCampaignId: campaignId, ownerUserId, draftPayload: payload })
+      .values({
+        status: 'draft',
+        sourceCampaignId: campaignId,
+        ownerUserId,
+        draftDesktopMediaId: campaign.desktopMediaId,
+        draftMobileMediaId: campaign.mobileMediaId,
+        draftPayload: draftContent,
+      })
       .onConflictDoNothing()
       .returning({ draftId: campaigns.campaignId });
     const draftId =
@@ -458,8 +378,6 @@ export async function createPromotionDraft(ownerUserId: string, campaignId?: str
         eyebrow: '',
         title: '',
         subtitle: '',
-        imageUrl: '',
-        mobileImageUrl: '',
         ctaLabel: 'Shop now',
         ctaHref: '/products',
         startsAt: '',
@@ -481,7 +399,13 @@ export async function listPromotionDrafts(ownerUserId: string) {
   return rows.map((row) => ({
     draftId: row.campaignId,
     campaignId: row.sourceCampaignId,
-    payload: promotionDraftPayloadSchema.parse(row.draftPayload),
+    payload: {
+      ...promotionDraftPayloadSchema.parse(row.draftPayload),
+      imageMediaId: row.draftDesktopMediaId,
+      mobileImageMediaId: row.draftMobileMediaId,
+      imageUrl: adminImageUrl(row.draftDesktopMediaId) ?? '',
+      mobileImageUrl: adminImageUrl(row.draftMobileMediaId) ?? '',
+    },
     updatedAt: row.updatedAt,
   }));
 }
@@ -501,7 +425,13 @@ export async function getPromotionDraft(ownerUserId: string, draftId: string) {
     .limit(1);
   if (!draft) throw new AppError(404, 'PROMOTION_DRAFT_NOT_FOUND', 'Promotion draft not found.');
 
-  const payload = promotionDraftPayloadSchema.parse(draft.draftPayload);
+  const payload = {
+    ...promotionDraftPayloadSchema.parse(draft.draftPayload),
+    imageMediaId: draft.draftDesktopMediaId,
+    mobileImageMediaId: draft.draftMobileMediaId,
+    imageUrl: adminImageUrl(draft.draftDesktopMediaId) ?? '',
+    mobileImageUrl: adminImageUrl(draft.draftMobileMediaId) ?? '',
+  };
   const selected = payload.products ?? [];
   const productIds = selected.map((item) => item.productId);
   const rows = productIds.length
@@ -549,17 +479,27 @@ export async function savePromotionDraft(
   draftId: string,
   payload: PromotionDraftPayload,
 ) {
-  const [draft] = await getDb()
-    .update(campaigns)
-    .set({ draftPayload: payload, updatedAt: new Date() })
-    .where(
-      and(
-        eq(campaigns.campaignId, draftId),
-        eq(campaigns.ownerUserId, ownerUserId),
-        eq(campaigns.status, 'draft'),
-      ),
-    )
-    .returning({ draftId: campaigns.campaignId });
+  const { imageMediaId, mobileImageMediaId, ...content } = payload;
+  const [draft] = await getDb().transaction(async (tx) => {
+    await lockAdminImage(tx, imageMediaId);
+    await lockAdminImage(tx, mobileImageMediaId);
+    return tx
+      .update(campaigns)
+      .set({
+        draftPayload: content,
+        draftDesktopMediaId: imageMediaId ?? null,
+        draftMobileMediaId: mobileImageMediaId ?? null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(campaigns.campaignId, draftId),
+          eq(campaigns.ownerUserId, ownerUserId),
+          eq(campaigns.status, 'draft'),
+        ),
+      )
+      .returning({ draftId: campaigns.campaignId });
+  });
   if (!draft) throw new AppError(404, 'PROMOTION_DRAFT_NOT_FOUND', 'Promotion draft not found.');
   return getPromotionDraft(ownerUserId, draftId);
 }
@@ -574,16 +514,8 @@ export async function discardPromotionDraft(ownerUserId: string, draftId: string
         eq(campaigns.status, 'draft'),
       ),
     )
-    .returning({
-      desktopBannerPrefix: campaigns.draftDesktopBannerPrefix,
-      mobileBannerPrefix: campaigns.draftMobileBannerPrefix,
-    });
+    .returning({ draftId: campaigns.campaignId });
   if (!draft) throw new AppError(404, 'PROMOTION_DRAFT_NOT_FOUND', 'Promotion draft not found.');
-  await Promise.all(
-    [draft.desktopBannerPrefix, draft.mobileBannerPrefix]
-      .filter((prefix): prefix is string => Boolean(prefix))
-      .map((prefix) => storageService.deletePrefix(prefix, STORAGE_BUCKETS.productMedia)),
-  );
 }
 
 export async function publishPromotionDraft(ownerUserId: string, draftId: string) {
@@ -594,7 +526,7 @@ export async function publishPromotionDraft(ownerUserId: string, draftId: string
   const endsAt = payload.endsAt ? new Date(payload.endsAt) : null;
   if (!payload.title?.trim())
     throw new AppError(400, 'PROMOTION_TITLE_REQUIRED', 'Add a promotion heading.');
-  if (!payload.imageUrl)
+  if (!payload.imageMediaId)
     throw new AppError(400, 'PROMOTION_BANNER_REQUIRED', 'Choose a desktop banner.');
   if (!startsAt || !Number.isFinite(startsAt.getTime())) {
     throw new AppError(400, 'PROMOTION_START_REQUIRED', 'Choose a start date and time.');
@@ -614,8 +546,8 @@ export async function publishPromotionDraft(ownerUserId: string, draftId: string
     eyebrow: payload.eyebrow?.trim() || 'Promotion',
     title: payload.title.trim(),
     subtitle: payload.subtitle?.trim() ?? '',
-    imageUrl: payload.imageUrl,
-    mobileImageUrl: payload.mobileImageUrl || null,
+    imageMediaId: payload.imageMediaId,
+    mobileImageMediaId: payload.mobileImageMediaId || null,
     ctaLabel: payload.ctaLabel?.trim() || 'Shop now',
     ctaHref: payload.ctaHref || '/products',
     startsAt: startsAt.toISOString(),
@@ -626,6 +558,8 @@ export async function publishPromotionDraft(ownerUserId: string, draftId: string
   });
 
   return db.transaction(async (tx) => {
+    await lockAdminImage(tx, input.imageMediaId);
+    await lockAdminImage(tx, input.mobileImageMediaId);
     const sourceCampaignId = draft.campaignId;
     let publishedCampaignId = draftId;
     if (sourceCampaignId) {
@@ -654,8 +588,8 @@ export async function publishPromotionDraft(ownerUserId: string, draftId: string
           ...campaignValues(input),
           ownerUserId: null,
           sourceCampaignId: null,
-          draftDesktopBannerPrefix: null,
-          draftMobileBannerPrefix: null,
+          draftDesktopMediaId: null,
+          draftMobileMediaId: null,
         })
         .where(and(eq(campaigns.campaignId, draftId), eq(campaigns.ownerUserId, ownerUserId)));
       await replaceCampaignProducts(tx, draftId, input);
@@ -765,8 +699,8 @@ export async function getHomepageCampaigns() {
     eyebrow: campaign.eyebrow!,
     title: campaign.title!,
     subtitle: campaign.subtitle!,
-    imageUrl: campaign.imageUrl!,
-    mobileImageUrl: campaign.mobileImageUrl,
+    imageUrl: adminImageUrl(campaign.desktopMediaId)!,
+    mobileImageUrl: adminImageUrl(campaign.mobileMediaId),
     ctaLabel: campaign.ctaLabel!,
     ctaHref: campaign.ctaHref!,
     startsAt: campaign.startsAt!,

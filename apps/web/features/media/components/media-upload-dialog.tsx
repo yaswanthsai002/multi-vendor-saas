@@ -7,6 +7,8 @@ import * as React from 'react';
 import { useUploadMedia } from '../hooks/use-media';
 import { validateMediaFiles } from '../types/media.types';
 
+import type { MediaScope } from '../services/media.service';
+
 interface MediaUploadDialogProps {
   open: boolean;
   initialFiles?: File[];
@@ -16,6 +18,7 @@ interface MediaUploadDialogProps {
   onUploadComplete?: () => void;
   onClose: () => void;
   onUploadInBackground?: (files: File[]) => void;
+  mediaScope?: MediaScope;
 }
 
 function formatFileSize(bytes: number): string {
@@ -33,6 +36,7 @@ export function MediaUploadDialog({
   onUploadComplete,
   onClose,
   onUploadInBackground,
+  mediaScope = 'vendor',
 }: MediaUploadDialogProps) {
   const [files, setFiles] = React.useState<File[]>(initialFiles);
   const [validationError, setValidationError] = React.useState<string | null>(null);
@@ -42,7 +46,7 @@ export function MediaUploadDialog({
   const [isDragging, setIsDragging] = React.useState(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const uploadMutation = useUploadMedia();
+  const uploadMutation = useUploadMedia(mediaScope);
   const isUploading = uploadMutation.isPending || customUploading;
   const uploadProgress = onUploadFiles ? customProgress : uploadMutation.progress;
 

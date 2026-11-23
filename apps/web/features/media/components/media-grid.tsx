@@ -29,6 +29,7 @@ interface MediaGridProps {
   selectedIds?: string[];
   getSelectionIndex?: (mediaId: string) => number | undefined;
   onSelect?: (item: MediaItem) => void;
+  emptyDescription?: string;
 }
 
 export function MediaGrid({
@@ -48,6 +49,7 @@ export function MediaGrid({
   selectedIds = [],
   getSelectionIndex,
   onSelect,
+  emptyDescription = 'Upload product photos, catalog images, and video demonstrations to reuse them across your products.',
 }: MediaGridProps) {
   if (isLoading) {
     return (
@@ -99,10 +101,7 @@ export function MediaGrid({
           <ImageIcon className="h-8 w-8" />
         </div>
         <h3 className="text-lg font-semibold text-text-primary">No media assets yet</h3>
-        <p className="text-sm text-text-secondary mt-1 max-w-md">
-          Upload product photos, catalog images, and video demonstrations to reuse them seamlessly
-          across your products.
-        </p>
+        <p className="text-sm text-text-secondary mt-1 max-w-md">{emptyDescription}</p>
         {onOpenUpload ? (
           <button
             type="button"

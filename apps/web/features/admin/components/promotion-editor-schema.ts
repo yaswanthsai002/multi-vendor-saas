@@ -7,6 +7,8 @@ export const promotionFormSchema = z
     subtitle: z.string().trim().max(240),
     imageUrl: z.string().trim(),
     mobileImageUrl: z.string().trim(),
+    imageMediaId: z.string().uuid().nullable(),
+    mobileImageMediaId: z.string().uuid().nullable(),
     ctaLabel: z.string().trim().min(1).max(40),
     ctaHref: z
       .string()
@@ -37,6 +39,8 @@ export const emptyPromotionForm: PromotionFormValues = {
   subtitle: '',
   imageUrl: '',
   mobileImageUrl: '',
+  imageMediaId: null,
+  mobileImageMediaId: null,
   ctaLabel: '',
   ctaHref: '/products',
   startsAt: '',
