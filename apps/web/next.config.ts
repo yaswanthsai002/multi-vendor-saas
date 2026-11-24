@@ -26,6 +26,15 @@ const nextConfig: NextConfig = {
         : []),
     ],
   },
+  async rewrites() {
+    // TODO: Keep this until a domain is bought
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://sslip.io*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
