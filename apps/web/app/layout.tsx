@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Suspense, type ReactNode } from 'react';
 
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Suspense>
           </ThemeProvider>
         </QueryProvider>
+        <Analytics />
       </body>
     </html>
   );
