@@ -180,18 +180,22 @@ export function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-text-tertiary gap-2">
           <div className="flex gap-2">
             <Link href="/privacy-policy" className="hover:text-text-primary transition-colors">
-              Privacy Policy
+              Privacy
             </Link>{' '}
             &bull;
             <Link href="/terms-of-service" className="hover:text-text-primary transition-colors">
-              Terms of Service
+              Terms
             </Link>{' '}
             &bull;
-            <Link href="/terms-of-service" className="hover:text-text-primary transition-colors">
-              Accessibility
+            <Link href="/acceptable-use" className="hover:text-text-primary transition-colors">
+              Acceptable use
+            </Link>{' '}
+            &bull;
+            <Link href="/cookie-notice" className="hover:text-text-primary transition-colors">
+              Cookies
             </Link>
           </div>
-          <div>© {new Date().getFullYear()} Perigee Inc. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} Perigee</div>
         </div>
       </div>
     </footer>
