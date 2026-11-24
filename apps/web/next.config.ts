@@ -27,11 +27,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    // TODO: Keep this until a domain is bought
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost';
+
     return [
       {
         source: '/api/:path*',
-        destination: 'https://sslip.io*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
