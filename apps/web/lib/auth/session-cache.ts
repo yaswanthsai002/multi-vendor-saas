@@ -25,7 +25,12 @@ export function getRemoteAuthSessionChange(data: unknown): AuthSessionChange | n
 }
 
 export function clearAuthSessionCache(queryClient: QueryClient, change: AuthSessionChange) {
-  queryClient.clear();
+  if (change === 'session-changed') {
+    queryClient.removeQueries({ type: 'inactive' });
+    void queryClient.resetQueries({ type: 'active' });
+  } else {
+    queryClient.clear();
+  }
 
   if (typeof BroadcastChannel === 'undefined') return;
 
