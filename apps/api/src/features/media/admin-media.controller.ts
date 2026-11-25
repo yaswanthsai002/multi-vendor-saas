@@ -58,13 +58,11 @@ export async function completeAdminUpload(
       userId,
       completeMediaUploadSchema.parse(req.body),
     );
-    res
-      .status(201)
-      .json({
-        message: `${items.length} media files uploaded successfully.`,
-        media: items[0],
-        items,
-      });
+    res.status(201).json({
+      message: `${items.length} media files uploaded successfully.`,
+      media: items[0],
+      items,
+    });
   } catch (error) {
     next(error);
   }
