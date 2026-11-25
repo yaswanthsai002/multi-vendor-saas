@@ -34,7 +34,10 @@ describe('clearAuthSessionCache', () => {
       close = vi.fn();
     }
     vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
-    clearAuthSessionCache(new QueryClient(), 'session-changed');
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['previous-account', 'orders'], { private: true });
+    clearAuthSessionCache(queryClient, 'session-changed');
+    expect(queryClient.getQueryData(['previous-account', 'orders'])).toBeUndefined();
 
     expect(getRemoteAuthSessionChange(postMessage.mock.calls[0]?.[0])).toBeNull();
     expect(getRemoteAuthSessionChange({ type: 'signed-out', sourceId: 'another-tab' })).toBe(

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -50,5 +51,23 @@ describe('QueryProvider OAuth session callback', () => {
     );
 
     expect(messages).not.toContainEqual(expect.objectContaining({ type: 'session-changed' }));
+  });
+
+  it('settles profile query after the OAuth callback refreshes session data', async () => {
+    window.history.replaceState(window.history.state, '', '/?auth_session_changed=1');
+    function ProfileProbe() {
+      const profile = useQuery({
+        queryKey: ['auth', 'me'],
+        queryFn: async () => ({ user: 'Jane' }),
+      });
+      return <span>{profile.isPending ? 'Loading profile' : profile.data?.user}</span>;
+    }
+
+    const { getByText } = render(
+      <QueryProvider>
+        <ProfileProbe />
+      </QueryProvider>,
+    );
+    await waitFor(() => expect(getByText('Jane')).toBeDefined());
   });
 });
